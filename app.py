@@ -47,9 +47,15 @@ class TikTokIngest(BaseModel):
 
 class AnalyzeRequest(BaseModel):
     platform: str = Field(..., pattern="^(instagram|tiktok)$")
-    media_id: str
-    published_at: str
-    metrics: Dict[str, Any]
+    file_url: str = Field(..., description="Video URL to analyze")
+    mode: Optional[str] = Field("FAST", description="Analysis mode: FAST or FULL")
+    title: Optional[str] = ""
+    caption: Optional[str] = ""
+    tags: Optional[List[str]] = []
+    email: Optional[str] = None
+    media_id: Optional[str] = None
+    published_at: Optional[str] = None
+    metrics: Optional[Dict[str, Any]] = None
 
 class AnalyzeResponse(BaseModel):
     score: float = Field(..., ge=0, le=100)
