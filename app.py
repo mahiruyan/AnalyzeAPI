@@ -165,15 +165,33 @@ def analyze_performance_api(data: AnalyzeRequest):
     """Real video analysis - no mock responses"""
     
     try:
-        # Her zaman gerçek video analizi yap
+        print(f"🔍 [DEBUG] Request received: mode={data.mode}")
+        print(f"🔍 [DEBUG] File URL: {data.file_url}")
+        print(f"🔍 [DEBUG] Platform: {data.platform}")
+        
+        print("🚀 [DEBUG] Starting imports...")
         import tempfile
         import os
         from pathlib import Path
+        print("✅ [DEBUG] Basic imports OK")
+        
         from utils import download_video, extract_audio_via_ffmpeg, grab_frames, get_video_duration
+        print("✅ [DEBUG] Utils import OK")
+        
         from features import extract_features
+        print("✅ [DEBUG] Features import OK")
+        
         from scoring import score_features
+        print("✅ [DEBUG] Scoring import OK")
+        
         from suggest import generate_suggestions
+        print("✅ [DEBUG] Suggest import OK")
+        
     except Exception as e:
+        print(f"❌ [ERROR] Import failed: {str(e)}")
+        print(f"❌ [ERROR] Error type: {type(e)}")
+        import traceback
+        print(f"❌ [ERROR] Traceback: {traceback.format_exc()}")
         return {
             "error": f"Import hatası: {str(e)}",
             "duration_seconds": 0,
@@ -188,24 +206,35 @@ def analyze_performance_api(data: AnalyzeRequest):
     
     # Video indirme ve analiz
     try:
+        print("🚀 [DEBUG] Starting FULL analysis...")
         with tempfile.TemporaryDirectory() as temp_dir:
             video_path = os.path.join(temp_dir, "video.mp4")
             audio_path = os.path.join(temp_dir, "audio.wav")
             frames_dir = os.path.join(temp_dir, "frames")
+            print(f"✅ [DEBUG] Temp directory created: {temp_dir}")
             
             # Video indir
+            print(f"🔽 [DEBUG] Downloading video from: {data.file_url}")
             download_video(data.file_url, video_path)
+            print(f"✅ [DEBUG] Video downloaded to: {video_path}")
             
             # Ses çıkar
+            print("🎵 [DEBUG] Extracting audio...")
             extract_audio_via_ffmpeg(video_path, audio_path)
+            print(f"✅ [DEBUG] Audio extracted to: {audio_path}")
             
             # Frame'ler çıkar
+            print("🖼️ [DEBUG] Extracting frames...")
             frames = grab_frames(video_path, frames_dir, max_frames=10)
+            print(f"✅ [DEBUG] Frames extracted: {len(frames)} frames")
             
             # Süre al
+            print("⏱️ [DEBUG] Getting video duration...")
             duration = get_video_duration(video_path)
+            print(f"✅ [DEBUG] Duration: {duration} seconds")
             
             # Özellikler çıkar
+            print("🧠 [DEBUG] Extracting features...")
             features = extract_features(
                 audio_path=audio_path,
                 frames=frames,
@@ -215,11 +244,15 @@ def analyze_performance_api(data: AnalyzeRequest):
                 duration_seconds=duration,
                 fast_mode=(data.mode == "FAST")
             )
+            print("✅ [DEBUG] Features extracted")
             
             # Skorlar hesapla
+            print("📊 [DEBUG] Calculating scores...")
             scores = score_features(features, data.platform, (data.mode == "FAST"))
+            print("✅ [DEBUG] Scores calculated")
             
             # Spesifik öneriler oluştur
+            print("💡 [DEBUG] Generating suggestions...")
             suggestions = generate_suggestions(
                 platform=data.platform,
                 caption=data.caption or "",
@@ -228,10 +261,13 @@ def analyze_performance_api(data: AnalyzeRequest):
                 features=features,
                 scores=scores
             )
+            print("✅ [DEBUG] Suggestions generated")
             
             # Toplam skor
             total_score = scores.get("overall_score", 0)
+            print(f"🎯 [DEBUG] Total score: {total_score}")
             
+            print("✅ [DEBUG] Analysis completed successfully!")
             return {
                 "duration_seconds": duration,
                 "features": features,
@@ -243,6 +279,10 @@ def analyze_performance_api(data: AnalyzeRequest):
                 "suggestions": suggestions
             }
     except Exception as e:
+        print(f"❌ [ERROR] Analysis failed: {str(e)}")
+        print(f"❌ [ERROR] Error type: {type(e)}")
+        import traceback
+        print(f"❌ [ERROR] Traceback: {traceback.format_exc()}")
         return {
             "error": f"Analiz hatası: {str(e)}",
             "duration_seconds": 0,
