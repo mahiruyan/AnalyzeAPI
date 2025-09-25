@@ -97,69 +97,95 @@ def ingest_tiktok(data: TikTokIngest):
 def analyze_performance_api(data: AnalyzeRequest):
     """Real video analysis - no mock responses"""
     
-    # Her zaman gerçek video analizi yap
-    import tempfile
-    import os
-    from pathlib import Path
-    from utils import download_video, extract_audio_via_ffmpeg, grab_frames, get_video_duration
-    from features import extract_features
-    from scoring import score_features
-    from suggest import generate_suggestions
+    try:
+        # Her zaman gerçek video analizi yap
+        import tempfile
+        import os
+        from pathlib import Path
+        from utils import download_video, extract_audio_via_ffmpeg, grab_frames, get_video_duration
+        from features import extract_features
+        from scoring import score_features
+        from suggest import generate_suggestions
+    except Exception as e:
+        return {
+            "error": f"Import hatası: {str(e)}",
+            "duration_seconds": 0,
+            "features": {},
+            "scores": {},
+            "verdict": "error",
+            "viral": False,
+            "mode": data.mode or "UNKNOWN",
+            "analysis_complete": False,
+            "suggestions": {"tips": [f"Hata: {str(e)}"]}
+        }
     
     # Video indirme ve analiz
-    with tempfile.TemporaryDirectory() as temp_dir:
-        video_path = os.path.join(temp_dir, "video.mp4")
-        audio_path = os.path.join(temp_dir, "audio.wav")
-        frames_dir = os.path.join(temp_dir, "frames")
-        
-        # Video indir
-        download_video(data.file_url, video_path)
-        
-        # Ses çıkar
-        extract_audio_via_ffmpeg(video_path, audio_path)
-        
-        # Frame'ler çıkar
-        frames = grab_frames(video_path, frames_dir, max_frames=10)
-        
-        # Süre al
-        duration = get_video_duration(video_path)
-        
-        # Özellikler çıkar
-        features = extract_features(
-            audio_path=audio_path,
-            frames=frames,
-            caption=data.caption or "",
-            title=data.title or "",
-            tags=data.tags or [],
-            duration_seconds=duration,
-            fast_mode=(data.mode == "FAST")
-        )
-        
-        # Skorlar hesapla
-        scores = score_features(features, data.platform, (data.mode == "FAST"))
-        
-        # Spesifik öneriler oluştur
-        suggestions = generate_suggestions(
-            platform=data.platform,
-            caption=data.caption or "",
-            title=data.title or "",
-            tags=data.tags or [],
-            features=features,
-            scores=scores
-        )
-        
-        # Toplam skor
-        total_score = scores.get("overall_score", 0)
-        
+    try:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            video_path = os.path.join(temp_dir, "video.mp4")
+            audio_path = os.path.join(temp_dir, "audio.wav")
+            frames_dir = os.path.join(temp_dir, "frames")
+            
+            # Video indir
+            download_video(data.file_url, video_path)
+            
+            # Ses çıkar
+            extract_audio_via_ffmpeg(video_path, audio_path)
+            
+            # Frame'ler çıkar
+            frames = grab_frames(video_path, frames_dir, max_frames=10)
+            
+            # Süre al
+            duration = get_video_duration(video_path)
+            
+            # Özellikler çıkar
+            features = extract_features(
+                audio_path=audio_path,
+                frames=frames,
+                caption=data.caption or "",
+                title=data.title or "",
+                tags=data.tags or [],
+                duration_seconds=duration,
+                fast_mode=(data.mode == "FAST")
+            )
+            
+            # Skorlar hesapla
+            scores = score_features(features, data.platform, (data.mode == "FAST"))
+            
+            # Spesifik öneriler oluştur
+            suggestions = generate_suggestions(
+                platform=data.platform,
+                caption=data.caption or "",
+                title=data.title or "",
+                tags=data.tags or [],
+                features=features,
+                scores=scores
+            )
+            
+            # Toplam skor
+            total_score = scores.get("overall_score", 0)
+            
+            return {
+                "duration_seconds": duration,
+                "features": features,
+                "scores": scores,
+                "verdict": "high" if total_score >= 70 else "mid" if total_score >= 40 else "low",
+                "viral": total_score >= 70,
+                "mode": data.mode,
+                "analysis_complete": True,
+                "suggestions": suggestions
+            }
+    except Exception as e:
         return {
-            "duration_seconds": duration,
-            "features": features,
-            "scores": scores,
-            "verdict": "high" if total_score >= 70 else "mid" if total_score >= 40 else "low",
-            "viral": total_score >= 70,
-            "mode": data.mode,
-            "analysis_complete": True,
-            "suggestions": suggestions
+            "error": f"Analiz hatası: {str(e)}",
+            "duration_seconds": 0,
+            "features": {},
+            "scores": {},
+            "verdict": "error", 
+            "viral": False,
+            "mode": data.mode or "UNKNOWN",
+            "analysis_complete": False,
+            "suggestions": {"tips": [f"Video analiz hatası: {str(e)}"]}
         }
 
 @app.post("/analyze", response_model=AnalyzeResponse)
