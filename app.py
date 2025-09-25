@@ -71,6 +71,11 @@ def api_health_check():
     """Railway API sağlık kontrolü endpoint'i"""
     return {"status": "ok"}
 
+@app.get("/api/ping")
+def ping():
+    """Keep-alive endpoint - Railway'i uyanık tutmak için"""
+    return {"status": "awake", "timestamp": "2025-01-25"}
+
 @app.get("/")
 def root():
     """Ana sayfa"""
