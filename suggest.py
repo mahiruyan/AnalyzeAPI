@@ -11,33 +11,74 @@ def _rule_based_suggestions(
     scores: Dict[str, float],
 ) -> Dict[str, Any]:
     suggestions: List[str] = []
-
-    if scores.get("hook_score", 0.0) < 0.6:
-        suggestions.append("İlk 3 saniyede merak uyandıran bir soru veya vaat ekleyin.")
-    if scores.get("flow_score", 0.0) < 0.6:
-        suggestions.append("Kısa kesmeler ve ritmik geçişlerle tempoyu artırın.")
-    if scores.get("audio_quality_score", 0.0) < 0.6:
-        suggestions.append("Arka plan gürültüsünü azaltın, ses seviyesini dengeli tutun.")
-    if scores.get("content_fit_score", 0.0) < 0.6:
-        suggestions.append("Metinde etiketlerinizle uyumlu anahtar kelimeleri öne çıkarın.")
-
-    # Alternatif kısa kancalar
-    base_hook = "Herkesin kaçırdığı şu detaya bak!" if not title else f"{title.strip()} — Peki ya şu?"
-    alt_hooks = [
-        base_hook,
-        "Bunu öğrenmeden paylaşma!",
-        "3 saniyede fikrini değiştirecek bilgi!",
-    ]
-
-    # Hashtag önerileri
-    tags_lower = [t.lower() for t in tags]
-    base_tags = list({*(tags_lower), "viral", "trending", platform.lower()[:10]})
-
+    
+    # Gerçek video analizine dayalı spesifik öneriler
+    audio = features.get("audio", {})
+    visual = features.get("visual", {})
+    textual = features.get("textual", {})
+    duration = features.get("duration_seconds", 0)
+    
+    # Ses analizi önerileri
+    loudness = audio.get("loudness_lufs", 0)
+    tempo = audio.get("tempo_bpm", 0)
+    
+    if loudness < -20:
+        suggestions.append(f"🎵 Ses seviyeniz çok düşük ({loudness:.1f} LUFS). -14 ile -10 LUFS arası ideal.")
+    elif loudness > -8:
+        suggestions.append(f"🎵 Ses seviyeniz çok yüksek ({loudness:.1f} LUFS). Dinleyiciler rahatsız olabilir.")
+    
+    if tempo < 70:
+        suggestions.append(f"🎶 Müzik temponuz yavaş ({tempo:.0f} BPM). Instagram için 90-120 BPM daha etkili.")
+    elif tempo > 160:
+        suggestions.append(f"🎶 Müzik temponuz çok hızlı ({tempo:.0f} BPM). Daha sakin bir müzik deneyin.")
+    
+    # Görsel analiz önerileri
+    flow = visual.get("optical_flow_mean", 0)
+    if flow < 0.5:
+        suggestions.append("📹 Videoda çok az hareket var. Daha dinamik sahneler ekleyin.")
+    elif flow > 3.0:
+        suggestions.append("📹 Çok hızlı geçişler var. Bazı sahneleri daha uzun tutun.")
+    
+    # Metin analizi önerileri
+    ocr_text = textual.get("ocr_text", "")
+    asr_text = textual.get("asr_text", "")
+    
+    if len(ocr_text) < 10:
+        suggestions.append("📝 Videoda yazı/metin yok. Anahtar kelimeleri ekranda gösterin.")
+    
+    if len(asr_text) < 20:
+        suggestions.append("🎤 Konuşma çok az. Sesli açıklama ekleyin.")
+    
+    # Süre önerileri
+    if duration < 15:
+        suggestions.append(f"⏱️ Video çok kısa ({duration:.1f}s). Instagram için 30-60 saniye ideal.")
+    elif duration > 90:
+        suggestions.append(f"⏱️ Video çok uzun ({duration:.1f}s). 60 saniyeden kısa tutun.")
+    
+    # Spesifik timing önerileri
+    if scores.get("hook_score", 0) < 0.6:
+        suggestions.append("🎯 İlk 3 saniyede dikkat çekici bir görsel veya ses efekti ekleyin.")
+    
+    if scores.get("flow_score", 0) < 0.6:
+        suggestions.append("🔄 3-5 saniye aralıklarla sahne değiştirin.")
+    
+    # Platform spesifik öneriler
+    if platform.lower() == "instagram":
+        if not ocr_text:
+            suggestions.append("📱 Instagram için alt yazı kullanın - sessiz izleme yaygın.")
+        suggestions.append("🌈 Canlı renkler kullanın - Instagram'da daha çok dikkat çeker.")
+    
     return {
         "tips": suggestions,
-        "alternative_hooks": alt_hooks,
-        "hashtags": base_tags[:8],
-        "captions": [caption or "Kısa ve net bir mesajla başla."],
+        "technical_details": {
+            "audio_loudness": f"{loudness:.1f} LUFS",
+            "tempo": f"{tempo:.0f} BPM", 
+            "visual_flow": f"{flow:.2f}",
+            "duration": f"{duration:.1f}s",
+            "text_detected": len(ocr_text) > 0,
+            "speech_detected": len(asr_text) > 20
+        },
+        "improvement_areas": [k for k, v in scores.items() if v < 0.6]
     }
 
 

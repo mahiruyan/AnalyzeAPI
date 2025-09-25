@@ -95,17 +95,70 @@ def ingest_tiktok(data: TikTokIngest):
 
 @app.post("/api/analyze")
 def analyze_performance_api(data: AnalyzeRequest):
-    """API endpoint for video analysis - redirects to main.py functionality"""
-    # Gerçek analiz için main.py'deki fonksiyonları kullan
-    from main import analyze as main_analyze
-    from fastapi import BackgroundTasks, Request
+    """Real video analysis with specific suggestions"""
+    import tempfile
+    import os
+    from pathlib import Path
+    from utils import download_video, extract_audio_via_ffmpeg, grab_frames, get_video_duration
+    from features import extract_features
+    from scoring import score_features
+    from suggest import generate_suggestions
     
-    # Mock request objesi oluştur
-    class MockRequest:
-        def __init__(self):
-            self.client = type('obj', (object,), {'host': 'unknown'})()
-    
-    return main_analyze(data, BackgroundTasks(), MockRequest())
+    # Video indirme ve analiz
+    with tempfile.TemporaryDirectory() as temp_dir:
+        video_path = os.path.join(temp_dir, "video.mp4")
+        audio_path = os.path.join(temp_dir, "audio.wav")
+        frames_dir = os.path.join(temp_dir, "frames")
+        
+        # Video indir
+        download_video(data.file_url, video_path)
+        
+        # Ses çıkar
+        extract_audio_via_ffmpeg(video_path, audio_path)
+        
+        # Frame'ler çıkar
+        frames = grab_frames(video_path, frames_dir, max_frames=10)
+        
+        # Süre al
+        duration = get_video_duration(video_path)
+        
+        # Özellikler çıkar
+        features = extract_features(
+            audio_path=audio_path,
+            frames=frames,
+            caption=data.caption or "",
+            title=data.title or "",
+            tags=data.tags or [],
+            duration_seconds=duration,
+            fast_mode=(data.mode == "FAST")
+        )
+        
+        # Skorlar hesapla
+        scores = score_features(features, data.platform, (data.mode == "FAST"))
+        
+        # Spesifik öneriler oluştur
+        suggestions = generate_suggestions(
+            platform=data.platform,
+            caption=data.caption or "",
+            title=data.title or "",
+            tags=data.tags or [],
+            features=features,
+            scores=scores
+        )
+        
+        # Toplam skor
+        total_score = scores.get("overall_score", 0)
+        
+        return {
+            "duration_seconds": duration,
+            "features": features,
+            "scores": scores,
+            "verdict": "high" if total_score >= 70 else "mid" if total_score >= 40 else "low",
+            "viral": total_score >= 70,
+            "mode": data.mode,
+            "analysis_complete": True,
+            "suggestions": suggestions
+        }
 
 @app.post("/analyze", response_model=AnalyzeResponse)
 def analyze_performance(data: AnalyzeRequest):
