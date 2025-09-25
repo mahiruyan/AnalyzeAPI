@@ -46,14 +46,14 @@ class TikTokIngest(BaseModel):
     metrics: TikTokMetrics
 
 class AnalyzeRequest(BaseModel):
-    platform: str = Field(..., regex="^(instagram|tiktok)$")
+    platform: str = Field(..., pattern="^(instagram|tiktok)$")
     media_id: str
     published_at: str
     metrics: Dict[str, Any]
 
 class AnalyzeResponse(BaseModel):
     score: float = Field(..., ge=0, le=100)
-    verdict: str = Field(..., regex="^(low|mid|high)$")
+    verdict: str = Field(..., pattern="^(low|mid|high)$")
     suggestions: List[str]
 
 # Hata yakalama middleware
