@@ -145,11 +145,18 @@ def analyze_performance(data: AnalyzeRequest):
 
 if __name__ == "__main__":
     import uvicorn
-    port_str = os.getenv("PORT", "8000")
-    try:
-        port = int(port_str)
-    except ValueError:
+    # Railway PORT environment variable'ını kontrol et
+    port_str = os.getenv("PORT")
+    if port_str:
+        try:
+            port = int(port_str)
+            print(f"Using Railway PORT: {port}")
+        except ValueError:
+            port = 8000
+            print(f"Invalid PORT value: {port_str}, using default: {port}")
+    else:
         port = 8000
-        print(f"Invalid PORT value: {port_str}, using default: {port}")
+        print(f"No PORT env var, using default: {port}")
+    
     print(f"Starting server on port {port}")
     uvicorn.run(app, host="0.0.0.0", port=port)
