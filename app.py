@@ -90,6 +90,54 @@ def api_health_check():
     """Railway API sağlık kontrolü endpoint'i"""
     return {"status": "ok"}
 
+@app.get("/api/test")
+def test_dependencies():
+    """Dependencies test endpoint"""
+    results = {}
+    
+    try:
+        import tempfile
+        results["tempfile"] = "OK"
+    except Exception as e:
+        results["tempfile"] = f"ERROR: {str(e)}"
+    
+    try:
+        from utils import download_video
+        results["utils"] = "OK"
+    except Exception as e:
+        results["utils"] = f"ERROR: {str(e)}"
+    
+    try:
+        import cv2
+        results["opencv"] = "OK"
+    except Exception as e:
+        results["opencv"] = f"ERROR: {str(e)}"
+    
+    try:
+        import librosa
+        results["librosa"] = "OK"
+    except Exception as e:
+        results["librosa"] = f"ERROR: {str(e)}"
+    
+    try:
+        from faster_whisper import WhisperModel
+        results["whisper"] = "OK"
+    except Exception as e:
+        results["whisper"] = f"ERROR: {str(e)}"
+    
+    try:
+        import subprocess
+        ffmpeg_result = subprocess.run(['ffmpeg', '-version'], 
+                                     capture_output=True, text=True, timeout=5)
+        if ffmpeg_result.returncode == 0:
+            results["ffmpeg"] = "OK"
+        else:
+            results["ffmpeg"] = "NOT_FOUND"
+    except Exception as e:
+        results["ffmpeg"] = f"ERROR: {str(e)}"
+    
+    return {"dependencies": results}
+
 @app.get("/api/ping")
 def ping():
     """Keep-alive endpoint - Railway'i uyanık tutmak için"""
