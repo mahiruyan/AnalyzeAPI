@@ -95,7 +95,25 @@ def ingest_tiktok(data: TikTokIngest):
 
 @app.post("/api/analyze")
 def analyze_performance_api(data: AnalyzeRequest):
-    """Real video analysis with specific suggestions"""
+    """Video analysis with mode control"""
+    
+    # Mode kontrolü: frontend'in istediği gibi
+    if not hasattr(data, 'mode') or not data.mode:
+        # Mode belirtilmemişse mock response döndür
+        return {
+            "duration_seconds": 0,
+            "features": {},
+            "scores": {},
+            "verdict": "mid",
+            "viral": False,
+            "mode": "MOCK",
+            "analysis_complete": False,
+            "suggestions": {
+                "tips": ["Önce mode parametresini belirtin (FAST veya FULL)"]
+            }
+        }
+    
+    # Gerçek video analizi
     import tempfile
     import os
     from pathlib import Path
