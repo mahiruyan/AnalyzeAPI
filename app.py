@@ -207,7 +207,7 @@ def analyze_performance_api(data: AnalyzeRequest):
             "viral": False,
             "mode": data.mode or "UNKNOWN",
             "analysis_complete": False,
-            "suggestions": {"tips": [f"Hata: {str(e)}"]}
+            "suggestions": [f"Hata: {str(e)}"]
         }
     
     # Video indirme ve analiz
@@ -282,7 +282,7 @@ def analyze_performance_api(data: AnalyzeRequest):
                 "viral": total_score >= 70,
                 "mode": data.mode,
                 "analysis_complete": True,
-                "suggestions": suggestions
+                "suggestions": suggestions.get("tips", []) if isinstance(suggestions, dict) else suggestions
             }
     except Exception as e:
         print(f"❌ [ERROR] Analysis failed: {str(e)}")
@@ -298,7 +298,7 @@ def analyze_performance_api(data: AnalyzeRequest):
             "viral": False,
             "mode": data.mode or "UNKNOWN",
             "analysis_complete": False,
-            "suggestions": {"tips": [f"Video analiz hatası: {str(e)}"]}
+            "suggestions": [f"Video analiz hatası: {str(e)}"]
         }
 
 @app.post("/analyze", response_model=AnalyzeResponse)
