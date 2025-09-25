@@ -126,52 +126,7 @@ def _rule_based_suggestions(
     }
 
 
-def _openai_suggestions(
-    platform: str,
-    caption: str,
-    title: str,
-    tags: List[str],
-    features: Dict[str, Any],
-    scores: Dict[str, float],
-) -> Dict[str, Any]:
-    try:
-        from openai import OpenAI
-    except Exception:
-        return _rule_based_suggestions(platform, caption, title, tags, features, scores)
-
-    client = OpenAI()
-    sys_prompt = (
-        "Kısa video optimizasyon asistanısın. Hook, akış, ses kalitesi ve içerik uyumu için kısa ve uygulanabilir öneriler üret."
-    )
-    user_prompt = f"""
-Platform: {platform}
-Başlık: {title}
-Altyazı: {caption}
-Etiketler: {', '.join(tags)}
-Özellikler: {features}
-Skorlar: {scores}
-"""
-    try:
-        resp = client.chat.completions.create(
-            model="gpt-4o-mini",
-            messages=[
-                {"role": "system", "content": sys_prompt},
-                {"role": "user", "content": user_prompt},
-            ],
-            temperature=0.7,
-        )
-        text = resp.choices[0].message.content or ""
-    except Exception:
-        return _rule_based_suggestions(platform, caption, title, tags, features, scores)
-
-    # Basit ayıklama
-    tips = [s.strip("- ").strip() for s in text.split("\n") if s.strip()][:6]
-    return {
-        "tips": tips or ["Hook'u güçlendir, mesajı sadeleştir, ritmi koru."],
-        "alternative_hooks": tips[:3] or ["Saniyeler içinde şunu keşfet!"],
-        "hashtags": [*(t.lower() for t in tags), "viral", "trend"][:8],
-        "captions": [caption or "Mesajını tek cümlede ver."],
-    }
+# Mock OpenAI fonksiyonu kaldırıldı - sadece gerçek analiz kullanılıyor
 
 
 def generate_suggestions(
@@ -183,8 +138,7 @@ def generate_suggestions(
     scores: Dict[str, float],
     fast_mode: bool = False,
 ) -> Dict[str, Any]:
-    if os.getenv("OPENAI_API_KEY") and not fast_mode:
-        return _openai_suggestions(platform, caption, title, tags, features, scores)
+    # Sadece gerçek analiz kullan - mock OpenAI fonksiyonunu kullanma
     return _rule_based_suggestions(platform, caption, title, tags, features, scores)
 
 
