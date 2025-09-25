@@ -66,6 +66,11 @@ def health_check():
     """Railway sağlık kontrolü endpoint'i"""
     return {"status": "ok"}
 
+@app.get("/api/health")
+def api_health_check():
+    """Railway API sağlık kontrolü endpoint'i"""
+    return {"status": "ok"}
+
 @app.get("/")
 def root():
     """Ana sayfa"""
