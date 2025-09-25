@@ -141,12 +141,7 @@ def analyze_performance(data: AnalyzeRequest):
         suggestions=suggestions
     )
 
-# Mevcut main.py'deki tüm endpoint'leri import et (video analizi için)
-try:
-    from main import app as main_app
-    app.include_router(main_app.router)
-except ImportError:
-    pass  # main.py yoksa devam et
+# main.py import'u kaldırıldı - circular import sorunu yaratıyordu
 
 if __name__ == "__main__":
     import uvicorn
