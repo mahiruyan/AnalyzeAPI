@@ -93,6 +93,11 @@ def ingest_tiktok(data: TikTokIngest):
     # Burada veritabanına kaydetme işlemi yapılabilir
     return {"status": "success", "video_id": data.video_id}
 
+@app.post("/api/analyze", response_model=AnalyzeResponse)
+def analyze_performance_api(data: AnalyzeRequest):
+    """API endpoint for video analysis"""
+    return analyze_performance(data)
+
 @app.post("/analyze", response_model=AnalyzeResponse)
 def analyze_performance(data: AnalyzeRequest):
     """Normalize edilmiş payload ile skor hesapla"""
