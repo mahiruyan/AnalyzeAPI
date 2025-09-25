@@ -162,50 +162,14 @@ def analyze_performance_api(data: AnalyzeRequest):
 
 @app.post("/analyze", response_model=AnalyzeResponse)
 def analyze_performance(data: AnalyzeRequest):
-    """Normalize edilmiş payload ile skor hesapla"""
-    metrics = data.metrics
-    
-    # Base skor (plays/views)
-    base_metric = metrics.get("plays", metrics.get("views", 0))
-    base_score = min(base_metric / 10000, 1.0) * 30  # Max 30 puan
-    
-    # Engagement skor
-    likes = metrics.get("likes", 0)
-    comments = metrics.get("comments", 0)
-    shares = metrics.get("shares", 0)
-    saves = metrics.get("saves", 0)
-    
-    engagement_total = likes + comments + shares + saves
-    engagement_score = (engagement_total / max(base_metric, 1)) * 40  # Max 40 puan
-    
-    # Watch time bonus
-    avg_watch_time = metrics.get("avg_watch_time_s", 0)
-    completion_rate = metrics.get("completion_rate", 0)
-    
-    watch_bonus = 0
-    if avg_watch_time:
-        watch_bonus += min(avg_watch_time / 30, 1.0) * 15  # Max 15 puan
-    if completion_rate:
-        watch_bonus += completion_rate * 15  # Max 15 puan
-    
-    # Toplam skor
-    total_score = min(base_score + engagement_score + watch_bonus, 100)
-    
-    # Verdict belirleme
-    if total_score >= 70:
-        verdict = "high"
-        suggestions = ["Mükemmel performans! Bu içeriği daha fazla üretin.", "Benzer formatları tekrarlayın."]
-    elif total_score >= 40:
-        verdict = "mid"
-        suggestions = ["Engagement'i artırmak için hook'u güçlendirin.", "İlk 3 saniyede dikkat çekici bir şey ekleyin."]
-    else:
-        verdict = "low"
-        suggestions = ["İçerik kalitesini artırın.", "Daha kısa ve odaklı videolar yapın.", "Trending hashtag'leri kullanın."]
+    """Legacy endpoint - redirects to /api/analyze"""
+    # Gerçek analiz için /api/analyze'i çağır
+    result = analyze_performance_api(data)
     
     return AnalyzeResponse(
-        score=round(total_score, 1),
-        verdict=verdict,
-        suggestions=suggestions
+        score=result.get("scores", {}).get("overall_score", 0),
+        verdict=result.get("verdict", "mid"),
+        suggestions=result.get("suggestions", {}).get("tips", [])
     )
 
 # main.py import'u kaldırıldı - circular import sorunu yaratıyordu
