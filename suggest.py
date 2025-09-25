@@ -12,73 +12,117 @@ def _rule_based_suggestions(
 ) -> Dict[str, Any]:
     suggestions: List[str] = []
     
-    # Gerçek video analizine dayalı spesifik öneriler
+    # Gerçek video verilerini al
     audio = features.get("audio", {})
     visual = features.get("visual", {})
     textual = features.get("textual", {})
     duration = features.get("duration_seconds", 0)
     
-    # Ses analizi önerileri
     loudness = audio.get("loudness_lufs", 0)
     tempo = audio.get("tempo_bpm", 0)
-    
-    if loudness < -20:
-        suggestions.append(f"🎵 Ses seviyeniz çok düşük ({loudness:.1f} LUFS). -14 ile -10 LUFS arası ideal.")
-    elif loudness > -8:
-        suggestions.append(f"🎵 Ses seviyeniz çok yüksek ({loudness:.1f} LUFS). Dinleyiciler rahatsız olabilir.")
-    
-    if tempo < 70:
-        suggestions.append(f"🎶 Müzik temponuz yavaş ({tempo:.0f} BPM). Instagram için 90-120 BPM daha etkili.")
-    elif tempo > 160:
-        suggestions.append(f"🎶 Müzik temponuz çok hızlı ({tempo:.0f} BPM). Daha sakin bir müzik deneyin.")
-    
-    # Görsel analiz önerileri
     flow = visual.get("optical_flow_mean", 0)
-    if flow < 0.5:
-        suggestions.append("📹 Videoda çok az hareket var. Daha dinamik sahneler ekleyin.")
-    elif flow > 3.0:
-        suggestions.append("📹 Çok hızlı geçişler var. Bazı sahneleri daha uzun tutun.")
-    
-    # Metin analizi önerileri
     ocr_text = textual.get("ocr_text", "")
     asr_text = textual.get("asr_text", "")
     
-    if len(ocr_text) < 10:
-        suggestions.append("📝 Videoda yazı/metin yok. Anahtar kelimeleri ekranda gösterin.")
+    # BPM analizi - gerçek değerlere göre
+    if tempo > 0:
+        if tempo < 60:
+            suggestions.append(f"Bu videonun BPM'i {tempo:.0f} - çok yavaş. Daha enerjik müzik kullanın.")
+        elif tempo < 80:
+            suggestions.append(f"BPM {tempo:.0f} - orta tempoda. Viral için 100-120 BPM daha etkili olur.")
+        elif tempo < 100:
+            suggestions.append(f"BPM {tempo:.0f} - iyi tempo. Bu hızı koruyun.")
+        elif tempo < 140:
+            suggestions.append(f"BPM {tempo:.0f} - hızlı tempo. Çok enerjik, dikkat çekici.")
+        else:
+            suggestions.append(f"BPM {tempo:.0f} - çok hızlı. Bazı izleyiciler için rahatsız edici olabilir.")
     
-    if len(asr_text) < 20:
-        suggestions.append("🎤 Konuşma çok az. Sesli açıklama ekleyin.")
+    # Ses seviyesi analizi - gerçek LUFS değerine göre
+    if loudness != 0:
+        if loudness < -25:
+            suggestions.append(f"Ses seviyesi {loudness:.1f} LUFS - çok sessiz. Ses seviyesini artırın.")
+        elif loudness < -18:
+            suggestions.append(f"Ses seviyesi {loudness:.1f} LUFS - düşük. Daha yüksek ses kullanın.")
+        elif loudness < -12:
+            suggestions.append(f"Ses seviyesi {loudness:.1f} LUFS - ideal seviye.")
+        elif loudness < -8:
+            suggestions.append(f"Ses seviyesi {loudness:.1f} LUFS - yüksek. Biraz azaltın.")
+        else:
+            suggestions.append(f"Ses seviyesi {loudness:.1f} LUFS - çok yüksek. Dinleyiciler rahatsız olur.")
     
-    # Süre önerileri
-    if duration < 15:
-        suggestions.append(f"⏱️ Video çok kısa ({duration:.1f}s). Instagram için 30-60 saniye ideal.")
-    elif duration > 90:
-        suggestions.append(f"⏱️ Video çok uzun ({duration:.1f}s). 60 saniyeden kısa tutun.")
+    # Görsel hareket analizi - gerçek flow değerine göre
+    if flow > 0:
+        if flow < 0.3:
+            suggestions.append(f"Görsel hareket {flow:.2f} - statik video. Daha fazla kamera hareketi ekleyin.")
+        elif flow < 0.8:
+            suggestions.append(f"Görsel hareket {flow:.2f} - az hareket. Daha dinamik çekim yapın.")
+        elif flow < 2.0:
+            suggestions.append(f"Görsel hareket {flow:.2f} - dengeli hareket. Bu seviyeyi koruyun.")
+        elif flow < 3.5:
+            suggestions.append(f"Görsel hareket {flow:.2f} - yoğun hareket. Bazı sahneleri yavaşlatın.")
+        else:
+            suggestions.append(f"Görsel hareket {flow:.2f} - çok hızlı geçişler. Daha yavaş edit yapın.")
     
-    # Spesifik timing önerileri
-    if scores.get("hook_score", 0) < 0.6:
-        suggestions.append("🎯 İlk 3 saniyede dikkat çekici bir görsel veya ses efekti ekleyin.")
+    # Metin tespiti - gerçek OCR sonuçlarına göre
+    if len(ocr_text) > 0:
+        suggestions.append(f"Videoda '{ocr_text[:50]}...' yazısı tespit edildi. Bu iyi bir başlangıç.")
+        if len(ocr_text) < 30:
+            suggestions.append("Daha fazla yazı ekleyin - metinler viral içerik için önemli.")
+    else:
+        suggestions.append("Videoda hiç yazı yok. Anahtar kelimeleri ekranda gösterin.")
     
-    if scores.get("flow_score", 0) < 0.6:
-        suggestions.append("🔄 3-5 saniye aralıklarla sahne değiştirin.")
+    # Konuşma analizi - gerçek ASR sonuçlarına göre
+    if len(asr_text) > 0:
+        suggestions.append(f"Konuşma tespit edildi: '{asr_text[:40]}...'")
+        if len(asr_text) < 50:
+            suggestions.append("Daha uzun açıklama yapın. Detaylı konuşma viral için etkili.")
+    else:
+        suggestions.append("Hiç konuşma yok. Sesli açıklama ekleyin.")
     
-    # Platform spesifik öneriler
-    if platform.lower() == "instagram":
-        if not ocr_text:
-            suggestions.append("📱 Instagram için alt yazı kullanın - sessiz izleme yaygın.")
-        suggestions.append("🌈 Canlı renkler kullanın - Instagram'da daha çok dikkat çeker.")
+    # Süre analizi - gerçek süreye göre
+    if duration > 0:
+        suggestions.append(f"Video süresi {duration:.1f} saniye.")
+        if platform.lower() == "instagram":
+            if duration < 20:
+                suggestions.append("Instagram Reels için çok kısa. En az 30 saniye yapın.")
+            elif duration > 90:
+                suggestions.append("Instagram için çok uzun. 60 saniyeden kısa tutun.")
+            else:
+                suggestions.append("Instagram için ideal süre.")
+    
+    # Skorlara göre spesifik öneriler
+    hook_score = scores.get("hook_score", 0)
+    flow_score = scores.get("flow_score", 0)
+    audio_score = scores.get("audio_quality_score", 0)
+    
+    if hook_score < 0.5:
+        suggestions.append("İlk 3 saniye etkisiz. Daha güçlü bir açılış yapın.")
+    elif hook_score < 0.7:
+        suggestions.append("Açılış orta seviye. Daha dikkat çekici bir başlangıç deneyin.")
+    
+    if flow_score < 0.5:
+        suggestions.append("Video akışı yavaş. Daha hızlı edit yapın.")
+    elif flow_score < 0.7:
+        suggestions.append("Akış dengeli ama daha ritmik olabilir.")
+    
+    if audio_score < 0.5:
+        suggestions.append("Ses kalitesi düşük. Daha temiz ses kaydı yapın.")
+    elif audio_score < 0.7:
+        suggestions.append("Ses kalitesi orta. Biraz daha iyileştirin.")
     
     return {
         "tips": suggestions,
-        "technical_details": {
-            "audio_loudness": f"{loudness:.1f} LUFS",
-            "tempo": f"{tempo:.0f} BPM", 
-            "visual_flow": f"{flow:.2f}",
-            "duration": f"{duration:.1f}s",
-            "text_detected": len(ocr_text) > 0,
-            "speech_detected": len(asr_text) > 20
-        },
-        "improvement_areas": [k for k, v in scores.items() if v < 0.6]
+        "analysis_summary": {
+            "actual_bpm": f"{tempo:.0f}",
+            "actual_loudness": f"{loudness:.1f} LUFS",
+            "actual_movement": f"{flow:.2f}",
+            "actual_duration": f"{duration:.1f}s",
+            "text_found": len(ocr_text) > 0,
+            "speech_found": len(asr_text) > 0,
+            "hook_strength": f"{hook_score:.1%}",
+            "flow_quality": f"{flow_score:.1%}",
+            "audio_quality": f"{audio_score:.1%}"
+        }
     }
 
 
