@@ -93,10 +93,19 @@ def ingest_tiktok(data: TikTokIngest):
     # Burada veritabanına kaydetme işlemi yapılabilir
     return {"status": "success", "video_id": data.video_id}
 
-@app.post("/api/analyze", response_model=AnalyzeResponse)
+@app.post("/api/analyze")
 def analyze_performance_api(data: AnalyzeRequest):
-    """API endpoint for video analysis"""
-    return analyze_performance(data)
+    """API endpoint for video analysis - redirects to main.py functionality"""
+    # Gerçek analiz için main.py'deki fonksiyonları kullan
+    from main import analyze as main_analyze
+    from fastapi import BackgroundTasks, Request
+    
+    # Mock request objesi oluştur
+    class MockRequest:
+        def __init__(self):
+            self.client = type('obj', (object,), {'host': 'unknown'})()
+    
+    return main_analyze(data, BackgroundTasks(), MockRequest())
 
 @app.post("/analyze", response_model=AnalyzeResponse)
 def analyze_performance(data: AnalyzeRequest):
