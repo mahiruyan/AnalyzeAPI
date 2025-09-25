@@ -56,10 +56,29 @@ class AnalyzeResponse(BaseModel):
     verdict: str = Field(..., pattern="^(low|mid|high)$")
     suggestions: List[str]
 
-# Hata yakalama middleware
+# Hata yakalama middleware - detaylı hata mesajları
 @app.exception_handler(Exception)
 async def global_exception_handler(request, exc):
-    return {"error": "internal_error"}
+    import traceback
+    error_detail = str(exc)
+    error_traceback = traceback.format_exc()
+    
+    # Detaylı hata döndür
+    return {
+        "error": f"Backend hatası: {error_detail}",
+        "error_type": type(exc).__name__,
+        "traceback": error_traceback[-1000:],  # Son 1000 karakter
+        "duration_seconds": 0,
+        "features": {},
+        "scores": {},
+        "verdict": "error",
+        "viral": False,
+        "mode": "ERROR",
+        "analysis_complete": False,
+        "suggestions": {
+            "tips": [f"Sistem hatası: {error_detail}"]
+        }
+    }
 
 @app.get("/healthz")
 def health_check():
