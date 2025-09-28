@@ -193,9 +193,6 @@ def analyze_performance_api(data: AnalyzeRequest):
         from suggest import generate_suggestions
         print("✅ [DEBUG] Suggest import OK")
         
-        from viral_scoring import calculate_viral_score
-        print("✅ [DEBUG] Viral scoring import OK")
-        
     except Exception as e:
         print(f"❌ [ERROR] Import failed: {str(e)}")
         print(f"❌ [ERROR] Error type: {type(e)}")
@@ -255,56 +252,37 @@ def analyze_performance_api(data: AnalyzeRequest):
             )
             print("✅ [DEBUG] Features extracted")
             
-            # Gelişmiş viral skorlama sistemi
-            print("🧠 [DEBUG] Calculating viral scores...")
-            viral_result = calculate_viral_score(
-                video_path=video_path,
-                audio_path=audio_path,
-                frames=frames,
-                features=features,
-                duration=duration,
-                platform=data.platform
-            )
-            print("✅ [DEBUG] Viral scores calculated")
+            # Skorlar hesapla
+            print("📊 [DEBUG] Calculating scores...")
+            scores = score_features(features, data.platform, (data.mode == "FAST"))
+            print("✅ [DEBUG] Scores calculated")
             
-            # Eski scoring sistemi (yedek)
-            legacy_scores = score_features(features, data.platform, (data.mode == "FAST"))
-            
-            # Öneriler - hem viral hem legacy
+            # Spesifik öneriler oluştur
             print("💡 [DEBUG] Generating suggestions...")
-            legacy_suggestions = generate_suggestions(
+            suggestions = generate_suggestions(
                 platform=data.platform,
                 caption=data.caption or "",
                 title=data.title or "",
                 tags=data.tags or [],
                 features=features,
-                scores=legacy_scores
+                scores=scores
             )
-            
-            # Viral önerileri ile birleştir
-            combined_suggestions = viral_result["recommendations"] + legacy_suggestions.get("tips", [])
-            print("✅ [DEBUG] Combined suggestions generated")
+            print("✅ [DEBUG] Suggestions generated")
             
             # Toplam skor
-            final_score = viral_result["final_score"]
-            print(f"🎯 [DEBUG] Viral score: {final_score}/100")
+            total_score = scores.get("overall_score", 0)
+            print(f"🎯 [DEBUG] Total score: {total_score}")
             
             print("✅ [DEBUG] Analysis completed successfully!")
             return {
                 "duration_seconds": duration,
                 "features": features,
-                "scores": viral_result["subscores"],
-                "legacy_scores": legacy_scores,  # Eski sistem (yedek)
-                "verdict": "high" if final_score >= 70 else "mid" if final_score >= 40 else "low",
-                "viral": viral_result["viral"],
-                "viral_score": final_score,
+                "scores": scores,
+                "verdict": "high" if total_score >= 70 else "mid" if total_score >= 40 else "low",
+                "viral": total_score >= 70,
                 "mode": data.mode,
                 "analysis_complete": True,
-                "suggestions": combined_suggestions[:8],  # En önemli 8 öneri
-                "findings": viral_result["findings"],  # Zaman kodlu bulgular
-                "content_type": viral_result["content_type"],
-                "raw_metrics": viral_result["raw"],
-                "analyzed_at": viral_result["analyzed_at"]
+                "suggestions": suggestions.get("tips", []) if isinstance(suggestions, dict) else suggestions
             }
     except Exception as e:
         print(f"❌ [ERROR] Analysis failed: {str(e)}")
