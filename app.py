@@ -222,20 +222,29 @@ def analyze_performance_api(data: AnalyzeRequest):
             frames_dir = os.path.join(temp_dir, "frames")
             print(f"✅ [DEBUG] Temp directory created: {temp_dir}")
             
-            # Video indir
+            # Video indir - timeout ile
             print(f"🔽 [DEBUG] Downloading video from: {data.file_url}")
-            download_video(data.file_url, video_path)
-            print(f"✅ [DEBUG] Video downloaded to: {video_path}")
+            try:
+                download_video(data.file_url, video_path, timeout=30)  # 30 saniye timeout
+                print(f"✅ [DEBUG] Video downloaded to: {video_path}")
+            except Exception as e:
+                raise Exception(f"Video indirme başarısız (30s timeout): {e}")
             
-            # Ses çıkar
+            # Ses çıkar - hızlı
             print("🎵 [DEBUG] Extracting audio...")
-            extract_audio_via_ffmpeg(video_path, audio_path)
-            print(f"✅ [DEBUG] Audio extracted to: {audio_path}")
+            try:
+                extract_audio_via_ffmpeg(video_path, audio_path, sample_rate=16000, mono=True)
+                print(f"✅ [DEBUG] Audio extracted to: {audio_path}")
+            except Exception as e:
+                raise Exception(f"Ses çıkarma başarısız: {e}")
             
-            # Frame'ler çıkar
+            # Frame'ler çıkar - çok hızlı
             print("🖼️ [DEBUG] Extracting frames...")
-            frames = grab_frames(video_path, frames_dir, max_frames=5)  # 5 frame'e düşürdük (hız için)
-            print(f"✅ [DEBUG] Frames extracted: {len(frames)} frames")
+            try:
+                frames = grab_frames(video_path, frames_dir, max_frames=3)  # 3 frame'e düşürdük (hız için)
+                print(f"✅ [DEBUG] Frames extracted: {len(frames)} frames")
+            except Exception as e:
+                raise Exception(f"Frame çıkarma başarısız: {e}")
             
             # Süre al
             print("⏱️ [DEBUG] Getting video duration...")
@@ -260,15 +269,23 @@ def analyze_performance_api(data: AnalyzeRequest):
             legacy_scores = score_features(features, data.platform, (data.mode == "FAST"))
             print("✅ [DEBUG] Legacy scores calculated")
             
-            # YENİ: Hook analizi (gerçek implementasyon)
+            # YENİ: Hook analizi (hızlı versiyon - 3 frame)
             print("🎯 [DEBUG] Analyzing hook (first 3 seconds)...")
-            hook_result = analyze_hook(video_path, audio_path, frames, features, duration)
-            print(f"✅ [DEBUG] Hook analysis completed: {hook_result['score']}/18")
+            try:
+                hook_result = analyze_hook(video_path, audio_path, frames[:3], features, duration)
+                print(f"✅ [DEBUG] Hook analysis completed: {hook_result['score']}/18")
+            except Exception as e:
+                print(f"⚠️ [DEBUG] Hook analysis failed: {e}, using fallback")
+                hook_result = {"score": 8, "findings": [], "recommendations": [f"Hook analizi hatası: {e}"]}
             
-            # YENİ: Pacing analizi (gerçek implementasyon)
+            # YENİ: Pacing analizi (hızlı versiyon - 3 frame)
             print("⚡ [DEBUG] Analyzing pacing & retention...")
-            pacing_result = analyze_pacing_retention(frames, features, duration)
-            print(f"✅ [DEBUG] Pacing analysis completed: {pacing_result['score']}/12")
+            try:
+                pacing_result = analyze_pacing_retention(frames, features, duration)
+                print(f"✅ [DEBUG] Pacing analysis completed: {pacing_result['score']}/12")
+            except Exception as e:
+                print(f"⚠️ [DEBUG] Pacing analysis failed: {e}, using fallback")
+                pacing_result = {"score": 6, "findings": [], "recommendations": [f"Pacing analizi hatası: {e}"]}
             
             # Gelişmiş skorları birleştir
             advanced_scores = {
