@@ -193,6 +193,9 @@ def analyze_performance_api(data: AnalyzeRequest):
         from suggest import generate_suggestions
         print("✅ [DEBUG] Suggest import OK")
         
+        from advanced_analysis import analyze_hook, analyze_pacing_retention
+        print("✅ [DEBUG] Advanced analysis import OK")
+        
     except Exception as e:
         print(f"❌ [ERROR] Import failed: {str(e)}")
         print(f"❌ [ERROR] Error type: {type(e)}")
@@ -252,37 +255,72 @@ def analyze_performance_api(data: AnalyzeRequest):
             )
             print("✅ [DEBUG] Features extracted")
             
-            # Skorlar hesapla
-            print("📊 [DEBUG] Calculating scores...")
-            scores = score_features(features, data.platform, (data.mode == "FAST"))
-            print("✅ [DEBUG] Scores calculated")
+            # Eski skorlar hesapla
+            print("📊 [DEBUG] Calculating legacy scores...")
+            legacy_scores = score_features(features, data.platform, (data.mode == "FAST"))
+            print("✅ [DEBUG] Legacy scores calculated")
             
-            # Spesifik öneriler oluştur
-            print("💡 [DEBUG] Generating suggestions...")
-            suggestions = generate_suggestions(
+            # YENİ: Hook analizi (gerçek implementasyon)
+            print("🎯 [DEBUG] Analyzing hook (first 3 seconds)...")
+            hook_result = analyze_hook(video_path, frames, features, duration)
+            print(f"✅ [DEBUG] Hook analysis completed: {hook_result['score']}/18")
+            
+            # YENİ: Pacing analizi (gerçek implementasyon)
+            print("⚡ [DEBUG] Analyzing pacing & retention...")
+            pacing_result = analyze_pacing_retention(frames, features, duration)
+            print(f"✅ [DEBUG] Pacing analysis completed: {pacing_result['score']}/12")
+            
+            # Gelişmiş skorları birleştir
+            advanced_scores = {
+                "hook_score": hook_result["score"],
+                "pacing_score": pacing_result["score"],
+                **legacy_scores  # Eski skorlar da dahil
+            }
+            
+            # Toplam skor (hook ve pacing dahil)
+            total_score = (hook_result["score"] + pacing_result["score"] + 
+                          legacy_scores.get("overall_score", 0))
+            advanced_scores["total_score"] = total_score
+            
+            # Legacy öneriler
+            print("💡 [DEBUG] Generating legacy suggestions...")
+            legacy_suggestions = generate_suggestions(
                 platform=data.platform,
                 caption=data.caption or "",
                 title=data.title or "",
                 tags=data.tags or [],
                 features=features,
-                scores=scores
+                scores=legacy_scores
             )
-            print("✅ [DEBUG] Suggestions generated")
             
-            # Toplam skor
-            total_score = scores.get("overall_score", 0)
-            print(f"🎯 [DEBUG] Total score: {total_score}")
+            # Advanced önerileri birleştir
+            all_suggestions = []
+            all_suggestions.extend(hook_result.get("recommendations", []))
+            all_suggestions.extend(pacing_result.get("recommendations", []))
+            all_suggestions.extend(legacy_suggestions.get("tips", []))
+            
+            # Findings birleştir
+            all_findings = []
+            all_findings.extend(hook_result.get("findings", []))
+            all_findings.extend(pacing_result.get("findings", []))
+            
+            print("✅ [DEBUG] Advanced suggestions generated")
+            print(f"🎯 [DEBUG] Total advanced score: {total_score}")
             
             print("✅ [DEBUG] Analysis completed successfully!")
             return {
                 "duration_seconds": duration,
                 "features": features,
-                "scores": scores,
+                "scores": advanced_scores,
+                "legacy_scores": legacy_scores,
                 "verdict": "high" if total_score >= 70 else "mid" if total_score >= 40 else "low",
                 "viral": total_score >= 70,
                 "mode": data.mode,
                 "analysis_complete": True,
-                "suggestions": suggestions.get("tips", []) if isinstance(suggestions, dict) else suggestions
+                "suggestions": all_suggestions[:10],  # En önemli 10 öneri
+                "findings": all_findings,  # Zaman kodlu bulgular
+                "hook_analysis": hook_result,  # Detaylı hook analizi
+                "pacing_analysis": pacing_result  # Detaylı pacing analizi
             }
     except Exception as e:
         print(f"❌ [ERROR] Analysis failed: {str(e)}")
