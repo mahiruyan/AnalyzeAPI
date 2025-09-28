@@ -39,33 +39,44 @@ def _is_social_media_url(url: str) -> bool:
     return any(re.search(pattern, url.lower()) for pattern in social_patterns)
 
 
-def download_video(url: str, dest_path: str, timeout: int = 120) -> None:
-    """Video indirme - sosyal medya için yt-dlp, normal URL'ler için requests"""
+def download_video(url: str, dest_path: str, timeout: int = 60) -> None:
+    """Video indirme - sosyal medya için yt-dlp, optimize edildi"""
     Path(dest_path).parent.mkdir(parents=True, exist_ok=True)
     
     if _is_social_media_url(url) and yt_dlp is not None:
-        # Sosyal medya için yt-dlp kullan (daha hızlı ve güvenilir)
+        # Sosyal medya için yt-dlp kullan (hız için optimize edildi)
         ydl_opts = {
-            'format': 'best[height<=720]/best',  # 720p altı, hızlı indirme
+            'format': 'best[height<=480]/best',  # 480p'ye düşürdük (hız için)
             'outtmpl': dest_path,
             'quiet': True,
             'no_warnings': True,
             'extract_flat': False,
+            'socket_timeout': timeout,
+            'retries': 2,  # Retry sayısını azalttık
         }
         try:
+            print(f"📥 Downloading with yt-dlp: {url}")
             with yt_dlp.YoutubeDL(ydl_opts) as ydl:
                 ydl.download([url])
+            print(f"✅ Download completed: {dest_path}")
             return
         except Exception as e:
-            print(f"yt-dlp hatası: {e}, requests ile deneyeceğim...")
+            print(f"❌ yt-dlp failed: {e}")
+            raise Exception(f"Video indirme başarısız: {e}")
     
-    # Fallback: normal HTTP indirme
-    resp = requests.get(url, stream=True, timeout=timeout)
-    resp.raise_for_status()
-    with open(dest_path, "wb") as f:
-        for chunk in resp.iter_content(chunk_size=1024 * 1024):
-            if chunk:
-                f.write(chunk)
+    # Fallback: normal HTTP indirme (sosyal medya değilse)
+    try:
+        print(f"📥 Downloading with requests: {url}")
+        resp = requests.get(url, stream=True, timeout=timeout)
+        resp.raise_for_status()
+        with open(dest_path, "wb") as f:
+            for chunk in resp.iter_content(chunk_size=1024 * 1024):
+                if chunk:
+                    f.write(chunk)
+        print(f"✅ Download completed: {dest_path}")
+    except Exception as e:
+        print(f"❌ Download failed: {e}")
+        raise Exception(f"Video indirme başarısız: {e}")
 
 
 def extract_audio_via_ffmpeg(
@@ -92,24 +103,44 @@ def extract_audio_via_ffmpeg(
     subprocess.run(args, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
 
-def grab_frames(input_video: str, output_dir: str, fps: int = 1) -> List[str]:
+def grab_frames(input_video: str, output_dir: str, max_frames: int = 10) -> List[str]:
     _ensure_ffmpeg_exists()
     Path(output_dir).mkdir(parents=True, exist_ok=True)
-    # ffmpeg ile belirli FPS'te kare çıkarma (hızlı mod)
-    pattern = str(Path(output_dir) / "frame_%05d.jpg")
-    args = [
-        "ffmpeg",
-        "-y",
-        "-i",
-        input_video,
-        "-vf",
-        f"fps={fps}",
-        "-q:v", "2",  # Hızlı JPEG kalitesi
-        "-threads", "4",  # Çoklu thread
-        pattern,
-    ]
-    subprocess.run(args, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    # Video süresini al ve optimal frame interval hesapla
+    try:
+        duration = get_video_duration(input_video)
+        if duration <= 0:
+            return []
+        
+        # Frame interval hesapla (maksimum frame sayısına göre)
+        interval = max(1, duration / max_frames)
+        
+        pattern = str(Path(output_dir) / "frame_%03d.jpg")
+        args = [
+            "ffmpeg",
+            "-y",
+            "-i", input_video,
+            "-vf", f"fps=1/{interval}",  # Dinamik interval
+            "-q:v", "5",  # Daha hızlı JPEG (kalite vs hız)
+            "-threads", "2",  # Optimize thread sayısı
+            "-frames:v", str(max_frames),  # Maksimum frame limiti
+            pattern,
+        ]
+        
+        subprocess.run(args, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=30)
+        
+    except subprocess.TimeoutExpired:
+        print("⚠️ Frame extraction timeout - using available frames")
+    except subprocess.CalledProcessError as e:
+        print(f"⚠️ Frame extraction error: {e}")
+        return []
+    except Exception as e:
+        print(f"⚠️ Frame extraction failed: {e}")
+        return []
+    
+    # Oluşturulan frame dosyalarını listele
     frames = sorted([str(p) for p in Path(output_dir).glob("frame_*.jpg")])
+    print(f"✅ Extracted {len(frames)} frames from {duration:.1f}s video")
     return frames
 
 

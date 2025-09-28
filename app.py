@@ -231,7 +231,7 @@ def analyze_performance_api(data: AnalyzeRequest):
             
             # Frame'ler çıkar
             print("🖼️ [DEBUG] Extracting frames...")
-            frames = grab_frames(video_path, frames_dir, max_frames=10)
+            frames = grab_frames(video_path, frames_dir, max_frames=5)  # 5 frame'e düşürdük (hız için)
             print(f"✅ [DEBUG] Frames extracted: {len(frames)} frames")
             
             # Süre al
