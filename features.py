@@ -89,7 +89,8 @@ def _ocr_frames(frames: List[str], fast_mode: bool = False) -> List[str]:
                         texts.append(txt)
                     elif isinstance(txt, (list, tuple)) and len(txt) > 0:
                         texts.append(str(txt[0]))
-        except Exception:
+        except Exception as e:
+            print(f"⚠️ OCR failed for frame: {e}")
             continue  # Hata durumunda devam et
     return texts
 

@@ -12,12 +12,6 @@ RUN apt-get update && apt-get install -y \
     libgomp1 \
     wget \
     curl \
-    libgl1-mesa-glx \
-    libglib2.0-0 \
-    libxcb1 \
-    libfontconfig1 \
-    libxrender1 \
-    libxtst6 \
     && rm -rf /var/lib/apt/lists/*
 
 # Set working directory
