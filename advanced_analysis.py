@@ -10,7 +10,7 @@ import json
 from pathlib import Path
 import subprocess
 
-def analyze_hook(video_path: str, frames: List[str], features: Dict[str, Any], duration: float) -> Dict[str, Any]:
+def analyze_hook(video_path: str, audio_path: str, frames: List[str], features: Dict[str, Any], duration: float) -> Dict[str, Any]:
     """
     Hook Analizi - İlk 3 saniye detaylı analiz (18 puan)
     Gerçek OpenCV ve frame analizi ile
@@ -70,9 +70,14 @@ def analyze_hook(video_path: str, frames: List[str], features: Dict[str, Any], d
     else:
         recommendations.append("İlk 3 saniyede güçlü bir kanca metni ekle")
     
-    # 3. Ses/Beat Giriş Analizi
+    # 3. Ses/Beat Giriş Analizi + GERÇEK beat detection
     audio_intro_score = analyze_audio_intro(features)
+    beat_drop_score = detect_beat_drop_in_intro(audio_path)
     raw_metrics["audio_intro_energy"] = audio_intro_score
+    raw_metrics["beat_drop_score"] = beat_drop_score
+    
+    # Beat drop bonusu ekle
+    audio_intro_score = min(audio_intro_score + beat_drop_score, 1.0)
     
     if audio_intro_score > 0.6:
         score += 3
@@ -276,7 +281,7 @@ def analyze_audio_intro(features: Dict[str, Any]) -> float:
     # BPM enerji değerlendirmesi
     if bpm > 120:
         score += 0.4  # Yüksek enerji
-        print(f"🎯 [HOOK] High energy BPM: {bmp}")
+        print(f"🎯 [HOOK] High energy BPM: {bpm}")
     elif bpm > 100:
         score += 0.3  # Orta-yüksek enerji
     elif bpm > 80:
@@ -299,6 +304,67 @@ def analyze_audio_intro(features: Dict[str, Any]) -> float:
     
     print(f"🎯 [HOOK] Audio intro score: {score:.2f}")
     return min(score, 1.0)
+
+
+def detect_beat_drop_in_intro(audio_path: str) -> float:
+    """
+    GERÇEK beat detection - librosa ile ilk 3 saniyede beat/drop tespit
+    """
+    try:
+        import librosa
+        import librosa.beat
+        
+        print(f"🎵 [HOOK] Analyzing beats in: {audio_path}")
+        
+        # İlk 3 saniyeyi yükle
+        y, sr = librosa.load(audio_path, sr=22050, duration=3.0)
+        
+        if len(y) == 0:
+            print("🎵 [HOOK] Audio file empty or not found")
+            return 0.0
+        
+        # Beat tracking
+        tempo, beats = librosa.beat.beat_track(y=y, sr=sr, hop_length=512)
+        beat_times = librosa.frames_to_time(beats, sr=sr, hop_length=512)
+        
+        # Onset detection (beat drop'lar için)
+        onset_frames = librosa.onset.onset_detect(y=y, sr=sr, hop_length=512, units='time')
+        
+        # İlk 3 saniyede beat/onset var mı?
+        early_beats = [t for t in beat_times if t <= 3.0]
+        early_onsets = [t for t in onset_frames if t <= 3.0]
+        
+        score = 0.0
+        
+        # Beat drop scoring
+        if len(early_onsets) >= 2:
+            score += 0.4  # Çoklu onset = drop efekti
+            print(f"🎵 [HOOK] Multiple beat drops in intro: {len(early_onsets)} onsets at {early_onsets}")
+        elif len(early_onsets) >= 1:
+            score += 0.2  # Tek onset
+            print(f"🎵 [HOOK] Beat drop detected at {early_onsets[0]:.1f}s")
+        
+        # İlk 1 saniyede onset varsa bonus
+        if any(t <= 1.0 for t in early_onsets):
+            score += 0.3
+            print(f"🎵 [HOOK] Early beat drop (within 1s) - very powerful!")
+        
+        # Beat consistency check
+        if tempo > 0 and len(early_beats) > 0:
+            expected_beats_in_3s = (tempo / 60) * 3
+            actual_beats = len(early_beats)
+            consistency = min(actual_beats / expected_beats_in_3s, 1.0) if expected_beats_in_3s > 0 else 0
+            
+            if consistency > 0.7:
+                score += 0.1
+                print(f"🎵 [HOOK] Good beat consistency: {consistency:.2f} ({actual_beats}/{expected_beats_in_3s:.1f})")
+        
+        print(f"🎵 [HOOK] Beat drop analysis complete: {score:.2f}")
+        return min(score, 1.0)
+        
+    except Exception as e:
+        print(f"❌ [HOOK] Beat detection failed: {e}")
+        return 0.0
 
 
 def analyze_direct_start(features: Dict[str, Any]) -> float:
@@ -398,9 +464,10 @@ def analyze_pacing_retention(frames: List[str], features: Dict[str, Any], durati
     
     print("⚡ [PACING] Starting pacing analysis...")
     
-    # 1. Kesim Yoğunluğu Analizi
-    cuts_per_sec = detect_cuts_per_second(frames, duration)
+    # 1. Kesim Yoğunluğu Analizi (GERÇEK timing ile)
+    cuts_per_sec, cut_timestamps = detect_cuts_per_second(frames, duration)
     raw_metrics["cuts_per_sec"] = cuts_per_sec
+    raw_metrics["cut_timestamps"] = cut_timestamps
     
     # İdeal aralık: 0.25-0.7 cuts/sec (lifestyle için)
     if 0.25 <= cuts_per_sec <= 0.7:
@@ -482,16 +549,20 @@ def analyze_pacing_retention(frames: List[str], features: Dict[str, Any], durati
     }
 
 
-def detect_cuts_per_second(frames: List[str], duration: float) -> float:
+def detect_cuts_per_second(frames: List[str], duration: float) -> Tuple[float, List[float]]:
     """
-    Gerçek cut detection - histogram based
+    GERÇEK cut detection - histogram + edge + timing based
+    Returns: (cuts_per_sec, cut_timestamps)
     """
     if len(frames) <= 1 or duration <= 0:
-        return 0.0
+        return 0.0, []
     
     try:
-        cuts = 0
-        threshold = 0.3  # Histogram difference threshold
+        cuts = []
+        cut_timestamps = []
+        
+        # Frame timing hesapla
+        frame_interval = duration / len(frames) if len(frames) > 0 else 1.0
         
         for i in range(len(frames) - 1):
             img1 = cv2.imread(frames[i])
@@ -500,26 +571,73 @@ def detect_cuts_per_second(frames: List[str], duration: float) -> float:
             if img1 is None or img2 is None:
                 continue
             
-            # Histogram farkı
-            hist1 = cv2.calcHist([img1], [0, 1, 2], None, [8, 8, 8], [0, 256, 0, 256, 0, 256])
-            hist2 = cv2.calcHist([img2], [0, 1, 2], None, [8, 8, 8], [0, 256, 0, 256, 0, 256])
+            # Resize for speed
+            img1 = cv2.resize(img1, (128, 128))
+            img2 = cv2.resize(img2, (128, 128))
             
-            # Chi-square distance
-            diff = cv2.compareHist(hist1, hist2, cv2.HISTCMP_CHISQR)
-            normalized_diff = diff / 10000.0  # Normalize
+            # 1. Histogram farkı (renk değişimi)
+            hist1 = cv2.calcHist([img1], [0, 1, 2], None, [16, 16, 16], [0, 256, 0, 256, 0, 256])
+            hist2 = cv2.calcHist([img2], [0, 1, 2], None, [16, 16, 16], [0, 256, 0, 256, 0, 256])
+            hist_diff = cv2.compareHist(hist1, hist2, cv2.HISTCMP_CHISQR) / 10000.0
             
-            if normalized_diff > threshold:
-                cuts += 1
-                print(f"⚡ [PACING] Cut detected at frame {i}: diff={normalized_diff:.3f}")
+            # 2. Edge farkı (kompozisyon değişimi)
+            gray1 = cv2.cvtColor(img1, cv2.COLOR_BGR2GRAY)
+            gray2 = cv2.cvtColor(img2, cv2.COLOR_BGR2GRAY)
+            edges1 = cv2.Canny(gray1, 50, 150)
+            edges2 = cv2.Canny(gray2, 50, 150)
+            edge_diff = np.mean(np.abs(edges1.astype(float) - edges2.astype(float))) / 255.0
+            
+            # 3. Structural similarity
+            ssim_score = calculate_ssim(gray1, gray2)
+            structure_diff = 1.0 - ssim_score
+            
+            # Kombinasyon: üç metriğin weighted average'ı
+            combined_diff = (hist_diff * 0.4) + (edge_diff * 0.3) + (structure_diff * 0.3)
+            
+            # Cut threshold (adaptive)
+            threshold = 0.25
+            if combined_diff > threshold:
+                cut_time = i * frame_interval
+                cuts.append(combined_diff)
+                cut_timestamps.append(cut_time)
+                print(f"⚡ [PACING] CUT at {cut_time:.1f}s: hist={hist_diff:.3f}, edge={edge_diff:.3f}, struct={structure_diff:.3f}, combined={combined_diff:.3f}")
         
-        cuts_per_sec = cuts / duration
-        print(f"⚡ [PACING] Total cuts: {cuts}, Duration: {duration:.1f}s, Rate: {cuts_per_sec:.3f}")
+        cuts_per_sec = len(cuts) / duration
+        print(f"⚡ [PACING] Cut detection complete: {len(cuts)} cuts in {duration:.1f}s = {cuts_per_sec:.3f} cuts/sec")
         
-        return cuts_per_sec
+        return cuts_per_sec, cut_timestamps
         
     except Exception as e:
         print(f"❌ [PACING] Cut detection failed: {e}")
-        return len(frames) / duration  # Fallback: frame rate as cut rate
+        return len(frames) / duration, []  # Fallback
+
+
+def calculate_ssim(img1: np.ndarray, img2: np.ndarray) -> float:
+    """
+    Structural Similarity Index - frame benzerliği
+    """
+    try:
+        # Simple SSIM implementation
+        mu1 = np.mean(img1)
+        mu2 = np.mean(img2)
+        
+        sigma1_sq = np.var(img1)
+        sigma2_sq = np.var(img2)
+        sigma12 = np.mean((img1 - mu1) * (img2 - mu2))
+        
+        # SSIM constants
+        c1 = (0.01 * 255) ** 2
+        c2 = (0.03 * 255) ** 2
+        
+        numerator = (2 * mu1 * mu2 + c1) * (2 * sigma12 + c2)
+        denominator = (mu1**2 + mu2**2 + c1) * (sigma1_sq + sigma2_sq + c2)
+        
+        ssim = numerator / denominator if denominator > 0 else 0.0
+        return max(0.0, min(1.0, ssim))
+        
+    except Exception as e:
+        print(f"❌ [PACING] SSIM calculation failed: {e}")
+        return 0.0
 
 
 def analyze_movement_rhythm(frames: List[str]) -> float:

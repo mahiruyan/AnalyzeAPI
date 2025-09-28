@@ -262,7 +262,7 @@ def analyze_performance_api(data: AnalyzeRequest):
             
             # YENİ: Hook analizi (gerçek implementasyon)
             print("🎯 [DEBUG] Analyzing hook (first 3 seconds)...")
-            hook_result = analyze_hook(video_path, frames, features, duration)
+            hook_result = analyze_hook(video_path, audio_path, frames, features, duration)
             print(f"✅ [DEBUG] Hook analysis completed: {hook_result['score']}/18")
             
             # YENİ: Pacing analizi (gerçek implementasyon)
