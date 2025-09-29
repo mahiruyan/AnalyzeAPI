@@ -1,0 +1,10 @@
+[tool.pyright]
+typeCheckingMode = "off"
+reportMissingImports = false
+reportGeneralTypeIssues = false
+reportOptionalMemberAccess = false
+reportOptionalCall = false
+reportUnknownArgumentType = false
+reportUnknownVariableType = false
+reportUnknownMemberType = false
+reportMissingTypeStubs = false
