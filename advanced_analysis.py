@@ -51,7 +51,8 @@ def analyze_hook(video_path: str, audio_path: str, frames: List[str], features: 
         recommendations.append("İlk saniyede daha keskin görsel değişim ekle (zoom, renk, açı)")
     else:
         score += 1
-        recommendations.append("İlk 3 saniyede ani zoom, renk değişimi veya yakın plan ekle")
+        # Gerçek analiz verisine göre öneri
+        recommendations.append(f"Görsel sıçrama çok düşük ({visual_jump_score:.2f}). İlk 3 saniyede ani zoom, renk değişimi veya yakın plan ekle.")
     
     # 2. Metin Kancası Analizi (OCR)
     hook_text_score = analyze_hook_text(features)
@@ -68,7 +69,12 @@ def analyze_hook(video_path: str, audio_path: str, frames: List[str], features: 
         score += 2
         recommendations.append("Kanca metnini daha güçlü yap - 'Kimse söylemiyor ama...' tarzı")
     else:
-        recommendations.append("İlk 3 saniyede güçlü bir kanca metni ekle")
+        # Gerçek OCR verisine göre öneri
+        ocr_text = features.get("textual", {}).get("ocr_text", "")
+        if len(ocr_text) > 0:
+            recommendations.append(f"Metin tespit edildi ama kanca gücü düşük ({hook_text_score:.2f}). '{ocr_text[:30]}...' metnini daha dikkat çekici yap.")
+        else:
+            recommendations.append(f"Hiç metin tespit edilmedi ({hook_text_score:.2f}). İlk 3 saniyede güçlü bir kanca metni ekle.")
     
     # 3. Ses/Beat Giriş Analizi + GERÇEK beat detection
     audio_intro_score = analyze_audio_intro(features)
@@ -108,7 +114,13 @@ def analyze_hook(video_path: str, audio_path: str, frames: List[str], features: 
         recommendations.append("Selamlaşmayı kısalt, daha hızlı konuya geç")
     else:
         score += 1
-        recommendations.append("'Merhaba' yerine direkt konuyla başla")
+        # Gerçek ASR verisine göre öneri
+        asr_text = features.get("textual", {}).get("asr_text", "")
+        if len(asr_text) > 0:
+            first_words = asr_text.split()[:5]
+            recommendations.append(f"Konuşma tespit edildi ama direkt başlangıç yok ({direct_start_score:.2f}). '{' '.join(first_words)}...' yerine direkt konuyla başla.")
+        else:
+            recommendations.append(f"Konuşma tespit edilmedi ({direct_start_score:.2f}). 'Merhaba' yerine direkt konuyla başla.")
     
     # 5. Erken Foreshadowing (Gelecek vaat)
     foreshadow_score = analyze_foreshadowing(features)
@@ -122,7 +134,13 @@ def analyze_hook(video_path: str, audio_path: str, frames: List[str], features: 
             "msg": "İyi foreshadowing - 'Sonunda göreceksin' tarzı vaat var"
         })
     else:
-        recommendations.append("0-3 saniye arası 'Sonunda X'i göreceksin' tarzı vaat ekle")
+        # Gerçek metin verisine göre öneri
+        combined_text = (features.get("textual", {}).get("ocr_text", "") + " " + 
+                        features.get("textual", {}).get("asr_text", "")).lower()
+        if "sonunda" in combined_text or "göreceksin" in combined_text:
+            recommendations.append(f"Foreshadowing var ama yeterince güçlü değil ({foreshadow_score:.2f}). 'Sonunda X'i göreceksin' ifadesini daha belirgin yap.")
+        else:
+            recommendations.append(f"Hiç foreshadowing yok ({foreshadow_score:.2f}). 0-3 saniye arası 'Sonunda X'i göreceksin' tarzı vaat ekle.")
     
     print(f"🎯 [HOOK] Hook score: {score}/18")
     
@@ -486,9 +504,9 @@ def analyze_pacing_retention(frames: List[str], features: Dict[str, Any], durati
     else:
         score += 1
         if cuts_per_sec < 0.15:
-            recommendations.append("Çok yavaş edit - daha fazla kesim ekle")
+            recommendations.append(f"Çok yavaş edit ({cuts_per_sec:.2f} kesim/saniye) - daha fazla kesim ekle. İdeal: 0.3-0.6 arası.")
         else:
-            recommendations.append("Çok hızlı edit - izleyici kaybedebilir")
+            recommendations.append(f"Çok hızlı edit ({cuts_per_sec:.2f} kesim/saniye) - izleyici kaybedebilir. Biraz yavaşlat.")
     
     # 2. Hareket Ritmi Analizi
     movement_rhythm = analyze_movement_rhythm(frames)
@@ -506,7 +524,7 @@ def analyze_pacing_retention(frames: List[str], features: Dict[str, Any], durati
         recommendations.append("Hareket ritmini biraz daha düzenli yap")
     else:
         score += 1
-        recommendations.append("Daha ritmik hareket paterni oluştur - düzenli aralıklarla hareket")
+        recommendations.append(f"Hareket ritmi çok düşük ({movement_rhythm:.2f}). Daha ritmik hareket paterni oluştur - düzenli aralıklarla hareket ekle.")
     
     # 3. Ölü An Tespiti
     dead_time_penalty = detect_dead_time(frames, features, duration)
