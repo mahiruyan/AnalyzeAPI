@@ -12,7 +12,7 @@ RUN apt-get update && apt-get install -y \
     libgomp1 \
     wget \
     curl \
-    libgl1-mesa-glx \
+    libgl1-mesa-dri \
     libfontconfig1 \
     libfreetype6 \
     && rm -rf /var/lib/apt/lists/*
