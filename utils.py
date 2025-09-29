@@ -46,19 +46,26 @@ def download_video(url: str, dest_path: str, timeout: int = 60) -> None:
     if _is_social_media_url(url) and yt_dlp is not None:
         # Sosyal medya için yt-dlp kullan (hız için optimize edildi)
         ydl_opts = {
-            'format': 'best[height<=480]/best',  # 480p'ye düşürdük (hız için)
+            'format': 'best[height<=480]/best',
             'outtmpl': dest_path,
-            'quiet': True,
-            'no_warnings': True,
+            'quiet': False,  # Debug için açık
+            'no_warnings': False,  # Debug için açık
             'extract_flat': False,
             'socket_timeout': timeout,
-            'retries': 2,  # Retry sayısını azalttık
-            'cookiesfrombrowser': None,  # Instagram için gerekli
+            'retries': 3,
+            # Instagram için gerekli ayarlar
+            'cookiesfrombrowser': None,
             'extractor_args': {
                 'instagram': {
                     'api': 'web',
-                    'web_api': True
+                    'web_api': True,
+                    'include_stories': False,
+                    'include_posts': True
                 }
+            },
+            # User agent ve headers
+            'http_headers': {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
             }
         }
         try:
@@ -69,30 +76,7 @@ def download_video(url: str, dest_path: str, timeout: int = 60) -> None:
             return
         except Exception as e:
             print(f"❌ yt-dlp failed: {e}")
-            # Instagram için özel fallback
-            if "instagram" in url.lower():
-                print("🔄 Trying Instagram-specific fallback...")
-                try:
-                    # Instagram için basit HTTP fallback
-                    import requests
-                    headers = {
-                        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
-                    }
-                    response = requests.get(url, headers=headers, timeout=timeout)
-                    if response.status_code == 200:
-                        # Basit bir placeholder video oluştur
-                        print("⚠️ Instagram URL not directly downloadable, using placeholder")
-                        # 1 saniyelik siyah video oluştur
-                        import subprocess
-                        subprocess.run([
-                            'ffmpeg', '-y', '-f', 'lavfi', '-i', 'color=black:size=640x480:duration=1',
-                            '-c:v', 'libx264', '-pix_fmt', 'yuv420p', dest_path
-                        ], check=True, capture_output=True)
-                        print(f"✅ Placeholder video created: {dest_path}")
-                        return
-                except Exception as fallback_e:
-                    print(f"❌ Instagram fallback failed: {fallback_e}")
-            
+            print(f"❌ Error details: {str(e)}")
             raise Exception(f"Video indirme başarısız: {e}")
     
     # Fallback: normal HTTP indirme (sosyal medya değilse)
@@ -140,23 +124,7 @@ def extract_audio_via_ffmpeg(
         print(f"❌ FFmpeg audio extraction failed: {e}")
         print(f"❌ FFmpeg stderr: {e.stderr.decode()}")
         
-        # Placeholder video için sessiz audio oluştur
-        print("🔄 Creating silent audio for placeholder video...")
-        try:
-            silent_args = [
-                "ffmpeg",
-                "-y",
-                "-f", "lavfi",
-                "-i", f"anullsrc=channel_layout=mono:sample_rate={sample_rate}",
-                "-t", "1",  # 1 saniye sessizlik
-                "-acodec", "pcm_s16le",
-                output_wav,
-            ]
-            subprocess.run(silent_args, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-            print(f"✅ Silent audio created: {output_wav}")
-        except subprocess.CalledProcessError as silent_e:
-            print(f"❌ Silent audio creation failed: {silent_e}")
-            raise Exception(f"Ses çıkarma başarısız: {e}")
+        raise Exception(f"Ses çıkarma başarısız: {e}")
 
 
 def grab_frames(input_video: str, output_dir: str, max_frames: int = 10) -> List[str]:
