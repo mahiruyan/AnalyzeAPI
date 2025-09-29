@@ -27,6 +27,8 @@ RUN apt-get update && apt-get install -y \
     libxkbcommon0 \
     libatk-bridge2.0-0 \
     libgbm1 \
+    libfontconfig1 \
+    libfreetype6 \
     && rm -rf /var/lib/apt/lists/*
 
 # Set working directory
