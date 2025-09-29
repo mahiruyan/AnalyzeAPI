@@ -26,6 +26,7 @@ COPY requirements.txt .
 # Install Python dependencies
 RUN pip install --upgrade pip && \
     pip install --no-cache-dir -f https://www.paddlepaddle.org.cn/whl/linux/x86_64 paddlepaddle==2.6.2 && \
+    pip install --no-cache-dir paddleocr==2.7.0.3 && \
     pip install --no-cache-dir -r requirements.txt
 
 # Copy application code

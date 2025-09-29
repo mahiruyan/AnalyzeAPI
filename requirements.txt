@@ -1,23 +1,34 @@
+# Core web framework
 fastapi==0.104.1
 uvicorn[standard]==0.24.0
 httpx==0.25.2
 pydantic==2.5.0
+
+# Scientific computing stack (compatible versions)
 numpy==1.24.3
-opencv-python-headless==4.8.1.78
-scenedetect==0.6.3
-# OCR
-paddlepaddle==2.6.2
-paddleocr==2.7.0.3
-# easyocr opsiyonel (gerekirse açılabilir)
-# easyocr==1.7.0
-pillow==10.1.0
+scipy==1.11.4
+scikit-learn==1.3.2
+
+# Audio processing
 librosa==0.10.1
 soundfile==0.12.1
 pyloudnorm==0.1.1
-scipy==1.11.4
 faster-whisper==0.10.0
+
+# Computer vision
+opencv-python-headless==4.8.1.78
+pillow==10.1.0
+
+# Video processing
+scenedetect==0.6.3
+
+# OCR (compatible versions)
+paddlepaddle==2.6.2
+paddleocr==2.7.0.3
+easyocr==1.7.0
+
+# Network & utilities
 requests==2.31.0
-# openai>=1.42.0
 python-dotenv==1.0.0
 yt-dlp==2024.12.13
 # redis

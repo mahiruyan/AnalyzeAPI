@@ -76,18 +76,82 @@ def _compute_tempo(audio_path: str) -> float:
 
 def _ocr_frames(frames: List[str], fast_mode: bool = False) -> List[str]:
     """
-    Frame'lerden OCR ile metin çıkarır - GEÇİCİ OLARAK DEVRE DIŞI
+    Frame'lerden OCR ile metin çıkarır
     """
-    # GEÇİCİ: OCR'ı devre dışı bırak, analiz çalışsın
-    print("⚠️ [OCR] Temporarily disabled - returning empty list")
-    return []
+    texts = []
+    
+    # FAST modda OCR atla
+    if fast_mode:
+        print("⚠️ [OCR] Skipped (fast mode)")
+        return texts
+    
+    # PaddleOCR yoksa atla
+    if PaddleOCR is None:
+        print("⚠️ [OCR] PaddleOCR not available")
+        return texts
+    
+    try:
+        print("🔍 [OCR] Initializing PaddleOCR...")
+        ocr = PaddleOCR(use_angle_cls=True, lang='en', show_log=False)
+        print(f"✅ [OCR] PaddleOCR initialized, processing {len(frames)} frames")
+        
+        # Hızlı analiz için sadece ilk 3 kare
+        for i, f in enumerate(frames[:3]):
+            try:
+                res = ocr.ocr(f, cls=True)
+                if res:
+                    for line in res:
+                        if line:
+                            for box, txt, conf in line:
+                                if isinstance(txt, str) and len(txt.strip()) > 1:
+                                    texts.append(txt.strip())
+                                elif isinstance(txt, (list, tuple)) and len(txt) > 0:
+                                    texts.append(str(txt[0]).strip())
+                print(f"📝 [OCR] Frame {i+1}: {len([t for t in texts if t])} texts found")
+            except Exception as e:
+                print(f"⚠️ [OCR] Failed for frame {i+1}: {e}")
+                continue
+        
+        print(f"✅ [OCR] Completed: {len(texts)} total texts found")
+        return texts[:10]  # Maksimum 10 text
+        
+    except Exception as e:
+        print(f"❌ [OCR] PaddleOCR initialization failed: {e}")
+        print("🔄 [OCR] Using fallback text detection...")
+        return _fallback_text_detection(frames)
 
 
 def _fallback_text_detection(frames: List[str]) -> List[str]:
     """
-    GEÇİCİ OLARAK DEVRE DIŞI
+    PaddleOCR çalışmazsa EasyOCR fallback
     """
-    print("⚠️ [OCR] Fallback disabled")
+    texts = []
+    
+    # EasyOCR fallback
+    try:
+        import easyocr
+        print("🔄 [OCR] Trying EasyOCR fallback...")
+        reader = easyocr.Reader(['en', 'tr'], gpu=False)
+        
+        for i, frame_path in enumerate(frames[:2]):  # Sadece ilk 2 frame
+            try:
+                results = reader.readtext(frame_path)
+                for (bbox, text, confidence) in results:
+                    if confidence > 0.5 and len(text.strip()) > 1:
+                        texts.append(text.strip())
+                print(f"🔄 [OCR] EasyOCR frame {i+1}: {len([t for t in texts if t])} texts")
+            except Exception as e:
+                print(f"⚠️ [OCR] EasyOCR frame {i+1} failed: {e}")
+                continue
+                
+        if texts:
+            print(f"✅ [OCR] EasyOCR fallback successful: {len(texts)} texts")
+            return texts[:10]
+    except Exception as e:
+        print(f"❌ [OCR] EasyOCR fallback failed: {e}")
+    
+    # Son çare: boş liste döndür
+    print("⚠️ [OCR] All OCR methods failed - returning empty list")
     return []
 
 
