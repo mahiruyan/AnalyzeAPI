@@ -24,23 +24,32 @@ try:
 except Exception:
     cv2 = None
 
-try:
-    from scenedetect import VideoManager, SceneManager
-    from scenedetect.detectors import ContentDetector
-except Exception:
-    VideoManager = None
-    SceneManager = None
-    ContentDetector = None
+# scenedetect temporarily disabled for Railway deploy
+# try:
+#     from scenedetect import VideoManager, SceneManager
+#     from scenedetect.detectors import ContentDetector
+# except Exception:
+#     VideoManager = None
+#     SceneManager = None
+#     ContentDetector = None
 
-try:
-    from paddleocr import PaddleOCR
-except Exception:
-    PaddleOCR = None
+VideoManager = None
+SceneManager = None
+ContentDetector = None
 
-try:
-    import easyocr
-except Exception:
-    easyocr = None
+# OCR temporarily disabled for Railway deploy
+# try:
+#     from paddleocr import PaddleOCR
+# except Exception:
+#     PaddleOCR = None
+
+# try:
+#     import easyocr
+# except Exception:
+#     easyocr = None
+
+PaddleOCR = None
+easyocr = None
 
 try:
     from faster_whisper import WhisperModel

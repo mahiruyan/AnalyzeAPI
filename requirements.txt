@@ -1,29 +1,29 @@
-fastapi
-uvicorn[standard]
-httpx
-pydantic
-numpy
-opencv-python-headless
-scenedetect
+fastapi==0.104.1
+uvicorn[standard]==0.24.0
+httpx==0.25.2
+pydantic==2.5.0
+numpy==1.24.3
+opencv-python-headless==4.8.1.78
+# scenedetect
 # OCR temporarily disabled for Railway deploy
 # paddlepaddle==2.6.1
 # paddleocr==2.8.1
 # easyocr==1.7.0
-pillow
-librosa
-soundfile
-pyloudnorm
-faster-whisper
-requests
-openai>=1.42.0
-python-dotenv
-yt-dlp
-redis
-SQLAlchemy
-psycopg2-binary
-boto3
-reportlab
-sentry-sdk
-prometheus-client
-gspread
-google-auth
+pillow==10.1.0
+librosa==0.10.1
+soundfile==0.12.1
+pyloudnorm==0.1.1
+faster-whisper==0.10.0
+requests==2.31.0
+# openai>=1.42.0
+python-dotenv==1.0.0
+yt-dlp==2023.11.16
+# redis
+# SQLAlchemy
+# psycopg2-binary
+# boto3
+# reportlab
+# sentry-sdk
+# prometheus-client
+# gspread
+# google-auth
