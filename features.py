@@ -20,6 +20,13 @@ except Exception:
     pyln = None
 
 try:
+    import pytesseract
+    from PIL import Image
+except Exception:
+    pytesseract = None
+    Image = None
+
+try:
     import cv2
 except Exception:
     cv2 = None
@@ -83,8 +90,10 @@ def _ocr_frames(frames: List[str], fast_mode: bool = False) -> List[str]:
         return texts
     
     try:
-        import pytesseract
-        from PIL import Image
+        if pytesseract is None or Image is None:
+            print("❌ [OCR] Tesseract not available")
+            return texts
+            
         print("🔍 [OCR] Using Tesseract OCR...")
         print(f"✅ [OCR] Tesseract initialized, processing {len(frames)} frames")
         
