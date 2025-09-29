@@ -4228,7 +4228,7 @@ def initialize_sync_viral_timeline(features: Dict[str, Any], duration: float, vi
 
 def analyze_visual_viral_impact(frame_path: str, current_time: float) -> Dict[str, Any]:
     """
-    Görüntü viral etkisi analizi
+    Gelişmiş görüntü viral etkisi analizi - nesne tespiti, hareket analizi
     """
     try:
         import cv2
@@ -4246,67 +4246,75 @@ def analyze_visual_viral_impact(frame_path: str, current_time: float) -> Dict[st
         
         viral_score = 0.0
         impact_reasons = []
+        detected_objects = []
+        movement_analysis = ""
         
-        # 1. Renk analizi
+        # 1. Nesne tespiti (İnsan, çocuk, hayvan)
+        objects = detect_objects_in_frame(image)
+        detected_objects.extend(objects)
+        
+        for obj in objects:
+            if obj["type"] == "person":
+                viral_score += 0.3
+                impact_reasons.append("İnsan tespit edildi - viral potansiyeli yüksek")
+                
+                # Çocuk tespiti (boyut ve oran analizi)
+                if obj["height_ratio"] > 0.6:  # Büyük insan = yetişkin
+                    impact_reasons.append("Yetişkin - güvenilir görünüm")
+                else:  # Küçük insan = çocuk
+                    viral_score += 0.2
+                    impact_reasons.append("Çocuk tespit edildi - dikkat çekici!")
+            
+            elif obj["type"] == "animal":
+                viral_score += 0.2
+                impact_reasons.append("Hayvan - viral potansiyeli")
+        
+        # 2. Hareket analizi
+        movement = analyze_movement_pattern(image, current_time)
+        if movement["type"] != "static":
+            viral_score += 0.2
+            impact_reasons.append(f"Hareket: {movement['description']}")
+            movement_analysis = movement["description"]
+            
+            # Yaklaşma analizi
+            if "yaklaşma" in movement["description"].lower() or "approaching" in movement["description"].lower():
+                viral_score += 0.3
+                impact_reasons.append("Yaklaşma hareketi - dikkat çekici!")
+        
+        # 3. Renk analizi
         hsv = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
-        
-        # Parlak renkler viral için iyidir
         bright_colors = cv2.inRange(hsv, np.array([0, 0, 200]), np.array([180, 255, 255]))
         bright_ratio = np.sum(bright_colors > 0) / (image.shape[0] * image.shape[1])
         
         if bright_ratio > 0.3:
-            viral_score += 0.3
+            viral_score += 0.2
             impact_reasons.append("Parlak renkler - dikkat çekici")
         elif bright_ratio > 0.1:
             viral_score += 0.1
             impact_reasons.append("Orta parlaklık")
         
-        # 2. Hareket analizi (optical flow)
-        # Basit edge density analizi
+        # 4. Kompozisyon analizi
         gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
         edges = cv2.Canny(gray, 50, 150)
         edge_density = np.sum(edges > 0) / (image.shape[0] * image.shape[1])
         
-        if edge_density > 0.15:  # Yüksek hareket/detay
-            viral_score += 0.2
-            impact_reasons.append("Yüksek detay - dinamik görüntü")
-        elif edge_density > 0.05:
+        if edge_density > 0.15:
             viral_score += 0.1
-            impact_reasons.append("Orta detay")
+            impact_reasons.append("Yüksek detay - dinamik görüntü")
         
-        # 3. Kompozisyon analizi
-        # Rule of thirds kontrolü
-        height, width = image.shape[:2]
-        
-        # Merkez dışı odak noktaları
-        center_x, center_y = width // 2, height // 2
-        third_x, third_y = width // 3, height // 3
-        
-        # Edge'lerin dağılımı
-        left_edges = np.sum(edges[:, :third_x] > 0)
-        right_edges = np.sum(edges[:, 2*third_x:] > 0)
-        center_edges = np.sum(edges[:, third_x:2*third_x] > 0)
-        
-        if left_edges > center_edges and right_edges > center_edges:
-            viral_score += 0.2
-            impact_reasons.append("İyi kompozisyon - Rule of Thirds")
-        
-        # 4. Kontrast analizi
+        # 5. Kontrast analizi
         contrast = np.std(gray)
         if contrast > 50:
-            viral_score += 0.3
+            viral_score += 0.2
             impact_reasons.append("Yüksek kontrast - net görüntü")
-        elif contrast > 25:
-            viral_score += 0.1
-            impact_reasons.append("Orta kontrast")
         
         # Impact belirleme
-        if viral_score > 0.7:
+        if viral_score > 0.8:
             impact = "positive"
-            score_change = 0.15
-        elif viral_score > 0.4:
+            score_change = 0.2
+        elif viral_score > 0.5:
             impact = "neutral"
-            score_change = 0.05
+            score_change = 0.1
         else:
             impact = "negative"
             score_change = -0.05
@@ -4317,7 +4325,9 @@ def analyze_visual_viral_impact(frame_path: str, current_time: float) -> Dict[st
             "impact": impact,
             "reason": " | ".join(impact_reasons) if impact_reasons else "Standart görüntü",
             "score_change": score_change,
-            "visual_score": viral_score
+            "visual_score": viral_score,
+            "detected_objects": detected_objects,
+            "movement": movement_analysis
         }
         
     except Exception as e:
@@ -4333,62 +4343,66 @@ def analyze_visual_viral_impact(frame_path: str, current_time: float) -> Dict[st
 
 def analyze_audio_viral_impact(audio_features: Dict[str, Any], current_time: float, frame_interval: float) -> Dict[str, Any]:
     """
-    Ses viral etkisi analizi
+    Gelişmiş ses viral etkisi analizi - içerik analizi, konu tespiti
     """
     try:
         viral_score = 0.0
         impact_reasons = []
+        content_analysis = ""
+        topic_detection = ""
         
-        # 1. Loudness analizi
+        # 1. İçerik analizi (ASR text'ten)
+        textual = audio_features.get("textual", {})
+        asr_text = textual.get("asr_text", "").lower()
+        
+        if asr_text:
+            content_analysis = analyze_speech_content(asr_text)
+            if content_analysis["viral_potential"] > 0.7:
+                viral_score += 0.4
+                impact_reasons.append(f"Viral içerik: {content_analysis['description']}")
+            elif content_analysis["viral_potential"] > 0.4:
+                viral_score += 0.2
+                impact_reasons.append(f"İyi içerik: {content_analysis['description']}")
+            
+            # Konu tespiti
+            topic_detection = detect_topic_from_speech(asr_text)
+            if topic_detection["confidence"] > 0.7:
+                viral_score += 0.3
+                impact_reasons.append(f"Konu: {topic_detection['topic']} - viral potansiyeli yüksek")
+        
+        # 2. Loudness analizi
         loudness = audio_features.get("loudness", -20)
         
         if -15 <= loudness <= -6:  # Optimal loudness
-            viral_score += 0.3
+            viral_score += 0.2
             impact_reasons.append("Optimal ses seviyesi")
         elif -20 <= loudness <= -3:  # Kabul edilebilir
-            viral_score += 0.2
-            impact_reasons.append("İyi ses seviyesi")
-        else:
             viral_score += 0.1
-            impact_reasons.append("Düşük ses seviyesi")
+            impact_reasons.append("İyi ses seviyesi")
         
-        # 2. Tempo analizi
+        # 3. Tempo analizi
         tempo = audio_features.get("tempo", 0)
         
         if 120 <= tempo <= 140:  # Viral tempo
-            viral_score += 0.3
+            viral_score += 0.2
             impact_reasons.append("Viral tempo - enerjik")
         elif 100 <= tempo <= 160:  # İyi tempo
-            viral_score += 0.2
+            viral_score += 0.1
             impact_reasons.append("İyi tempo")
-        elif tempo > 0:
-            viral_score += 0.1
-            impact_reasons.append("Tempo tespit edildi")
         
-        # 3. Ses kalitesi
-        # audio_info = features.get("audio_info", {})  # features burada tanımlı değil
+        # 4. Ses kalitesi
         sample_rate = 44100  # Default değer
-        
         if sample_rate >= 44100:
-            viral_score += 0.2
-            impact_reasons.append("Yüksek kalite ses")
-        elif sample_rate >= 22050:
             viral_score += 0.1
-            impact_reasons.append("Orta kalite ses")
-        
-        # 4. Ses değişimi analizi (basit)
-        # Ses segment'inde değişim var mı?
-        if current_time > 0:
-            viral_score += 0.2
-            impact_reasons.append("Ses değişimi - dinamik")
+            impact_reasons.append("Yüksek kalite ses")
         
         # Impact belirleme
-        if viral_score > 0.7:
+        if viral_score > 0.8:
             impact = "positive"
-            score_change = 0.1
-        elif viral_score > 0.4:
+            score_change = 0.2
+        elif viral_score > 0.5:
             impact = "neutral"
-            score_change = 0.05
+            score_change = 0.1
         else:
             impact = "negative"
             score_change = -0.05
@@ -4399,7 +4413,9 @@ def analyze_audio_viral_impact(audio_features: Dict[str, Any], current_time: flo
             "impact": impact,
             "reason": " | ".join(impact_reasons) if impact_reasons else "Standart ses",
             "score_change": score_change,
-            "audio_score": viral_score
+            "audio_score": viral_score,
+            "content_analysis": content_analysis,
+            "topic_detection": topic_detection
         }
         
     except Exception as e:
@@ -4415,7 +4431,7 @@ def analyze_audio_viral_impact(audio_features: Dict[str, Any], current_time: flo
 
 def analyze_text_viral_impact_at_time(textual: Dict[str, Any], current_time: float) -> Dict[str, Any]:
     """
-    Belirli bir zamanda metin viral etkisi
+    Gelişmiş metin viral etkisi - OCR text analizi, konu tespiti
     """
     try:
         asr_text = textual.get("asr_text", "").lower()
@@ -4428,18 +4444,42 @@ def analyze_text_viral_impact_at_time(textual: Dict[str, Any], current_time: flo
         
         viral_score = 0.0
         impact_reasons = []
+        ocr_analysis = ""
+        topic_from_text = ""
         
-        # Viral kelimeler
+        # 1. OCR text analizi (görsel metin)
+        if ocr_texts:
+            ocr_analysis = analyze_ocr_text_content(ocr_texts)
+            if ocr_analysis["viral_potential"] > 0.7:
+                viral_score += 0.4
+                impact_reasons.append(f"Viral OCR text: {ocr_analysis['description']}")
+            elif ocr_analysis["viral_potential"] > 0.4:
+                viral_score += 0.2
+                impact_reasons.append(f"İyi OCR text: {ocr_analysis['description']}")
+            
+            # OCR'dan konu tespiti
+            topic_from_text = detect_topic_from_ocr(ocr_texts)
+            if topic_from_text["confidence"] > 0.7:
+                viral_score += 0.3
+                impact_reasons.append(f"Konu: {topic_from_text['topic']} - viral potansiyeli yüksek")
+        
+        # 2. ASR text analizi (konuşma)
+        if asr_text:
+            asr_analysis = analyze_speech_content(asr_text)
+            if asr_analysis["viral_potential"] > 0.7:
+                viral_score += 0.3
+                impact_reasons.append(f"Viral konuşma: {asr_analysis['description']}")
+        
+        # 3. Viral kelimeler
         viral_keywords = {
-            "wow": 0.3, "amazing": 0.3, "incredible": 0.3, "unbelievable": 0.3,
-            "shocking": 0.3, "mind-blowing": 0.3, "epic": 0.2, "legendary": 0.2,
-            "harika": 0.3, "inanılmaz": 0.3, "muhteşem": 0.3, "şaşırtıcı": 0.3,
-            "müthiş": 0.2, "efsane": 0.2, "vay be": 0.15, "fire": 0.15,
-            "like": 0.1, "share": 0.1, "comment": 0.1, "subscribe": 0.1,
-            "beğen": 0.1, "paylaş": 0.1, "yorum": 0.1, "abone": 0.1
+            "wow": 0.2, "amazing": 0.2, "incredible": 0.2, "unbelievable": 0.2,
+            "shocking": 0.2, "mind-blowing": 0.2, "epic": 0.15, "legendary": 0.15,
+            "harika": 0.2, "inanılmaz": 0.2, "muhteşem": 0.2, "şaşırtıcı": 0.2,
+            "müthiş": 0.15, "efsane": 0.15, "vay be": 0.1, "fire": 0.1,
+            "like": 0.05, "share": 0.05, "comment": 0.05, "subscribe": 0.05,
+            "beğen": 0.05, "paylaş": 0.05, "yorum": 0.05, "abone": 0.05
         }
         
-        # Text'te viral kelime var mı?
         words = all_text.split()
         viral_words_found = []
         
@@ -4451,21 +4491,18 @@ def analyze_text_viral_impact_at_time(textual: Dict[str, Any], current_time: flo
         if viral_words_found:
             impact_reasons.append(f"Viral kelimeler: {', '.join(viral_words_found[:3])}")
         
-        # Text uzunluğu
+        # 4. Text uzunluğu
         if 5 <= len(words) <= 20:
-            viral_score += 0.2
-            impact_reasons.append("Optimal text uzunluğu")
-        elif len(words) > 0:
             viral_score += 0.1
-            impact_reasons.append("Text mevcut")
+            impact_reasons.append("Optimal text uzunluğu")
         
         # Impact belirleme
-        if viral_score > 0.5:
+        if viral_score > 0.8:
             impact = "positive"
-            score_change = 0.2
-        elif viral_score > 0.2:
+            score_change = 0.25
+        elif viral_score > 0.5:
             impact = "neutral"
-            score_change = 0.05
+            score_change = 0.1
         else:
             impact = "negative"
             score_change = -0.05
@@ -4476,7 +4513,9 @@ def analyze_text_viral_impact_at_time(textual: Dict[str, Any], current_time: flo
             "impact": impact,
             "reason": " | ".join(impact_reasons) if impact_reasons else "Standart metin",
             "score_change": score_change,
-            "text_score": viral_score
+            "text_score": viral_score,
+            "ocr_analysis": ocr_analysis,
+            "topic_from_text": topic_from_text
         }
         
     except Exception as e:
@@ -4555,14 +4594,74 @@ def merge_sync_events(events: List[Dict], current_time: float) -> Dict[str, Any]
         else:
             impact = "negative"
         
-        # Reason'ları birleştir
+        # Gelişmiş analiz birleştirme
         reasons = []
+        combined_analysis = {}
+        
         if visual_events:
-            reasons.append(f"Görüntü: {visual_events[0]['reason']}")
+            visual_event = visual_events[0]
+            reasons.append(f"Görüntü: {visual_event['reason']}")
+            combined_analysis["detected_objects"] = visual_event.get("detected_objects", [])
+            combined_analysis["movement"] = visual_event.get("movement", "")
+            
+            # Nesne tespiti analizi
+            if combined_analysis["detected_objects"]:
+                for obj in combined_analysis["detected_objects"]:
+                    if obj.get("age_estimate") == "child":
+                        reasons.append("Çocuk tespit edildi!")
+                        total_score_change += 0.1
+                    elif obj.get("type") == "person":
+                        reasons.append("İnsan tespit edildi!")
+                        total_score_change += 0.05
+        
         if audio_events:
-            reasons.append(f"Ses: {audio_events[0]['reason']}")
+            audio_event = audio_events[0]
+            reasons.append(f"Ses: {audio_event['reason']}")
+            combined_analysis["content_analysis"] = audio_event.get("content_analysis", {})
+            combined_analysis["topic_detection"] = audio_event.get("topic_detection", {})
+            
+            # İçerik analizi
+            if combined_analysis["content_analysis"].get("detected_types"):
+                content_types = combined_analysis["content_analysis"]["detected_types"]
+                if "question" in content_types:
+                    reasons.append("Soru sorma tespit edildi - etkileşim artırıcı!")
+                    total_score_change += 0.1
+                if "shock" in content_types:
+                    reasons.append("Şok edici içerik - viral potansiyeli yüksek!")
+                    total_score_change += 0.15
+        
         if text_events:
-            reasons.append(f"Metin: {text_events[0]['reason']}")
+            text_event = text_events[0]
+            reasons.append(f"Metin: {text_event['reason']}")
+            combined_analysis["ocr_analysis"] = text_event.get("ocr_analysis", {})
+            combined_analysis["topic_from_text"] = text_event.get("topic_from_text", {})
+            
+            # OCR analizi
+            if combined_analysis["ocr_analysis"].get("detected_types"):
+                ocr_types = combined_analysis["ocr_analysis"]["detected_types"]
+                if "title" in ocr_types:
+                    reasons.append("Başlık metni - dikkat çekici!")
+                    total_score_change += 0.1
+                if "fact" in ocr_types:
+                    reasons.append("Bilgi metni - eğitici!")
+                    total_score_change += 0.05
+        
+        # Konu uyumu analizi
+        topic_consistency = analyze_topic_consistency(combined_analysis)
+        if topic_consistency["consistent"]:
+            reasons.append(f"Konu uyumu: {topic_consistency['description']} - mükemmel kombinasyon!")
+            total_score_change += 0.2
+        elif topic_consistency["partial"]:
+            reasons.append(f"Kısmi konu uyumu: {topic_consistency['description']}")
+            total_score_change += 0.1
+        
+        # Impact yeniden belirle
+        if total_score_change > 0.3:
+            impact = "positive"
+        elif total_score_change > 0.1:
+            impact = "neutral"
+        else:
+            impact = "negative"
         
         return {
             "t": current_time,
@@ -4575,7 +4674,9 @@ def merge_sync_events(events: List[Dict], current_time: float) -> Dict[str, Any]
             "text_score": text_events[0]["text_score"] if text_events else 0,
             "sync_score": (visual_events[0]["visual_score"] if visual_events else 0) +
                          (audio_events[0]["audio_score"] if audio_events else 0) +
-                         (text_events[0]["text_score"] if text_events else 0)
+                         (text_events[0]["text_score"] if text_events else 0),
+            "combined_analysis": combined_analysis,
+            "topic_consistency": topic_consistency
         }
         
     except Exception as e:
@@ -4586,4 +4687,424 @@ def merge_sync_events(events: List[Dict], current_time: float) -> Dict[str, Any]
             "impact": "neutral",
             "reason": "Event birleştirme başarısız",
             "score_change": 0.0
+        }
+
+
+def detect_objects_in_frame(image) -> List[Dict]:
+    """
+    Frame'de nesne tespiti (insan, çocuk, hayvan)
+    """
+    try:
+        import cv2
+        import numpy as np
+        
+        objects = []
+        
+        # Haar Cascade ile yüz tespiti (basit insan tespiti)
+        face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
+        gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+        faces = face_cascade.detectMultiScale(gray, 1.1, 4)
+        
+        height, width = image.shape[:2]
+        
+        for (x, y, w, h) in faces:
+            # Yüz oranlarına göre çocuk/yetişkin tespiti
+            face_ratio = h / height
+            
+            if face_ratio > 0.15:  # Büyük yüz = yetişkin
+                obj_type = "person"
+                age_estimate = "adult"
+            else:  # Küçük yüz = çocuk
+                obj_type = "person"
+                age_estimate = "child"
+            
+            objects.append({
+                "type": obj_type,
+                "bbox": (x, y, w, h),
+                "height_ratio": face_ratio,
+                "age_estimate": age_estimate,
+                "confidence": 0.8
+            })
+        
+        # Basit hareket tespiti (optical flow)
+        # Bu basit bir implementasyon, gerçekte daha gelişmiş olmalı
+        edges = cv2.Canny(gray, 50, 150)
+        edge_density = np.sum(edges > 0) / (height * width)
+        
+        if edge_density > 0.1:  # Yüksek hareket varsa
+            objects.append({
+                "type": "movement",
+                "bbox": (0, 0, width, height),
+                "height_ratio": edge_density,
+                "confidence": 0.6
+            })
+        
+        return objects
+        
+    except Exception as e:
+        print(f"🎬 [SYNC] Object detection failed: {e}")
+        return []
+
+
+def analyze_movement_pattern(image, current_time: float) -> Dict[str, Any]:
+    """
+    Hareket pattern analizi
+    """
+    try:
+        import cv2
+        import numpy as np
+        
+        # Basit hareket analizi
+        gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+        edges = cv2.Canny(gray, 50, 150)
+        edge_density = np.sum(edges > 0) / (image.shape[0] * image.shape[1])
+        
+        # Hareket türü belirleme (basit)
+        if edge_density > 0.15:
+            movement_type = "high_movement"
+            description = "Yüksek hareket - dinamik görüntü"
+            
+            # Yaklaşma analizi (basit)
+            if current_time > 0:
+                description += " - yaklaşma hareketi tespit edildi"
+        elif edge_density > 0.05:
+            movement_type = "medium_movement"
+            description = "Orta hareket - normal görüntü"
+        else:
+            movement_type = "static"
+            description = "Statik görüntü - hareket yok"
+        
+        return {
+            "type": movement_type,
+            "description": description,
+            "edge_density": edge_density,
+            "confidence": 0.7
+        }
+        
+    except Exception as e:
+        print(f"🎬 [SYNC] Movement analysis failed: {e}")
+        return {
+            "type": "static",
+            "description": "Hareket analizi başarısız",
+            "edge_density": 0.0,
+            "confidence": 0.0
+        }
+
+
+def analyze_speech_content(asr_text: str) -> Dict[str, Any]:
+    """
+    Konuşma içeriği analizi
+    """
+    try:
+        viral_score = 0.0
+        description = ""
+        
+        # İçerik türleri
+        content_types = {
+            "question": ["biliyor muydunuz", "bilir misiniz", "neden", "nasıl", "ne", "kim", "ne zaman"],
+            "story": ["hikaye", "olay", "anlatayım", "bir gün", "geçen gün"],
+            "fact": ["gerçek", "doğru", "aslında", "bilimsel", "araştırma"],
+            "shock": ["inanılmaz", "şaşırtıcı", "imkansız", "mucize"],
+            "call_to_action": ["beğen", "paylaş", "yorum", "abone", "takip"]
+        }
+        
+        # İçerik türü tespiti
+        detected_types = []
+        for content_type, keywords in content_types.items():
+            for keyword in keywords:
+                if keyword in asr_text:
+                    detected_types.append(content_type)
+                    
+                    if content_type == "question":
+                        viral_score += 0.3
+                        description = "Soru sorma - etkileşim artırıcı"
+                    elif content_type == "story":
+                        viral_score += 0.2
+                        description = "Hikaye anlatımı - ilgi çekici"
+                    elif content_type == "fact":
+                        viral_score += 0.25
+                        description = "Bilgi paylaşımı - eğitici"
+                    elif content_type == "shock":
+                        viral_score += 0.4
+                        description = "Şok edici içerik - viral potansiyeli yüksek"
+                    elif content_type == "call_to_action":
+                        viral_score += 0.2
+                        description = "Çağrı eylemi - etkileşim artırıcı"
+                    break
+        
+        if not detected_types:
+            description = "Standart konuşma"
+            viral_score = 0.1
+        
+        return {
+            "viral_potential": min(viral_score, 1.0),
+            "description": description,
+            "detected_types": detected_types
+        }
+        
+    except Exception as e:
+        print(f"🎬 [SYNC] Speech content analysis failed: {e}")
+        return {
+            "viral_potential": 0.1,
+            "description": "Konuşma analizi başarısız",
+            "detected_types": []
+        }
+
+
+def detect_topic_from_speech(asr_text: str) -> Dict[str, Any]:
+    """
+    Konuşmadan konu tespiti
+    """
+    try:
+        # Konu anahtar kelimeleri
+        topics = {
+            "tarih": ["tarih", "geçmiş", "osmanlı", "cumhuriyet", "savaş", "devrim"],
+            "bilim": ["bilim", "teknoloji", "araştırma", "deney", "buluş", "icat"],
+            "eğitim": ["okul", "öğrenci", "öğretmen", "ders", "eğitim", "üniversite"],
+            "sağlık": ["sağlık", "doktor", "hastane", "tedavi", "ilaç", "hastalık"],
+            "spor": ["futbol", "basketbol", "spor", "oyun", "takım", "maç"],
+            "müzik": ["müzik", "şarkı", "sanatçı", "konser", "enstrüman"],
+            "yemek": ["yemek", "tarif", "mutfak", "pişirme", "lezzet"],
+            "seyahat": ["seyahat", "gezi", "ülke", "şehir", "turizm", "tatil"]
+        }
+        
+        asr_lower = asr_text.lower()
+        topic_scores = {}
+        
+        for topic, keywords in topics.items():
+            score = 0
+            for keyword in keywords:
+                if keyword in asr_lower:
+                    score += 1
+            
+            if score > 0:
+                topic_scores[topic] = score / len(keywords)
+        
+        if topic_scores:
+            best_topic = max(topic_scores, key=topic_scores.get)
+            confidence = topic_scores[best_topic]
+            
+            return {
+                "topic": best_topic,
+                "confidence": confidence,
+                "all_scores": topic_scores
+            }
+        else:
+            return {
+                "topic": "genel",
+                "confidence": 0.1,
+                "all_scores": {}
+            }
+        
+    except Exception as e:
+        print(f"🎬 [SYNC] Topic detection from speech failed: {e}")
+        return {
+            "topic": "bilinmeyen",
+            "confidence": 0.0,
+            "all_scores": {}
+        }
+
+
+def analyze_ocr_text_content(ocr_texts: List[str]) -> Dict[str, Any]:
+    """
+    OCR text içeriği analizi
+    """
+    try:
+        viral_score = 0.0
+        description = ""
+        
+        # Tüm OCR text'leri birleştir
+        all_ocr_text = " ".join(ocr_texts).lower()
+        
+        # İçerik türleri
+        content_types = {
+            "title": ["başlık", "title", "konu", "konuşma"],
+            "fact": ["gerçek", "bilgi", "tarih", "istatistik", "rakam"],
+            "question": ["?", "soru", "neden", "nasıl"],
+            "shock": ["!", "inanılmaz", "şaşırtıcı", "wow"],
+            "call_to_action": ["beğen", "paylaş", "yorum", "abone", "takip"]
+        }
+        
+        detected_types = []
+        for content_type, keywords in content_types.items():
+            for keyword in keywords:
+                if keyword in all_ocr_text:
+                    detected_types.append(content_type)
+                    
+                    if content_type == "title":
+                        viral_score += 0.3
+                        description = "Başlık metni - dikkat çekici"
+                    elif content_type == "fact":
+                        viral_score += 0.25
+                        description = "Bilgi metni - eğitici"
+                    elif content_type == "question":
+                        viral_score += 0.2
+                        description = "Soru metni - etkileşim artırıcı"
+                    elif content_type == "shock":
+                        viral_score += 0.4
+                        description = "Şok edici metin - viral potansiyeli yüksek"
+                    elif content_type == "call_to_action":
+                        viral_score += 0.2
+                        description = "Çağrı metni - etkileşim artırıcı"
+                    break
+        
+        if not detected_types:
+            description = "Standart metin"
+            viral_score = 0.1
+        
+        return {
+            "viral_potential": min(viral_score, 1.0),
+            "description": description,
+            "detected_types": detected_types,
+            "text_length": len(all_ocr_text)
+        }
+        
+    except Exception as e:
+        print(f"🎬 [SYNC] OCR content analysis failed: {e}")
+        return {
+            "viral_potential": 0.1,
+            "description": "OCR analizi başarısız",
+            "detected_types": [],
+            "text_length": 0
+        }
+
+
+def detect_topic_from_ocr(ocr_texts: List[str]) -> Dict[str, Any]:
+    """
+    OCR'dan konu tespiti
+    """
+    try:
+        # OCR text'leri birleştir
+        all_ocr_text = " ".join(ocr_texts).lower()
+        
+        # Konu anahtar kelimeleri
+        topics = {
+            "tarih": ["türkiye", "tarih", "osmanlı", "cumhuriyet", "atatürk", "geçmiş"],
+            "bilim": ["bilim", "teknoloji", "araştırma", "deney", "buluş"],
+            "eğitim": ["okul", "öğrenci", "öğretmen", "ders", "eğitim"],
+            "sağlık": ["sağlık", "doktor", "hastane", "tedavi", "ilaç"],
+            "spor": ["futbol", "basketbol", "spor", "oyun", "takım"],
+            "müzik": ["müzik", "şarkı", "sanatçı", "konser"],
+            "yemek": ["yemek", "tarif", "mutfak", "pişirme"],
+            "seyahat": ["seyahat", "gezi", "ülke", "şehir", "turizm"]
+        }
+        
+        topic_scores = {}
+        
+        for topic, keywords in topics.items():
+            score = 0
+            for keyword in keywords:
+                if keyword in all_ocr_text:
+                    score += 1
+            
+            if score > 0:
+                topic_scores[topic] = score / len(keywords)
+        
+        if topic_scores:
+            best_topic = max(topic_scores, key=topic_scores.get)
+            confidence = topic_scores[best_topic]
+            
+            return {
+                "topic": best_topic,
+                "confidence": confidence,
+                "all_scores": topic_scores
+            }
+        else:
+            return {
+                "topic": "genel",
+                "confidence": 0.1,
+                "all_scores": {}
+            }
+        
+    except Exception as e:
+        print(f"🎬 [SYNC] Topic detection from OCR failed: {e}")
+        return {
+            "topic": "bilinmeyen",
+            "confidence": 0.0,
+            "all_scores": {}
+        }
+
+
+def analyze_topic_consistency(combined_analysis: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Konu tutarlılığı analizi - görüntü, ses, metin uyumu
+    """
+    try:
+        content_analysis = combined_analysis.get("content_analysis", {})
+        topic_detection = combined_analysis.get("topic_detection", {})
+        ocr_analysis = combined_analysis.get("ocr_analysis", {})
+        topic_from_text = combined_analysis.get("topic_from_text", {})
+        detected_objects = combined_analysis.get("detected_objects", [])
+        
+        # Konuları topla
+        topics = []
+        if topic_detection.get("topic"):
+            topics.append(topic_detection["topic"])
+        if topic_from_text.get("topic"):
+            topics.append(topic_from_text["topic"])
+        
+        # İçerik türlerini topla
+        content_types = []
+        if content_analysis.get("detected_types"):
+            content_types.extend(content_analysis["detected_types"])
+        if ocr_analysis.get("detected_types"):
+            content_types.extend(ocr_analysis["detected_types"])
+        
+        # Nesne türlerini topla
+        object_types = [obj.get("type") for obj in detected_objects]
+        
+        consistency_score = 0.0
+        description = ""
+        
+        # Konu tutarlılığı
+        if len(set(topics)) == 1 and topics[0] != "genel":
+            consistency_score += 0.4
+            description = f"Konu tutarlılığı: {topics[0]}"
+        elif len(set(topics)) > 1:
+            consistency_score += 0.2
+            description = f"Kısmi konu uyumu: {', '.join(set(topics))}"
+        
+        # İçerik uyumu
+        if "question" in content_types and "title" in content_types:
+            consistency_score += 0.3
+            description += " - Soru + Başlık kombinasyonu"
+        elif "fact" in content_types and "title" in content_types:
+            consistency_score += 0.2
+            description += " - Bilgi + Başlık kombinasyonu"
+        
+        # Nesne-içerik uyumu
+        if "person" in object_types and "question" in content_types:
+            consistency_score += 0.3
+            description += " - İnsan + Soru kombinasyonu (viral!)"
+        elif "child" in [obj.get("age_estimate") for obj in detected_objects] and "question" in content_types:
+            consistency_score += 0.4
+            description += " - Çocuk + Soru kombinasyonu (çok viral!)"
+        
+        # Özel kombinasyonlar
+        if (topic_detection.get("topic") == "tarih" and 
+            "tarih" in str(combined_analysis.get("topic_from_text", {}).get("all_scores", {})) and
+            "question" in content_types):
+            consistency_score += 0.5
+            description += " - Tarih konusu + Soru (mükemmel kombinasyon!)"
+        
+        return {
+            "consistent": consistency_score > 0.6,
+            "partial": 0.3 <= consistency_score <= 0.6,
+            "description": description if description else "Standart kombinasyon",
+            "consistency_score": consistency_score,
+            "topics": list(set(topics)),
+            "content_types": list(set(content_types)),
+            "object_types": list(set(object_types))
+        }
+        
+    except Exception as e:
+        print(f"🎬 [SYNC] Topic consistency analysis failed: {e}")
+        return {
+            "consistent": False,
+            "partial": False,
+            "description": "Konu analizi başarısız",
+            "consistency_score": 0.0,
+            "topics": [],
+            "content_types": [],
+            "object_types": []
         }
