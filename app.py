@@ -193,7 +193,7 @@ def analyze_performance_api(data: AnalyzeRequest):
         from suggest import generate_suggestions
         print("✅ [DEBUG] Suggest import OK")
         
-        from advanced_analysis import analyze_hook, analyze_pacing_retention, analyze_cta_interaction, analyze_message_clarity, analyze_technical_quality, analyze_transition_quality, analyze_loop_final, analyze_text_readability
+        from advanced_analysis import analyze_hook, analyze_pacing_retention, analyze_cta_interaction, analyze_message_clarity, analyze_technical_quality, analyze_transition_quality, analyze_loop_final, analyze_text_readability, analyze_trend_originality
         print("✅ [DEBUG] Advanced analysis import OK")
         
     except Exception as e:
@@ -341,6 +341,15 @@ def analyze_performance_api(data: AnalyzeRequest):
             print(f"❌ [DEBUG] Text readability analysis failed: {e}")
             raise Exception(f"Metin okunabilirlik analizi başarısız: {e}")
         
+        # YENİ: Trend & orijinallik analizi
+        print("📈 [DEBUG] Analyzing trend & originality...")
+        try:
+            trend_result = analyze_trend_originality(features, duration)
+            print(f"✅ [DEBUG] Trend & originality analysis completed: {trend_result['score']}/8")
+        except Exception as e:
+            print(f"❌ [DEBUG] Trend & originality analysis failed: {e}")
+            raise Exception(f"Trend & orijinallik analizi başarısız: {e}")
+        
         # Gelişmiş skorları birleştir
         advanced_scores = {
             "hook_score": hook_result["score"],
@@ -351,6 +360,7 @@ def analyze_performance_api(data: AnalyzeRequest):
             "transition_quality_score": transition_result["score"],
             "loop_final_score": loop_result["score"],
             "text_readability_score": text_result["score"],
+            "trend_originality_score": trend_result["score"],
             **legacy_scores  # Eski skorlar da dahil
         }
         
@@ -359,6 +369,7 @@ def analyze_performance_api(data: AnalyzeRequest):
                       cta_result["score"] + message_result["score"] + 
                       tech_result["score"] + transition_result["score"] + 
                       loop_result["score"] + text_result["score"] + 
+                      trend_result["score"] + 
                       legacy_scores.get("overall_score", 0))
         
         advanced_scores["total_score"] = total_score
@@ -385,6 +396,7 @@ def analyze_performance_api(data: AnalyzeRequest):
         all_suggestions.extend(transition_result.get("recommendations", []))
         all_suggestions.extend(loop_result.get("recommendations", []))
         all_suggestions.extend(text_result.get("recommendations", []))
+        all_suggestions.extend(trend_result.get("recommendations", []))
         all_suggestions.extend(legacy_suggestions.get("tips", []))
         
         # Findings birleştir
@@ -397,6 +409,7 @@ def analyze_performance_api(data: AnalyzeRequest):
         all_findings.extend(transition_result.get("findings", []))
         all_findings.extend(loop_result.get("findings", []))
         all_findings.extend(text_result.get("findings", []))
+        all_findings.extend(trend_result.get("findings", []))
         
         print("✅ [DEBUG] Advanced suggestions generated")
         print(f"🎯 [DEBUG] Total advanced score: {total_score}")
@@ -421,6 +434,7 @@ def analyze_performance_api(data: AnalyzeRequest):
             "transition_analysis": transition_result,  # Detaylı geçiş analizi
             "loop_final_analysis": loop_result,  # Detaylı loop & final analizi
             "text_readability_analysis": text_result,  # Detaylı metin okunabilirlik analizi
+            "trend_originality_analysis": trend_result,  # Detaylı trend & orijinallik analizi
             "nlp_analysis": message_result.get("raw", {}),  # NLP detayları
             "emotion_analysis": message_result.get("raw", {}).get("emotions", {}),  # Duygu analizi
             "intent_analysis": message_result.get("raw", {}).get("intent", "unknown"),  # Amaç analizi
