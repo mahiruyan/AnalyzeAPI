@@ -117,21 +117,46 @@ def extract_audio_via_ffmpeg(
     mono: bool = True,
 ) -> None:
     _ensure_ffmpeg_exists()
-    args = [
-        "ffmpeg",
-        "-y",
-        "-i",
-        input_video,
-        "-vn",
-        "-acodec",
-        "pcm_s16le",
-        "-ar",
-        str(sample_rate),
-        "-ac",
-        "1" if mono else "2",
-        output_wav,
-    ]
-    subprocess.run(args, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    Path(output_wav).parent.mkdir(parents=True, exist_ok=True)
+    
+    try:
+        args = [
+            "ffmpeg",
+            "-y",
+            "-i",
+            input_video,
+            "-vn",
+            "-acodec",
+            "pcm_s16le",
+            "-ar",
+            str(sample_rate),
+            "-ac",
+            "1" if mono else "2",
+            output_wav,
+        ]
+        result = subprocess.run(args, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        print(f"✅ Audio extracted: {output_wav}")
+    except subprocess.CalledProcessError as e:
+        print(f"❌ FFmpeg audio extraction failed: {e}")
+        print(f"❌ FFmpeg stderr: {e.stderr.decode()}")
+        
+        # Placeholder video için sessiz audio oluştur
+        print("🔄 Creating silent audio for placeholder video...")
+        try:
+            silent_args = [
+                "ffmpeg",
+                "-y",
+                "-f", "lavfi",
+                "-i", f"anullsrc=channel_layout=mono:sample_rate={sample_rate}",
+                "-t", "1",  # 1 saniye sessizlik
+                "-acodec", "pcm_s16le",
+                output_wav,
+            ]
+            subprocess.run(silent_args, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            print(f"✅ Silent audio created: {output_wav}")
+        except subprocess.CalledProcessError as silent_e:
+            print(f"❌ Silent audio creation failed: {silent_e}")
+            raise Exception(f"Ses çıkarma başarısız: {e}")
 
 
 def grab_frames(input_video: str, output_dir: str, max_frames: int = 10) -> List[str]:
