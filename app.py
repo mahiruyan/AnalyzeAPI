@@ -275,8 +275,8 @@ def analyze_performance_api(data: AnalyzeRequest):
                 hook_result = analyze_hook(video_path, audio_path, frames[:3], features, duration)
                 print(f"✅ [DEBUG] Hook analysis completed: {hook_result['score']}/18")
             except Exception as e:
-                print(f"⚠️ [DEBUG] Hook analysis failed: {e}, using fallback")
-                hook_result = {"score": 8, "findings": [], "recommendations": [f"Hook analizi hatası: {e}"]}
+                print(f"❌ [DEBUG] Hook analysis failed: {e}")
+                raise Exception(f"Hook analizi başarısız: {e}")
             
             # YENİ: Pacing analizi (hızlı versiyon - 3 frame)
             print("⚡ [DEBUG] Analyzing pacing & retention...")
@@ -284,8 +284,8 @@ def analyze_performance_api(data: AnalyzeRequest):
                 pacing_result = analyze_pacing_retention(frames, features, duration)
                 print(f"✅ [DEBUG] Pacing analysis completed: {pacing_result['score']}/12")
             except Exception as e:
-                print(f"⚠️ [DEBUG] Pacing analysis failed: {e}, using fallback")
-                pacing_result = {"score": 6, "findings": [], "recommendations": [f"Pacing analizi hatası: {e}"]}
+                print(f"❌ [DEBUG] Pacing analysis failed: {e}")
+                raise Exception(f"Pacing analizi başarısız: {e}")
             
             # Gelişmiş skorları birleştir
             advanced_scores = {

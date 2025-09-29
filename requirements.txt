@@ -22,10 +22,8 @@ pillow==10.1.0
 # Video processing
 scenedetect==0.6.3
 
-# OCR (compatible versions)
-paddlepaddle==2.6.2
-paddleocr==2.7.0.3
-easyocr==1.7.0
+# OCR
+pytesseract==0.3.10
 
 # Network & utilities
 requests==2.31.0

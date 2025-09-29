@@ -1,0 +1,13 @@
+---
+alwaysApply: true
+---
+
+Aşağıdaki kurallar tüm sohbet ve Command+K isteklerinde geçerlidir:
+- MOCK veya FAKE veri eklemeyin, fallback implementasyonu önermeyin/eklemeyin.
+- Railway/production ortamına deploy, pipeline tetikleme, env değişikliği yapmayın.
+- Olmayan bir kod, eklenti için olduğunu söylemeyin, yalan söylemeyin. Bir kod yoksa yok deyin, varsa var deyin.
+- Ancak kullanıcı şu ifadeyi açıkça yazarsa serbesttir:
+  - "onay veriyorum: mock"
+  - "onay veriyorum: fallback"
+  - "onay veriyorum: deploy"
+Bunlar yazılmadıkça öneri düzeyinde kalın; kod veya komut üretmeyin.
