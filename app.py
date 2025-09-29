@@ -193,7 +193,7 @@ def analyze_performance_api(data: AnalyzeRequest):
         from suggest import generate_suggestions
         print("✅ [DEBUG] Suggest import OK")
         
-        from advanced_analysis import analyze_hook, analyze_pacing_retention
+        from advanced_analysis import analyze_hook, analyze_pacing_retention, analyze_cta_interaction, analyze_message_clarity, analyze_technical_quality, analyze_transition_quality, analyze_loop_final
         print("✅ [DEBUG] Advanced analysis import OK")
         
     except Exception as e:
@@ -287,61 +287,137 @@ def analyze_performance_api(data: AnalyzeRequest):
                 print(f"❌ [DEBUG] Pacing analysis failed: {e}")
                 raise Exception(f"Pacing analizi başarısız: {e}")
             
-            # Gelişmiş skorları birleştir
-            advanced_scores = {
-                "hook_score": hook_result["score"],
-                "pacing_score": pacing_result["score"],
-                **legacy_scores  # Eski skorlar da dahil
-            }
+            # YENİ: CTA & Etkileşim analizi
+            print("📢 [DEBUG] Analyzing CTA & interaction...")
+            try:
+                cta_result = analyze_cta_interaction(features, duration)
+                print(f"✅ [DEBUG] CTA analysis completed: {cta_result['score']}/8")
+            except Exception as e:
+                print(f"❌ [DEBUG] CTA analysis failed: {e}")
+                raise Exception(f"CTA analizi başarısız: {e}")
             
-            # Toplam skor (hook ve pacing dahil)
-            total_score = (hook_result["score"] + pacing_result["score"] + 
-                          legacy_scores.get("overall_score", 0))
-            advanced_scores["total_score"] = total_score
-            advanced_scores["overall_score"] = total_score  # Frontend için
-            
-            # Legacy öneriler
-            print("💡 [DEBUG] Generating legacy suggestions...")
-            legacy_suggestions = generate_suggestions(
-                platform=data.platform,
-                caption=data.caption or "",
-                title=data.title or "",
-                tags=data.tags or [],
-                features=features,
-                scores=legacy_scores
-            )
-            
-            # Advanced önerileri birleştir
-            all_suggestions = []
-            all_suggestions.extend(hook_result.get("recommendations", []))
-            all_suggestions.extend(pacing_result.get("recommendations", []))
-            all_suggestions.extend(legacy_suggestions.get("tips", []))
-            
-            # Findings birleştir
-            all_findings = []
-            all_findings.extend(hook_result.get("findings", []))
-            all_findings.extend(pacing_result.get("findings", []))
-            
-            print("✅ [DEBUG] Advanced suggestions generated")
-            print(f"🎯 [DEBUG] Total advanced score: {total_score}")
-            
-            print("✅ [DEBUG] Analysis completed successfully!")
-            return {
-                "duration_seconds": duration,
-                "features": features,
-                "scores": advanced_scores,
-                "legacy_scores": legacy_scores,
-                "verdict": "high" if total_score >= 70 else "mid" if total_score >= 40 else "low",
-                "viral": total_score >= 70,
-                "mode": data.mode,
-                "analysis_complete": True,
-                "suggestions": all_suggestions[:10],  # En önemli 10 öneri
-                "findings": all_findings,  # Zaman kodlu bulgular
-                "hook_analysis": hook_result,  # Detaylı hook analizi
-                "pacing_analysis": pacing_result,  # Detaylı pacing analizi
-                "score": total_score,  # Frontend için direkt score
-                "overall_score": total_score  # Frontend için
-            }
+        # YENİ: Mesaj netliği analizi
+        print("💬 [DEBUG] Analyzing message clarity...")
+        try:
+            message_result = analyze_message_clarity(features, duration)
+            print(f"✅ [DEBUG] Message analysis completed: {message_result['score']}/6")
+        except Exception as e:
+            print(f"❌ [DEBUG] Message analysis failed: {e}")
+            raise Exception(f"Mesaj analizi başarısız: {e}")
+        
+        # YENİ: Teknik kalite analizi
+        print("🔧 [DEBUG] Analyzing technical quality...")
+        try:
+            tech_result = analyze_technical_quality(features, duration)
+            print(f"✅ [DEBUG] Technical analysis completed: {tech_result['score']}/15")
+        except Exception as e:
+            print(f"❌ [DEBUG] Technical analysis failed: {e}")
+            raise Exception(f"Teknik analiz başarısız: {e}")
+        
+        # YENİ: Geçiş kalitesi analizi
+        print("🎬 [DEBUG] Analyzing transition quality...")
+        try:
+            transition_result = analyze_transition_quality(features, duration)
+            print(f"✅ [DEBUG] Transition analysis completed: {transition_result['score']}/8")
+        except Exception as e:
+            print(f"❌ [DEBUG] Transition analysis failed: {e}")
+            raise Exception(f"Geçiş analizi başarısız: {e}")
+        
+        # YENİ: Loop & final analizi
+        print("🔄 [DEBUG] Analyzing loop & final...")
+        try:
+            loop_result = analyze_loop_final(features, duration)
+            print(f"✅ [DEBUG] Loop & final analysis completed: {loop_result['score']}/7")
+        except Exception as e:
+            print(f"❌ [DEBUG] Loop & final analysis failed: {e}")
+            raise Exception(f"Loop & final analizi başarısız: {e}")
+        
+        # Gelişmiş skorları birleştir
+        advanced_scores = {
+            "hook_score": hook_result["score"],
+            "pacing_score": pacing_result["score"],
+            "cta_score": cta_result["score"],
+            "message_clarity_score": message_result["score"],
+            "technical_quality_score": tech_result["score"],
+            "transition_quality_score": transition_result["score"],
+            "loop_final_score": loop_result["score"],
+            **legacy_scores  # Eski skorlar da dahil
+        }
+        
+        # Toplam skor (tüm analizler dahil)
+        total_score = (hook_result["score"] + pacing_result["score"] + 
+                      cta_result["score"] + message_result["score"] + 
+                      tech_result["score"] + transition_result["score"] + 
+                      loop_result["score"] + 
+                      legacy_scores.get("overall_score", 0))
+        
+        advanced_scores["total_score"] = total_score
+        advanced_scores["overall_score"] = total_score  # Frontend için
+        
+        # Legacy öneriler
+        print("💡 [DEBUG] Generating legacy suggestions...")
+        legacy_suggestions = generate_suggestions(
+            platform=data.platform,
+            caption=data.caption or "",
+            title=data.title or "",
+            tags=data.tags or [],
+            features=features,
+            scores=legacy_scores
+        )
+        
+        # Advanced önerileri birleştir
+        all_suggestions = []
+        all_suggestions.extend(hook_result.get("recommendations", []))
+        all_suggestions.extend(pacing_result.get("recommendations", []))
+        all_suggestions.extend(cta_result.get("recommendations", []))
+        all_suggestions.extend(message_result.get("recommendations", []))
+        all_suggestions.extend(tech_result.get("recommendations", []))
+        all_suggestions.extend(transition_result.get("recommendations", []))
+        all_suggestions.extend(loop_result.get("recommendations", []))
+        all_suggestions.extend(legacy_suggestions.get("tips", []))
+        
+        # Findings birleştir
+        all_findings = []
+        all_findings.extend(hook_result.get("findings", []))
+        all_findings.extend(pacing_result.get("findings", []))
+        all_findings.extend(cta_result.get("findings", []))
+        all_findings.extend(message_result.get("findings", []))
+        all_findings.extend(tech_result.get("findings", []))
+        all_findings.extend(transition_result.get("findings", []))
+        all_findings.extend(loop_result.get("findings", []))
+        
+        print("✅ [DEBUG] Advanced suggestions generated")
+        print(f"🎯 [DEBUG] Total advanced score: {total_score}")
+        
+        print("✅ [DEBUG] Analysis completed successfully!")
+        return {
+            "duration_seconds": duration,
+            "features": features,
+            "scores": advanced_scores,
+            "legacy_scores": legacy_scores,
+            "verdict": "high" if total_score >= 70 else "mid" if total_score >= 40 else "low",
+            "viral": total_score >= 70,
+            "mode": data.mode,
+            "analysis_complete": True,
+            "suggestions": all_suggestions[:10],  # En önemli 10 öneri
+            "findings": all_findings,  # Zaman kodlu bulgular
+            "hook_analysis": hook_result,  # Detaylı hook analizi
+            "pacing_analysis": pacing_result,  # Detaylı pacing analizi
+            "cta_analysis": cta_result,  # Detaylı CTA analizi
+            "message_analysis": message_result,  # Detaylı mesaj analizi
+            "technical_analysis": tech_result,  # Detaylı teknik analiz
+            "transition_analysis": transition_result,  # Detaylı geçiş analizi
+            "loop_final_analysis": loop_result,  # Detaylı loop & final analizi
+            "nlp_analysis": message_result.get("raw", {}),  # NLP detayları
+            "emotion_analysis": message_result.get("raw", {}).get("emotions", {}),  # Duygu analizi
+            "intent_analysis": message_result.get("raw", {}).get("intent", "unknown"),  # Amaç analizi
+            "readability_score": message_result.get("raw", {}).get("readability_score", 0.5),  # Okunabilirlik
+            "engagement_potential": message_result.get("raw", {}).get("engagement_potential", 0.5),  # Etkileşim potansiyeli
+            "viral_keywords": message_result.get("raw", {}).get("viral_keywords", []),  # Viral kelimeler
+            "language_quality": message_result.get("raw", {}).get("language_quality", 0.5),  # Dil kalitesi
+            "score": total_score,  # Frontend için direkt score
+            "overall_score": total_score  # Frontend için
+        }
     except Exception as e:
         print(f"❌ [ERROR] Analysis failed: {str(e)}")
         print(f"❌ [ERROR] Error type: {type(e)}")

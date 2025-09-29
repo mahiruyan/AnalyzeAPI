@@ -15,9 +15,28 @@ RUN apt-get update && apt-get install -y \
     libgl1-mesa-dri \
     libfontconfig1 \
     libfreetype6 \
-    tesseract-ocr \
-    tesseract-ocr-tur \
-    && rm -rf /var/lib/apt/lists/*
+            tesseract-ocr \
+            tesseract-ocr-tur \
+            libgl1-mesa-glx \
+            libglib2.0-0 \
+            libsm6 \
+            libxext6 \
+            libxrender-dev \
+            libgomp1 \
+            libgthread-2.0-0 \
+            libgtk-3-0 \
+            libavcodec-dev \
+            libavformat-dev \
+            libswscale-dev \
+            libv4l-dev \
+            libxvidcore-dev \
+            libx264-dev \
+            libjpeg-dev \
+            libpng-dev \
+            libtiff-dev \
+            libatlas-base-dev \
+            gfortran \
+            && rm -rf /var/lib/apt/lists/*
 
 # Set working directory
 WORKDIR /app

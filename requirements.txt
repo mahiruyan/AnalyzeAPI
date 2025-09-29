@@ -25,6 +25,9 @@ scenedetect==0.6.3
 # OCR
 pytesseract==0.3.10
 
+# Computer Vision
+opencv-python==4.8.1.78
+
 # Network & utilities
 requests==2.31.0
 python-dotenv==1.0.0
