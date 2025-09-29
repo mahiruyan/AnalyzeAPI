@@ -18,7 +18,7 @@ faster-whisper==0.10.0
 requests==2.31.0
 # openai>=1.42.0
 python-dotenv==1.0.0
-yt-dlp==2024.1.7
+yt-dlp==2023.11.16
 # redis
 # SQLAlchemy
 # psycopg2-binary
