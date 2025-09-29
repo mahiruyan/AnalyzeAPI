@@ -3654,3 +3654,528 @@ def analyze_viral_loop_potential(features: Dict[str, Any], duration: float) -> f
     except Exception as e:
         print(f"🔄 [LOOP] Viral loop potential analysis failed: {e}")
         return 0.5
+
+
+def analyze_text_readability(features: Dict[str, Any], duration: float) -> Dict[str, Any]:
+    """
+    Metin Okunabilirlik Analizi (6 puan)
+    Font, kontrast, timing + zaman bazlı viral etki analizi
+    """
+    score = 0
+    findings = []
+    recommendations = []
+    raw_metrics = {}
+    viral_impact_timeline = []
+    
+    print("📝 [TEXT] Starting text readability analysis...")
+    
+    # 1. Font Analizi (1 puan)
+    font_score = analyze_font_quality(features, duration, viral_impact_timeline)
+    raw_metrics["font_quality"] = font_score
+    
+    if font_score > 0.7:
+        score += 1
+        findings.append({
+            "t": duration * 0.3,
+            "type": "good_font",
+            "msg": "Kaliteli font kullanımı - okunabilirlik yüksek"
+        })
+    elif font_score > 0.4:
+        score += 0.5
+        recommendations.append("Font kalitesini artır - daha okunabilir font seç")
+    else:
+        recommendations.append("Font değiştir - kalın ve net font kullan")
+    
+    # 2. Kontrast Analizi (2 puan)
+    contrast_score = analyze_text_contrast(features, duration, viral_impact_timeline)
+    raw_metrics["text_contrast"] = contrast_score
+    
+    if contrast_score > 0.7:
+        score += 2
+        findings.append({
+            "t": duration * 0.5,
+            "type": "high_contrast",
+            "msg": "Yüksek kontrast - metin net görünüyor"
+        })
+    elif contrast_score > 0.4:
+        score += 1
+        recommendations.append("Kontrastı artır - beyaz metin siyah arka plan")
+    else:
+        recommendations.append("Kontrast sorunu var - metin görünmüyor")
+    
+    # 3. Timing Analizi (2 puan)
+    timing_score = analyze_text_timing(features, duration, viral_impact_timeline)
+    raw_metrics["text_timing"] = timing_score
+    
+    if timing_score > 0.7:
+        score += 2
+        findings.append({
+            "t": duration * 0.7,
+            "type": "perfect_timing",
+            "msg": "Mükemmel timing - metin okunabilir sürede kalıyor"
+        })
+    elif timing_score > 0.4:
+        score += 1
+        recommendations.append("Timing'i iyileştir - metin daha uzun süre kalsın")
+    else:
+        recommendations.append("Metin çok hızlı - okunabilir sürede kalması için yavaşlat")
+    
+    # 4. Viral Etki Analizi (1 puan)
+    viral_impact_score = analyze_text_viral_impact(features, duration, viral_impact_timeline)
+    raw_metrics["viral_impact"] = viral_impact_score
+    
+    if viral_impact_score > 0.7:
+        score += 1
+        findings.append({
+            "t": duration * 0.8,
+            "type": "viral_text",
+            "msg": "Viral potansiyeli yüksek metin - etkileyici kelimeler"
+        })
+    else:
+        recommendations.append("Viral kelimeler ekle - 'wow', 'amazing', 'incredible' gibi")
+    
+    print(f"📝 [TEXT] Text readability score: {score}/6")
+    
+    return {
+        "score": min(score, 6),
+        "findings": findings,
+        "recommendations": recommendations,
+        "raw": raw_metrics,
+        "viral_impact_timeline": viral_impact_timeline  # Zaman bazlı viral etki
+    }
+
+
+def analyze_font_quality(features: Dict[str, Any], duration: float, viral_timeline: List[Dict]) -> float:
+    """
+    Font kalitesi analizi
+    """
+    try:
+        frames = features.get("frames", [])
+        if not frames:
+            return 0.5
+        
+        font_score = 0.0
+        font_sizes = []
+        
+        import cv2
+        import numpy as np
+        
+        # Her frame'de font analizi
+        for i, frame_path in enumerate(frames[:5]):  # İlk 5 frame
+            try:
+                image = cv2.imread(frame_path)
+                if image is None:
+                    continue
+                
+                # OCR ile text detection
+                textual = features.get("textual", {})
+                ocr_texts = textual.get("ocr_text", [])
+                
+                if ocr_texts:
+                    # Font kalitesi skoru
+                    current_time = (i / len(frames)) * duration
+                    
+                    # Font boyutu analizi (text region area)
+                    text_regions = detect_text_regions(image)
+                    if text_regions:
+                        avg_font_size = np.mean([region['area'] for region in text_regions])
+                        
+                        if avg_font_size > 1000:  # Büyük font
+                            font_score += 0.3
+                            viral_timeline.append({
+                                "t": current_time,
+                                "impact": "positive",
+                                "reason": "Büyük font - dikkat çekici",
+                                "score_change": 0.1
+                            })
+                        elif avg_font_size > 500:  # Orta font
+                            font_score += 0.2
+                            viral_timeline.append({
+                                "t": current_time,
+                                "impact": "neutral",
+                                "reason": "Orta font - okunabilir",
+                                "score_change": 0.05
+                            })
+                        else:  # Küçük font
+                            font_score += 0.1
+                            viral_timeline.append({
+                                "t": current_time,
+                                "impact": "negative",
+                                "reason": "Küçük font - zor okunuyor",
+                                "score_change": -0.1
+                            })
+                        
+                        font_sizes.append(avg_font_size)
+                
+            except Exception as e:
+                print(f"📝 [TEXT] Font analysis failed for frame {i}: {e}")
+                continue
+        
+        # Ortalama font kalitesi
+        if font_sizes:
+            avg_font_size = np.mean(font_sizes)
+            if avg_font_size > 800:
+                font_score += 0.4
+            elif avg_font_size > 400:
+                font_score += 0.3
+            else:
+                font_score += 0.1
+        
+        return min(font_score, 1.0)
+        
+    except Exception as e:
+        print(f"📝 [TEXT] Font quality analysis failed: {e}")
+        return 0.5
+
+
+def detect_text_regions(image) -> List[Dict]:
+    """
+    Görüntüde text region'ları tespit et
+    """
+    try:
+        import cv2
+        import numpy as np
+        
+        gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+        
+        # Text detection için edge detection
+        edges = cv2.Canny(gray, 50, 150)
+        
+        # Contour bulma
+        contours, _ = cv2.findContours(edges, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        
+        text_regions = []
+        for contour in contours:
+            area = cv2.contourArea(contour)
+            if area > 100:  # Minimum area
+                x, y, w, h = cv2.boundingRect(contour)
+                aspect_ratio = w / h
+                
+                # Text-like aspect ratio
+                if 0.2 < aspect_ratio < 10:
+                    text_regions.append({
+                        'area': area,
+                        'bbox': (x, y, w, h),
+                        'aspect_ratio': aspect_ratio
+                    })
+        
+        return text_regions
+        
+    except Exception as e:
+        print(f"📝 [TEXT] Text region detection failed: {e}")
+        return []
+
+
+def analyze_text_contrast(features: Dict[str, Any], duration: float, viral_timeline: List[Dict]) -> float:
+    """
+    Text kontrast analizi
+    """
+    try:
+        frames = features.get("frames", [])
+        if not frames:
+            return 0.5
+        
+        contrast_score = 0.0
+        contrast_values = []
+        
+        import cv2
+        import numpy as np
+        
+        for i, frame_path in enumerate(frames[:5]):
+            try:
+                image = cv2.imread(frame_path)
+                if image is None:
+                    continue
+                
+                current_time = (i / len(frames)) * duration
+                
+                # Text region'larda kontrast analizi
+                text_regions = detect_text_regions(image)
+                
+                for region in text_regions:
+                    x, y, w, h = region['bbox']
+                    roi = image[y:y+h, x:x+w]
+                    
+                    if roi.size > 0:
+                        # Gri tonlama
+                        gray_roi = cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY)
+                        
+                        # Kontrast hesaplama (std deviation)
+                        contrast = np.std(gray_roi)
+                        contrast_values.append(contrast)
+                        
+                        if contrast > 50:  # Yüksek kontrast
+                            contrast_score += 0.3
+                            viral_timeline.append({
+                                "t": current_time,
+                                "impact": "positive",
+                                "reason": "Yüksek kontrast - metin net",
+                                "score_change": 0.15
+                            })
+                        elif contrast > 25:  # Orta kontrast
+                            contrast_score += 0.2
+                            viral_timeline.append({
+                                "t": current_time,
+                                "impact": "neutral",
+                                "reason": "Orta kontrast - okunabilir",
+                                "score_change": 0.05
+                            })
+                        else:  # Düşük kontrast
+                            contrast_score += 0.1
+                            viral_timeline.append({
+                                "t": current_time,
+                                "impact": "negative",
+                                "reason": "Düşük kontrast - zor okunuyor",
+                                "score_change": -0.15
+                            })
+                
+            except Exception as e:
+                print(f"📝 [TEXT] Contrast analysis failed for frame {i}: {e}")
+                continue
+        
+        # Genel kontrast skoru
+        if contrast_values:
+            avg_contrast = np.mean(contrast_values)
+            if avg_contrast > 40:
+                contrast_score += 0.4
+            elif avg_contrast > 20:
+                contrast_score += 0.3
+            else:
+                contrast_score += 0.1
+        
+        return min(contrast_score, 1.0)
+        
+    except Exception as e:
+        print(f"📝 [TEXT] Text contrast analysis failed: {e}")
+        return 0.5
+
+
+def analyze_text_timing(features: Dict[str, Any], duration: float, viral_timeline: List[Dict]) -> float:
+    """
+    Text timing analizi - metin ne kadar süre ekranda kalıyor
+    """
+    try:
+        frames = features.get("frames", [])
+        textual = features.get("textual", {})
+        ocr_texts = textual.get("ocr_text", [])
+        
+        if not frames or not ocr_texts:
+            return 0.5
+        
+        timing_score = 0.0
+        frame_interval = duration / len(frames)
+        
+        # Text persistence analizi
+        text_persistence = analyze_text_persistence(frames, ocr_texts)
+        
+        for i, persistence in enumerate(text_persistence):
+            current_time = i * frame_interval
+            
+            if persistence > 0.8:  # Text çoğu frame'de var
+                timing_score += 0.3
+                viral_timeline.append({
+                    "t": current_time,
+                    "impact": "positive",
+                    "reason": "Metin sürekli görünüyor - okunabilir",
+                    "score_change": 0.1
+                })
+            elif persistence > 0.5:  # Text yarı yarıya var
+                timing_score += 0.2
+                viral_timeline.append({
+                    "t": current_time,
+                    "impact": "neutral",
+                    "reason": "Metin ara sıra görünüyor",
+                    "score_change": 0.0
+                })
+            else:  # Text nadiren var
+                timing_score += 0.1
+                viral_timeline.append({
+                    "t": current_time,
+                    "impact": "negative",
+                    "reason": "Metin çok kısa görünüyor",
+                    "score_change": -0.1
+                })
+        
+        # Optimal timing kontrolü
+        optimal_timing = check_optimal_text_timing(frames, ocr_texts, duration)
+        timing_score += optimal_timing * 0.4
+        
+        return min(timing_score, 1.0)
+        
+    except Exception as e:
+        print(f"📝 [TEXT] Text timing analysis failed: {e}")
+        return 0.5
+
+
+def analyze_text_persistence(frames: List[str], ocr_texts: List[str]) -> List[float]:
+    """
+    Text'in frame'lerde ne kadar süre kaldığını analiz et
+    """
+    try:
+        persistence_scores = []
+        
+        # Her frame için text varlığı kontrol et
+        for frame_path in frames:
+            # Basit text detection (OCR sonuçlarına dayalı)
+            text_found = len(ocr_texts) > 0
+            persistence_scores.append(1.0 if text_found else 0.0)
+        
+        return persistence_scores
+        
+    except Exception as e:
+        print(f"📝 [TEXT] Text persistence analysis failed: {e}")
+        return [0.5] * len(frames)
+
+
+def check_optimal_text_timing(frames: List[str], ocr_texts: List[str], duration: float) -> float:
+    """
+    Optimal text timing kontrolü
+    """
+    try:
+        if not frames or not ocr_texts:
+            return 0.5
+        
+        # Text timing kuralları
+        frame_interval = duration / len(frames)
+        
+        # 1. Text çok hızlı değişmemeli (minimum 2 saniye)
+        min_text_duration = 2.0
+        frames_per_min_duration = int(min_text_duration / frame_interval)
+        
+        # 2. Text çok uzun süre kalmamalı (maksimum 10 saniye)
+        max_text_duration = 10.0
+        frames_per_max_duration = int(max_text_duration / frame_interval)
+        
+        # Text persistence analizi
+        persistence = analyze_text_persistence(frames, ocr_texts)
+        
+        # Continuous text blocks bul
+        text_blocks = []
+        current_block_start = None
+        
+        for i, has_text in enumerate(persistence):
+            if has_text > 0.5 and current_block_start is None:
+                current_block_start = i
+            elif has_text <= 0.5 and current_block_start is not None:
+                text_blocks.append((current_block_start, i - 1))
+                current_block_start = None
+        
+        # Son block'u ekle
+        if current_block_start is not None:
+            text_blocks.append((current_block_start, len(persistence) - 1))
+        
+        # Timing skoru hesapla
+        timing_score = 0.0
+        for start_frame, end_frame in text_blocks:
+            block_duration_frames = end_frame - start_frame + 1
+            
+            if frames_per_min_duration <= block_duration_frames <= frames_per_max_duration:
+                timing_score += 1.0  # Optimal timing
+            elif block_duration_frames < frames_per_min_duration:
+                timing_score += 0.3  # Çok kısa
+            else:
+                timing_score += 0.5  # Çok uzun
+        
+        # Normalize
+        if text_blocks:
+            return timing_score / len(text_blocks)
+        else:
+            return 0.5
+        
+    except Exception as e:
+        print(f"📝 [TEXT] Optimal timing check failed: {e}")
+        return 0.5
+
+
+def analyze_text_viral_impact(features: Dict[str, Any], duration: float, viral_timeline: List[Dict]) -> float:
+    """
+    Text'in viral etkisini analiz et
+    """
+    try:
+        textual = features.get("textual", {})
+        asr_text = textual.get("asr_text", "").lower()
+        ocr_texts = textual.get("ocr_text", [])
+        
+        # Tüm text'i birleştir
+        all_text = asr_text
+        for ocr_text in ocr_texts:
+            all_text += " " + ocr_text.lower()
+        
+        viral_score = 0.0
+        
+        # Viral kelimeler
+        viral_keywords = {
+            # Pozitif viral kelimeler
+            "wow": 0.2, "amazing": 0.2, "incredible": 0.2, "unbelievable": 0.2,
+            "shocking": 0.2, "mind-blowing": 0.2, "epic": 0.15, "legendary": 0.15,
+            "harika": 0.2, "inanılmaz": 0.2, "muhteşem": 0.2, "şaşırtıcı": 0.2,
+            "müthiş": 0.15, "efsane": 0.15, "vay be": 0.1, "wow": 0.2,
+            
+            # Etkileşim kelimeleri
+            "like": 0.1, "share": 0.1, "comment": 0.1, "subscribe": 0.1,
+            "beğen": 0.1, "paylaş": 0.1, "yorum": 0.1, "abone": 0.1,
+            
+            # Soru kelimeleri
+            "how": 0.1, "why": 0.1, "what": 0.1, "when": 0.1,
+            "nasıl": 0.1, "neden": 0.1, "ne": 0.1, "ne zaman": 0.1,
+            
+            # Sayılar (viral için önemli)
+            "first": 0.1, "last": 0.1, "only": 0.1, "never": 0.1,
+            "ilk": 0.1, "son": 0.1, "sadece": 0.1, "hiç": 0.1,
+            
+            # Emoji benzeri kelimeler
+            "fire": 0.1, "lit": 0.1, "goals": 0.1, "vibes": 0.1
+        }
+        
+        # Text'i kelimelere böl
+        words = all_text.split()
+        total_words = len(words)
+        
+        if total_words == 0:
+            return 0.5
+        
+        viral_word_count = 0
+        for word in words:
+            if word in viral_keywords:
+                viral_score += viral_keywords[word]
+                viral_word_count += 1
+        
+        # Viral kelime yoğunluğu
+        viral_density = viral_word_count / total_words if total_words > 0 else 0
+        
+        # Viral density skoru
+        if viral_density > 0.1:  # %10'dan fazla viral kelime
+            viral_score += 0.4
+            viral_timeline.append({
+                "t": duration * 0.5,
+                "impact": "positive",
+                "reason": f"Yüksek viral kelime yoğunluğu (%{viral_density*100:.1f})",
+                "score_change": 0.2
+            })
+        elif viral_density > 0.05:  # %5'ten fazla viral kelime
+            viral_score += 0.3
+            viral_timeline.append({
+                "t": duration * 0.5,
+                "impact": "positive",
+                "reason": f"Orta viral kelime yoğunluğu (%{viral_density*100:.1f})",
+                "score_change": 0.1
+            })
+        else:
+            viral_timeline.append({
+                "t": duration * 0.5,
+                "impact": "negative",
+                "reason": f"Düşük viral kelime yoğunluğu (%{viral_density*100:.1f})",
+                "score_change": -0.1
+            })
+        
+        # Text uzunluğu analizi
+        if 10 <= total_words <= 50:  # Optimal text uzunluğu
+            viral_score += 0.2
+        elif 5 <= total_words <= 100:  # Kabul edilebilir uzunluk
+            viral_score += 0.1
+        
+        return min(viral_score, 1.0)
+        
+    except Exception as e:
+        print(f"📝 [TEXT] Text viral impact analysis failed: {e}")
+        return 0.5
