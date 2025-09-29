@@ -12,6 +12,21 @@ RUN apt-get update && apt-get install -y \
     libgomp1 \
     wget \
     curl \
+    libgl1-mesa-glx \
+    libgthread-2.0-0 \
+    libgtk-3-0 \
+    libgdk-pixbuf2.0-0 \
+    libxss1 \
+    libasound2 \
+    libxrandr2 \
+    libatspi2.0-0 \
+    libdrm2 \
+    libxcomposite1 \
+    libxdamage1 \
+    libxfixes3 \
+    libxkbcommon0 \
+    libatk-bridge2.0-0 \
+    libgbm1 \
     && rm -rf /var/lib/apt/lists/*
 
 # Set working directory

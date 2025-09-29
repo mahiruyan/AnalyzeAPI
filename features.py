@@ -38,6 +38,11 @@ except Exception:
     PaddleOCR = None
 
 try:
+    import easyocr
+except Exception:
+    easyocr = None
+
+try:
     from faster_whisper import WhisperModel
 except Exception:
     WhisperModel = None
@@ -120,15 +125,39 @@ def _ocr_frames(frames: List[str], fast_mode: bool = False) -> List[str]:
 
 def _fallback_text_detection(frames: List[str]) -> List[str]:
     """
-    PaddleOCR çalışmazsa basit text detection fallback
+    PaddleOCR çalışmazsa EasyOCR fallback
     """
-    # Basit filename veya hardcoded text return
-    # Gerçek projede EasyOCR veya Tesseract kullanılabilir
+    texts = []
+    
+    # EasyOCR fallback
+    if easyocr is not None:
+        try:
+            print("🔄 [OCR] Trying EasyOCR fallback...")
+            reader = easyocr.Reader(['en', 'tr'], gpu=False)
+            
+            for i, frame_path in enumerate(frames[:2]):  # Sadece ilk 2 frame
+                try:
+                    results = reader.readtext(frame_path)
+                    for (bbox, text, confidence) in results:
+                        if confidence > 0.5 and len(text.strip()) > 1:
+                            texts.append(text.strip())
+                    print(f"🔄 [OCR] EasyOCR frame {i+1}: {len([t for t in texts if t])} texts")
+                except Exception as e:
+                    print(f"⚠️ [OCR] EasyOCR frame {i+1} failed: {e}")
+                    continue
+                    
+            if texts:
+                print(f"✅ [OCR] EasyOCR fallback successful: {len(texts)} texts")
+                return texts[:10]
+        except Exception as e:
+            print(f"❌ [OCR] EasyOCR fallback failed: {e}")
+    
+    # Son çare: hardcoded placeholder
     fallback_texts = [
-        "Sample text detected",  # Placeholder
-        "Fallback text analysis"
+        "OCR not available",  # Daha açıklayıcı
+        "Text detection failed"
     ]
-    print(f"🔄 [OCR] Fallback text detection used: {len(fallback_texts)} texts")
+    print(f"🔄 [OCR] Using hardcoded fallback: {len(fallback_texts)} texts")
     return fallback_texts
 
 

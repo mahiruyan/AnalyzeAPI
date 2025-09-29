@@ -5,7 +5,9 @@ pydantic
 numpy
 opencv-python-headless
 scenedetect
+paddlepaddle
 paddleocr
+easyocr
 pillow
 librosa
 soundfile
