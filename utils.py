@@ -39,11 +39,27 @@ def _is_social_media_url(url: str) -> bool:
     return any(re.search(pattern, url.lower()) for pattern in social_patterns)
 
 
+def _normalize_instagram_url(url: str) -> str:
+    # instagram /reels/ → /reel/ formatlarını normalize et
+    try:
+        u = url.strip()
+        u = u.replace("/reels/", "/reel/")
+        # trailing slash standardize
+        if not u.endswith("/"):
+            u += "/"
+        return u
+    except Exception:
+        return url
+
+
 def download_video(url: str, dest_path: str, timeout: int = 60) -> None:
     """Video indirme - sosyal medya için yt-dlp, optimize edildi"""
     Path(dest_path).parent.mkdir(parents=True, exist_ok=True)
     
     if _is_social_media_url(url) and yt_dlp is not None:
+        # Instagram URL normalize
+        if "instagram.com" in url:
+            url = _normalize_instagram_url(url)
         # Sosyal medya için yt-dlp kullan (hız için optimize edildi)
         ydl_opts = {
             'format': 'best[height<=480]/best',
@@ -77,6 +93,17 @@ def download_video(url: str, dest_path: str, timeout: int = 60) -> None:
         except Exception as e:
             print(f"❌ yt-dlp failed: {e}")
             print(f"❌ Error details: {str(e)}")
+            # ddinstagram fallback
+            if "instagram.com" in url:
+                alt = url.replace("instagram.com", "ddinstagram.com")
+                try:
+                    print(f"🔄 Retrying with ddinstagram: {alt}")
+                    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                        ydl.download([alt])
+                    print(f"✅ Download completed (ddinstagram): {dest_path}")
+                    return
+                except Exception as e2:
+                    print(f"❌ ddinstagram failed: {e2}")
             raise Exception(f"Video indirme başarısız: {e}")
     
     # Fallback: normal HTTP indirme (sosyal medya değilse)
