@@ -58,28 +58,20 @@ def _safe_load_audio(audio_path: str, sr: int = 16000):
 def _compute_loudness(audio_path: str) -> float:
     if pyln is None or sf is None:
         return 0.0
-    try:
-        data, rate = sf.read(audio_path)
-        if data.ndim > 1:
-            data = np.mean(data, axis=1)
-        meter = pyln.Meter(rate)
-        loudness = meter.integrated_loudness(data)
-        return float(loudness)
-    except Exception as e:
-        print(f"⚠️ [LOUDNESS] Error: {e}")
-        return -20.0  # Default LUFS
+    data, rate = sf.read(audio_path)
+    if data.ndim > 1:
+        data = np.mean(data, axis=1)
+    meter = pyln.Meter(rate)
+    loudness = meter.integrated_loudness(data)
+    return float(loudness)
 
 
 def _compute_tempo(audio_path: str) -> float:
     if librosa is None:
         return 0.0
-    try:
-        y, sr = librosa.load(audio_path, sr=22050, mono=True)
-        tempo, _ = librosa.beat.beat_track(y=y, sr=sr)
-        return float(tempo)
-    except Exception as e:
-        print(f"⚠️ [TEMPO] Error: {e}")
-        return 120.0  # Default BPM
+    y, sr = librosa.load(audio_path, sr=22050, mono=True)
+    tempo, _ = librosa.beat.beat_track(y=y, sr=sr)
+    return float(tempo)
 
 
 def _ocr_frames(frames: List[str], fast_mode: bool = False) -> List[str]:
