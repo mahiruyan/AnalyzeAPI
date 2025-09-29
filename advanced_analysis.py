@@ -5207,3 +5207,652 @@ def analyze_topic_consistency(combined_analysis: Dict[str, Any]) -> Dict[str, An
             "content_types": [],
             "object_types": []
         }
+
+
+def analyze_trend_originality(features: Dict[str, Any], duration: float) -> Dict[str, Any]:
+    """
+    Trend & Orijinallik Analizi (8 puan)
+    TikTok API'den güncel trend verileri ile analiz
+    """
+    score = 0
+    findings = []
+    recommendations = []
+    raw_metrics = {}
+    
+    print("📈 [TREND] Starting trend & originality analysis...")
+    
+    try:
+        # 1. TikTok'tan güncel trend verileri çek (2 puan)
+        tiktok_trends_result = fetch_tiktok_trends()
+        score += tiktok_trends_result["score"]
+        findings.extend(tiktok_trends_result["findings"])
+        raw_metrics["tiktok_trends"] = tiktok_trends_result
+        
+        # 2. Görsel trend analizi (2 puan)
+        visual_trend_result = analyze_visual_trends(features, tiktok_trends_result.get("data", {}))
+        score += visual_trend_result["score"]
+        findings.extend(visual_trend_result["findings"])
+        raw_metrics["visual_trends"] = visual_trend_result
+        
+        # 3. Ses trend analizi (2 puan)
+        audio_trend_result = analyze_audio_trends(features, tiktok_trends_result.get("data", {}))
+        score += audio_trend_result["score"]
+        findings.extend(audio_trend_result["findings"])
+        raw_metrics["audio_trends"] = audio_trend_result
+        
+        # 4. Orijinallik analizi (2 puan)
+        originality_result = analyze_originality(features)
+        score += originality_result["score"]
+        findings.extend(originality_result["findings"])
+        raw_metrics["originality"] = originality_result
+        
+        # Genel değerlendirme
+        if score >= 6:
+            recommendations.append("Mükemmel trend kullanımı ve orijinallik!")
+        elif score >= 4:
+            recommendations.append("İyi trend kullanımı, orijinallik artırılabilir")
+        elif score >= 2:
+            recommendations.append("Trend takibi geliştirilebilir")
+        else:
+            recommendations.append("Trend analizi ve orijinallik çalışması gerekli")
+        
+        print(f"✅ [TREND] Analysis completed: {score}/8")
+        
+        return {
+            "score": min(score, 8),
+            "findings": findings,
+            "recommendations": recommendations,
+            "raw": raw_metrics
+        }
+        
+    except Exception as e:
+        print(f"❌ [TREND] Analysis failed: {e}")
+        return {
+            "score": 0,
+            "findings": [f"Trend analizi başarısız: {e}"],
+            "recommendations": ["Trend analizi geliştirilmeli"],
+            "raw": {}
+        }
+
+
+def fetch_tiktok_trends() -> Dict[str, Any]:
+    """
+    TikTok API'den güncel trend verileri çek
+    """
+    try:
+        import requests
+        import os
+        from datetime import datetime, timedelta
+        
+        # TikTok API anahtarı (environment variable'dan)
+        tiktok_api_key = os.getenv("TIKTOK_API_KEY")
+        
+        if not tiktok_api_key:
+            print("⚠️ [TREND] TikTok API key not found, using fallback trends")
+            return get_fallback_trends()
+        
+        # TikTok Research API endpoint
+        url = "https://open-api.tiktok.com/research/v2/video/query/"
+        
+        # Güncel trend parametreleri
+        params = {
+            "query": "viral",
+            "start_date": (datetime.now() - timedelta(days=7)).strftime("%Y%m%d"),
+            "end_date": datetime.now().strftime("%Y%m%d"),
+            "max_count": 100
+        }
+        
+        headers = {
+            "Authorization": f"Bearer {tiktok_api_key}",
+            "Content-Type": "application/json"
+        }
+        
+        print("📱 [TREND] Fetching TikTok trends...")
+        response = requests.get(url, headers=headers, params=params, timeout=10)
+        
+        if response.status_code == 200:
+            data = response.json()
+            
+            # Trend verilerini işle
+            trending_hashtags = extract_trending_hashtags(data)
+            trending_sounds = extract_trending_sounds(data)
+            trending_formats = extract_trending_formats(data)
+            
+            score = 0
+            findings = []
+            
+            if trending_hashtags:
+                score += 0.5
+                findings.append(f"Güncel hashtag trendleri: {len(trending_hashtags)} adet")
+            
+            if trending_sounds:
+                score += 0.5
+                findings.append(f"Güncel ses trendleri: {len(trending_sounds)} adet")
+            
+            if trending_formats:
+                score += 0.5
+                findings.append(f"Güncel format trendleri: {len(trending_formats)} adet")
+            
+            # Trend timing analizi
+            timing_score = analyze_trend_timing(data)
+            score += timing_score
+            
+            print(f"✅ [TREND] TikTok trends fetched: {len(trending_hashtags)} hashtags, {len(trending_sounds)} sounds")
+            
+            return {
+                "score": min(score, 2),
+                "findings": findings,
+                "data": {
+                    "hashtags": trending_hashtags,
+                    "sounds": trending_sounds,
+                    "formats": trending_formats,
+                    "timing": timing_score
+                }
+            }
+            
+        else:
+            print(f"⚠️ [TREND] TikTok API error: {response.status_code}")
+            return get_fallback_trends()
+            
+    except Exception as e:
+        print(f"❌ [TREND] TikTok API fetch failed: {e}")
+        return get_fallback_trends()
+
+
+def get_fallback_trends() -> Dict[str, Any]:
+    """
+    Fallback trend verileri (API çalışmazsa)
+    """
+    try:
+        from datetime import datetime
+        
+        # Güncel trend verileri (manuel güncellenebilir)
+        current_trends = {
+            "hashtags": [
+                "#viral", "#fyp", "#trending", "#foryou", "#explore",
+                "#lifestyle", "#daily", "#routine", "#selfcare",
+                "#fashion", "#style", "#outfit", "#ootd",
+                "#beauty", "#makeup", "#skincare", "#glowup",
+                "#fitness", "#workout", "#gym", "#healthy",
+                "#food", "#recipe", "#cooking", "#delicious"
+            ],
+            "sounds": [
+                "viral sound", "trending audio", "popular music",
+                "catchy beat", "upbeat tempo", "chill vibes",
+                "dance music", "pop song", "hip hop beat"
+            ],
+            "formats": [
+                "short form", "quick cuts", "fast pace",
+                "vertical video", "mobile first", "story format",
+                "tutorial style", "reaction video", "challenge format"
+            ]
+        }
+        
+        return {
+            "score": 1.0,  # Fallback için orta skor
+            "findings": ["Fallback trend verileri kullanıldı"],
+            "data": current_trends
+        }
+        
+    except Exception as e:
+        print(f"❌ [TREND] Fallback trends failed: {e}")
+        return {
+            "score": 0,
+            "findings": ["Trend verileri alınamadı"],
+            "data": {}
+        }
+
+
+def extract_trending_hashtags(api_data: Dict[str, Any]) -> List[str]:
+    """
+    TikTok API verisinden trending hashtag'leri çıkar
+    """
+    try:
+        hashtags = []
+        
+        # API verisinden hashtag'leri çıkar
+        videos = api_data.get("data", {}).get("videos", [])
+        
+        for video in videos:
+            # Video açıklamasından hashtag'leri çıkar
+            description = video.get("description", "")
+            if description:
+                # Hashtag pattern'ini bul
+                import re
+                found_hashtags = re.findall(r'#\w+', description)
+                hashtags.extend(found_hashtags)
+        
+        # En popüler hashtag'leri döndür
+        from collections import Counter
+        hashtag_counts = Counter(hashtags)
+        return [tag for tag, count in hashtag_counts.most_common(20)]
+        
+    except Exception as e:
+        print(f"❌ [TREND] Hashtag extraction failed: {e}")
+        return []
+
+
+def extract_trending_sounds(api_data: Dict[str, Any]) -> List[str]:
+    """
+    TikTok API verisinden trending sesleri çıkar
+    """
+    try:
+        sounds = []
+        
+        # API verisinden ses bilgilerini çıkar
+        videos = api_data.get("data", {}).get("videos", [])
+        
+        for video in videos:
+            # Ses bilgilerini çıkar
+            music_info = video.get("music", {})
+            if music_info:
+                title = music_info.get("title", "")
+                if title:
+                    sounds.append(title)
+        
+        # En popüler sesleri döndür
+        from collections import Counter
+        sound_counts = Counter(sounds)
+        return [sound for sound, count in sound_counts.most_common(10)]
+        
+    except Exception as e:
+        print(f"❌ [TREND] Sound extraction failed: {e}")
+        return []
+
+
+def extract_trending_formats(api_data: Dict[str, Any]) -> List[str]:
+    """
+    TikTok API verisinden trending formatları çıkar
+    """
+    try:
+        formats = []
+        
+        # API verisinden format bilgilerini çıkar
+        videos = api_data.get("data", {}).get("videos", [])
+        
+        for video in videos:
+            # Video özelliklerini analiz et
+            duration = video.get("duration", 0)
+            if duration < 15:
+                formats.append("short form")
+            elif duration < 60:
+                formats.append("medium form")
+            else:
+                formats.append("long form")
+            
+            # Video türünü belirle
+            description = video.get("description", "").lower()
+            if "tutorial" in description or "how to" in description:
+                formats.append("tutorial")
+            elif "challenge" in description:
+                formats.append("challenge")
+            elif "reaction" in description:
+                formats.append("reaction")
+        
+        # En popüler formatları döndür
+        from collections import Counter
+        format_counts = Counter(formats)
+        return [fmt for fmt, count in format_counts.most_common(10)]
+        
+    except Exception as e:
+        print(f"❌ [TREND] Format extraction failed: {e}")
+        return []
+
+
+def analyze_trend_timing(api_data: Dict[str, Any]) -> float:
+    """
+    Trend timing analizi - erken/peak/geç
+    """
+    try:
+        # Basit timing analizi
+        # Gerçek implementasyon için daha gelişmiş analiz gerekli
+        
+        videos = api_data.get("data", {}).get("videos", [])
+        if not videos:
+            return 0.0
+        
+        # Video sayısına göre trend durumu
+        video_count = len(videos)
+        
+        if video_count > 50:
+            return 0.3  # Peak trend
+        elif video_count > 20:
+            return 0.2  # Rising trend
+        elif video_count > 5:
+            return 0.1  # Early trend
+        else:
+            return 0.0  # Unknown
+        
+    except Exception as e:
+        print(f"❌ [TREND] Trend timing analysis failed: {e}")
+        return 0.0
+
+
+def analyze_visual_trends(features: Dict[str, Any], tiktok_data: Dict[str, Any] = None) -> Dict[str, Any]:
+    """
+    Görsel trend analizi
+    """
+    try:
+        score = 0
+        findings = []
+        detected_trends = []
+        
+        frames = features.get("frames", [])
+        if not frames:
+            return {"score": 0, "findings": ["Görüntü bulunamadı"], "trends": []}
+        
+        # Trend renk paletleri
+        color_trends = {
+            "vibrant": ["parlak", "canlı", "neon", "fluorescent"],
+            "pastel": ["açık", "yumuşak", "pastel", "muted"],
+            "monochrome": ["siyah-beyaz", "monochrome", "grayscale"],
+            "warm": ["sıcak", "warm", "orange", "red", "yellow"],
+            "cool": ["soğuk", "cool", "blue", "green", "purple"]
+        }
+        
+        # Trend kompozisyonlar
+        composition_trends = {
+            "minimalist": ["minimal", "basit", "clean", "boş alan"],
+            "maximalist": ["dolu", "detalı", "complex", "busy"],
+            "centered": ["merkez", "center", "symmetrical"],
+            "rule_of_thirds": ["üçte bir", "thirds", "asymmetric"],
+            "diagonal": ["çapraz", "diagonal", "dynamic"]
+        }
+        
+        # Trend filtreler/efektler
+        filter_trends = {
+            "vintage": ["vintage", "retro", "sepia", "aged"],
+            "high_contrast": ["kontrast", "contrast", "dramatic"],
+            "soft_focus": ["yumuşak", "soft", "blur", "dreamy"],
+            "saturated": ["doygun", "saturated", "vivid"],
+            "desaturated": ["soluk", "desaturated", "muted"]
+        }
+        
+        # Her frame için trend analizi
+        for i, frame_path in enumerate(frames[:3]):  # İlk 3 frame
+            try:
+                import cv2
+                import numpy as np
+                
+                image = cv2.imread(frame_path)
+                if image is None:
+                    continue
+                
+                # Renk analizi
+                hsv = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
+                
+                # Parlaklık analizi
+                brightness = np.mean(hsv[:,:,2])
+                if brightness > 200:
+                    detected_trends.append("vibrant")
+                    score += 0.2
+                elif brightness < 100:
+                    detected_trends.append("monochrome")
+                    score += 0.1
+                
+                # Kontrast analizi
+                gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+                contrast = np.std(gray)
+                if contrast > 60:
+                    detected_trends.append("high_contrast")
+                    score += 0.2
+                elif contrast < 20:
+                    detected_trends.append("soft_focus")
+                    score += 0.1
+                
+                # Kompozisyon analizi
+                height, width = image.shape[:2]
+                edges = cv2.Canny(gray, 50, 150)
+                
+                # Merkez odak analizi
+                center_region = edges[height//3:2*height//3, width//3:2*width//3]
+                center_density = np.sum(center_region > 0) / (center_region.shape[0] * center_region.shape[1])
+                
+                if center_density > 0.3:
+                    detected_trends.append("centered")
+                    score += 0.2
+                else:
+                    detected_trends.append("rule_of_thirds")
+                    score += 0.1
+                
+            except Exception as e:
+                print(f"⚠️ [TREND] Visual analysis failed for frame {i}: {e}")
+                continue
+        
+        # Trend tespiti
+        if detected_trends:
+            unique_trends = list(set(detected_trends))
+            findings.append(f"Görsel trendler tespit edildi: {', '.join(unique_trends[:3])}")
+            
+            # Viral trendler
+            viral_trends = ["vibrant", "high_contrast", "centered"]
+            viral_count = sum(1 for trend in unique_trends if trend in viral_trends)
+            if viral_count > 0:
+                score += 0.3
+                findings.append(f"Viral görsel trendler: {viral_count} adet")
+        
+        return {
+            "score": min(score, 2),
+            "findings": findings,
+            "trends": list(set(detected_trends))
+        }
+        
+    except Exception as e:
+        print(f"❌ [TREND] Visual trend analysis failed: {e}")
+        return {
+            "score": 0,
+            "findings": [f"Görsel trend analizi başarısız: {e}"],
+            "trends": []
+        }
+
+
+def analyze_audio_trends(features: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Ses trend analizi
+    """
+    try:
+        score = 0
+        findings = []
+        detected_trends = []
+        
+        audio_features = features.get("audio", {})
+        if not audio_features:
+            return {"score": 0, "findings": ["Ses bulunamadı"], "trends": []}
+        
+        # Trend müzik türleri
+        music_trends = {
+            "pop": ["pop", "mainstream", "catchy"],
+            "hip_hop": ["hip hop", "rap", "urban"],
+            "electronic": ["electronic", "edm", "dance", "synth"],
+            "indie": ["indie", "alternative", "underground"],
+            "lofi": ["lofi", "chill", "relaxing"],
+            "viral_sounds": ["viral", "trending", "meme", "sound"]
+        }
+        
+        # Trend ses efektleri
+        sound_trends = {
+            "transition_sounds": ["transition", "whoosh", "swoosh"],
+            "notification_sounds": ["notification", "ding", "ping"],
+            "nature_sounds": ["nature", "birds", "rain", "ocean"],
+            "urban_sounds": ["city", "traffic", "urban", "street"],
+            "vocal_effects": ["echo", "reverb", "autotune", "pitch"]
+        }
+        
+        # Tempo analizi
+        tempo = audio_features.get("tempo", 0)
+        if 120 <= tempo <= 140:
+            detected_trends.append("viral_tempo")
+            score += 0.3
+            findings.append("Viral tempo aralığında")
+        elif 80 <= tempo <= 100:
+            detected_trends.append("chill_tempo")
+            score += 0.2
+            findings.append("Chill tempo trendi")
+        elif tempo > 140:
+            detected_trends.append("high_energy")
+            score += 0.2
+            findings.append("Yüksek enerji trendi")
+        
+        # Loudness analizi
+        loudness = audio_features.get("loudness", -20)
+        if -12 <= loudness <= -6:
+            detected_trends.append("optimal_loudness")
+            score += 0.2
+            findings.append("Optimal ses seviyesi trendi")
+        elif loudness > -6:
+            detected_trends.append("loud_trend")
+            score += 0.1
+            findings.append("Yüksek ses trendi")
+        
+        # Ses kalitesi analizi
+        # Bu basit bir implementasyon, gerçekte daha gelişmiş olmalı
+        if tempo > 0 and loudness > -20:
+            detected_trends.append("high_quality_audio")
+            score += 0.2
+            findings.append("Yüksek kalite ses trendi")
+        
+        # Metin analizi ile ses trendi eşleştirme
+        textual = features.get("textual", {})
+        asr_text = textual.get("asr_text", "").lower()
+        
+        # Viral ses ifadeleri
+        viral_sound_expressions = [
+            "viral", "trending", "meme", "sound", "audio",
+            "music", "song", "beat", "rhythm", "melody"
+        ]
+        
+        for expression in viral_sound_expressions:
+            if expression in asr_text:
+                detected_trends.append("viral_sound_mention")
+                score += 0.3
+                findings.append(f"Viral ses ifadesi: {expression}")
+                break
+        
+        return {
+            "score": min(score, 2),
+            "findings": findings,
+            "trends": list(set(detected_trends))
+        }
+        
+    except Exception as e:
+        print(f"❌ [TREND] Audio trend analysis failed: {e}")
+        return {
+            "score": 0,
+            "findings": [f"Ses trend analizi başarısız: {e}"],
+            "trends": []
+        }
+
+
+def analyze_text_trends(features: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Metin trend analizi
+    """
+    try:
+        score = 0
+        findings = []
+        detected_trends = []
+        
+        textual = features.get("textual", {})
+        asr_text = textual.get("asr_text", "").lower()
+        ocr_texts = textual.get("ocr_text", [])
+        
+        # Tüm metinleri birleştir
+        all_text = asr_text
+        for ocr_text in ocr_texts:
+            all_text += " " + ocr_text.lower()
+        
+        # Trend hashtag'ler
+        hashtag_trends = {
+            "viral": ["#viral", "#trending", "#fyp", "#foryou", "#explore"],
+            "lifestyle": ["#lifestyle", "#daily", "#routine", "#selfcare"],
+            "fashion": ["#fashion", "#style", "#outfit", "#ootd"],
+            "beauty": ["#beauty", "#makeup", "#skincare", "#glowup"],
+            "fitness": ["#fitness", "#workout", "#gym", "#healthy"],
+            "food": ["#food", "#recipe", "#cooking", "#delicious"],
+            "travel": ["#travel", "#wanderlust", "#adventure", "#explore"]
+        }
+        
+        # Trend ifadeler
+        expression_trends = {
+            "question_trend": ["pov:", "when you", "me when", "nobody:", "everyone:", "this is so"],
+            "reaction_trend": ["wait what", "no way", "i can't", "this is", "omg", "wtf"],
+            "tutorial_trend": ["how to", "step by step", "tutorial", "guide", "tips"],
+            "story_trend": ["storytime", "back when", "remember when", "one time"],
+            "challenge_trend": ["challenge", "try this", "can you", "bet you can't"]
+        }
+        
+        # Trend emoji kullanımı
+        emoji_trends = {
+            "fire": ["🔥", "fire", "lit"],
+            "eyes": ["👀", "eyes", "watching"],
+            "brain": ["🧠", "brain", "mind"],
+            "heart": ["❤️", "💕", "💖", "love"],
+            "laugh": ["😂", "🤣", "lol", "haha"]
+        }
+        
+        # Hashtag analizi
+        for category, hashtags in hashtag_trends.items():
+            for hashtag in hashtags:
+                if hashtag in all_text:
+                    detected_trends.append(f"{category}_hashtag")
+                    score += 0.2
+                    findings.append(f"Trend hashtag: {hashtag}")
+                    break
+        
+        # İfade analizi
+        for category, expressions in expression_trends.items():
+            for expression in expressions:
+                if expression in all_text:
+                    detected_trends.append(category)
+                    score += 0.3
+                    findings.append(f"Trend ifade: {expression}")
+                    break
+        
+        # Emoji analizi
+        emoji_count = sum(1 for char in all_text if ord(char) > 127)  # Basit emoji tespiti
+        if emoji_count > 3:
+            detected_trends.append("emoji_heavy")
+            score += 0.2
+            findings.append("Yoğun emoji kullanımı trendi")
+        elif emoji_count > 0:
+            detected_trends.append("emoji_light")
+            score += 0.1
+            findings.append("Hafif emoji kullanımı")
+        
+        # Viral kelime analizi
+        viral_words = [
+            "viral", "trending", "meme", "fire", "lit", "slay", "period",
+            "no cap", "bet", "fr", "periodt", "bestie", "main character"
+        ]
+        
+        for word in viral_words:
+            if word in all_text:
+                detected_trends.append("viral_vocabulary")
+                score += 0.3
+                findings.append(f"Viral kelime: {word}")
+                break
+        
+        # Metin uzunluğu trendi
+        word_count = len(all_text.split())
+        if word_count < 10:
+            detected_trends.append("short_form")
+            score += 0.1
+            findings.append("Kısa form içerik trendi")
+        elif word_count > 50:
+            detected_trends.append("long_form")
+            score += 0.1
+            findings.append("Uzun form içerik trendi")
+        
+        return {
+            "score": min(score, 2),
+            "findings": findings,
+            "trends": list(set(detected_trends))
+        }
+        
+    except Exception as e:
+        print(f"❌ [TREND] Text trend analysis failed: {e}")
+        return {
+            "score": 0,
+            "findings": [f"Metin trend analizi başarısız: {e}"],
+            "trends": []
+        }
