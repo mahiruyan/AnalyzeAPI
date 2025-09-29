@@ -1,0 +1,6 @@
+{
+  "reportMissingImports": "warning",
+  "ignore": [
+    "pytesseract"
+  ]
+}

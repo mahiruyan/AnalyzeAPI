@@ -20,7 +20,7 @@ except Exception:
     pyln = None
 
 try:
-    import pytesseract
+    import pytesseract  # type: ignore
     from PIL import Image
 except Exception:
     pytesseract = None
