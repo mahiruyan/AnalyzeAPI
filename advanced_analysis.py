@@ -4811,7 +4811,7 @@ def analyze_speech_content(asr_text: str) -> Dict[str, Any]:
             "transformation": ["önce", "sonra", "değişim", "dönüşüm", "fark", "farklı"],
             "tutorial": ["nasıl yapılır", "adım adım", "tutorial", "rehber", "öğren", "yap"],
             "review": ["inceleme", "review", "deneyim", "denedim", "kullandım", "aldım"],
-            "exclusive_event": ["davet", "etkinlik", "özel", "exclusive", "netflix", "amazon", "google", "apple", "microsoft", "etkinlik", "lansman", "premiere", "galası"],
+            "exclusive_event": ["davet", "etkinlik", "özel", "exclusive", "netflix", "amazon", "google", "apple", "microsoft", "meta", "facebook", "instagram", "youtube", "tiktok", "twitter", "x", "spotify", "uber", "airbnb", "tesla", "nike", "adidas", "coca cola", "pepsi", "mcdonald's", "starbucks", "disney", "marvel", "dc", "warner", "sony", "samsung", "lg", "huawei", "xiaomi", "oneplus", "intel", "amd", "nvidia", "oracle", "salesforce", "adobe", "autodesk", "vmware", "cisco", "ibm", "dell", "hp", "lenovo", "asus", "acer", "msi", "gigabyte", "corsair", "razer", "logitech", "steelcase", "herman miller", "ikea", "zara", "h&m", "uniqlo", "gucci", "lv", "chanel", "dior", "prada", "versace", "armani", "tom ford", "burberry", "hermes", "cartier", "tiffany", "rolex", "omega", "tag heuer", "breitling", "panerai", "iwc", "jaeger", "vacheron", "patek", "audemars", "richard mille", "lansman", "premiere", "galası", "etkinlik", "özel", "exclusive"],
             "collaboration": ["işbirliği", "collaboration", "ortaklık", "partnership", "sponsor", "destek", "birlikte", "beraber"],
             "behind_scenes": ["arkada", "perde", "behind", "scenes", "sahne", "kamera", "çekim", "set"]
         }
@@ -4959,7 +4959,10 @@ def analyze_ocr_text_content(ocr_texts: List[str]) -> Dict[str, Any]:
             "fact": ["gerçek", "bilgi", "tarih", "istatistik", "rakam"],
             "question": ["?", "soru", "neden", "nasıl"],
             "shock": ["!", "inanılmaz", "şaşırtıcı", "wow"],
-            "call_to_action": ["beğen", "paylaş", "yorum", "abone", "takip"]
+            "call_to_action": ["beğen", "paylaş", "yorum", "abone", "takip"],
+            "exclusive_event": ["davet", "etkinlik", "özel", "exclusive", "netflix", "amazon", "google", "apple", "microsoft", "meta", "facebook", "instagram", "youtube", "tiktok", "twitter", "x", "spotify", "uber", "airbnb", "tesla", "nike", "adidas", "coca cola", "pepsi", "mcdonald's", "starbucks", "disney", "marvel", "dc", "warner", "sony", "samsung", "lg", "huawei", "xiaomi", "oneplus", "intel", "amd", "nvidia", "oracle", "salesforce", "adobe", "autodesk", "vmware", "cisco", "ibm", "dell", "hp", "lenovo", "asus", "acer", "msi", "gigabyte", "corsair", "razer", "logitech", "steelcase", "herman miller", "ikea", "zara", "h&m", "uniqlo", "gucci", "lv", "chanel", "dior", "prada", "versace", "armani", "tom ford", "burberry", "hermes", "cartier", "tiffany", "rolex", "omega", "tag heuer", "breitling", "panerai", "iwc", "jaeger", "vacheron", "patek", "audemars", "richard mille", "lansman", "premiere", "galası"],
+            "collaboration": ["işbirliği", "collaboration", "ortaklık", "partnership", "sponsor", "destek", "birlikte", "beraber"],
+            "behind_scenes": ["arkada", "perde", "behind", "scenes", "sahne", "kamera", "çekim", "set"]
         }
         
         detected_types = []
@@ -4983,6 +4986,15 @@ def analyze_ocr_text_content(ocr_texts: List[str]) -> Dict[str, Any]:
                     elif content_type == "call_to_action":
                         viral_score += 0.2
                         description = "Çağrı metni - etkileşim artırıcı"
+                    elif content_type == "exclusive_event":
+                        viral_score += 0.5
+                        description = "Özel etkinlik metni - çok viral potansiyeli!"
+                    elif content_type == "collaboration":
+                        viral_score += 0.4
+                        description = "İşbirliği metni - güvenilirlik artırıcı"
+                    elif content_type == "behind_scenes":
+                        viral_score += 0.3
+                        description = "Perde arkası metni - merak uyandırıcı"
                     break
         
         if not detected_types:
