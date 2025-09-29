@@ -5277,67 +5277,66 @@ def analyze_trend_originality(features: Dict[str, Any], duration: float) -> Dict
 
 def fetch_tiktok_trends() -> Dict[str, Any]:
     """
-    TikTok API'den güncel trend verileri çek
+    Chartmetric API'den TikTok trend verileri çek
     """
     try:
         import requests
         import os
         from datetime import datetime, timedelta
         
-        # TikTok API anahtarı (environment variable'dan)
-        tiktok_api_key = os.getenv("TIKTOK_API_KEY")
+        # Chartmetric API anahtarı (environment variable'dan)
+        chartmetric_api_key = os.getenv("CHARTMETRIC_API_KEY")
         
-        if not tiktok_api_key:
-            print("⚠️ [TREND] TikTok API key not found, using fallback trends")
+        if not chartmetric_api_key:
+            print("⚠️ [TREND] Chartmetric API key not found, using fallback trends")
             return get_fallback_trends()
         
-        # TikTok Research API endpoint
-        url = "https://open-api.tiktok.com/research/v2/video/query/"
+        # Chartmetric TikTok Trends API endpoint
+        url = "https://api.chartmetric.com/api/tiktok/trending"
         
         # Güncel trend parametreleri
         params = {
-            "query": "viral",
-            "start_date": (datetime.now() - timedelta(days=7)).strftime("%Y%m%d"),
-            "end_date": datetime.now().strftime("%Y%m%d"),
-            "max_count": 100
+            "platform": "tiktok",
+            "country": "US",
+            "limit": 50
         }
         
         headers = {
-            "Authorization": f"Bearer {tiktok_api_key}",
+            "Authorization": f"Bearer {chartmetric_api_key}",
             "Content-Type": "application/json"
         }
         
-        print("📱 [TREND] Fetching TikTok trends...")
+        print("📊 [TREND] Fetching Chartmetric TikTok trends...")
         response = requests.get(url, headers=headers, params=params, timeout=10)
         
         if response.status_code == 200:
             data = response.json()
             
-            # Trend verilerini işle
-            trending_hashtags = extract_trending_hashtags(data)
-            trending_sounds = extract_trending_sounds(data)
-            trending_formats = extract_trending_formats(data)
+            # Chartmetric verilerini işle
+            trending_hashtags = extract_chartmetric_hashtags(data)
+            trending_sounds = extract_chartmetric_sounds(data)
+            trending_formats = extract_chartmetric_formats(data)
             
             score = 0
             findings = []
             
             if trending_hashtags:
                 score += 0.5
-                findings.append(f"Güncel hashtag trendleri: {len(trending_hashtags)} adet")
+                findings.append(f"Chartmetric hashtag trendleri: {len(trending_hashtags)} adet")
             
             if trending_sounds:
                 score += 0.5
-                findings.append(f"Güncel ses trendleri: {len(trending_sounds)} adet")
+                findings.append(f"Chartmetric ses trendleri: {len(trending_sounds)} adet")
             
             if trending_formats:
                 score += 0.5
-                findings.append(f"Güncel format trendleri: {len(trending_formats)} adet")
+                findings.append(f"Chartmetric format trendleri: {len(trending_formats)} adet")
             
             # Trend timing analizi
-            timing_score = analyze_trend_timing(data)
+            timing_score = analyze_chartmetric_timing(data)
             score += timing_score
             
-            print(f"✅ [TREND] TikTok trends fetched: {len(trending_hashtags)} hashtags, {len(trending_sounds)} sounds")
+            print(f"✅ [TREND] Chartmetric trends fetched: {len(trending_hashtags)} hashtags, {len(trending_sounds)} sounds")
             
             return {
                 "score": min(score, 2),
@@ -5346,16 +5345,17 @@ def fetch_tiktok_trends() -> Dict[str, Any]:
                     "hashtags": trending_hashtags,
                     "sounds": trending_sounds,
                     "formats": trending_formats,
-                    "timing": timing_score
+                    "timing": timing_score,
+                    "source": "chartmetric"
                 }
             }
             
         else:
-            print(f"⚠️ [TREND] TikTok API error: {response.status_code}")
+            print(f"⚠️ [TREND] Chartmetric API error: {response.status_code}")
             return get_fallback_trends()
             
     except Exception as e:
-        print(f"❌ [TREND] TikTok API fetch failed: {e}")
+        print(f"❌ [TREND] Chartmetric API fetch failed: {e}")
         return get_fallback_trends()
 
 
@@ -5403,21 +5403,27 @@ def get_fallback_trends() -> Dict[str, Any]:
         }
 
 
-def extract_trending_hashtags(api_data: Dict[str, Any]) -> List[str]:
+def extract_chartmetric_hashtags(api_data: Dict[str, Any]) -> List[str]:
     """
-    TikTok API verisinden trending hashtag'leri çıkar
+    Chartmetric API verisinden trending hashtag'leri çıkar
     """
     try:
         hashtags = []
         
-        # API verisinden hashtag'leri çıkar
-        videos = api_data.get("data", {}).get("videos", [])
+        # Chartmetric API verisinden hashtag'leri çıkar
+        trends = api_data.get("data", {}).get("trends", [])
         
-        for video in videos:
-            # Video açıklamasından hashtag'leri çıkar
-            description = video.get("description", "")
+        for trend in trends:
+            # Hashtag bilgilerini çıkar
+            hashtag_info = trend.get("hashtags", [])
+            for hashtag in hashtag_info:
+                tag = hashtag.get("tag", "")
+                if tag:
+                    hashtags.append(f"#{tag}")
+            
+            # Video açıklamalarından hashtag'leri çıkar
+            description = trend.get("description", "")
             if description:
-                # Hashtag pattern'ini bul
                 import re
                 found_hashtags = re.findall(r'#\w+', description)
                 hashtags.extend(found_hashtags)
@@ -5428,27 +5434,38 @@ def extract_trending_hashtags(api_data: Dict[str, Any]) -> List[str]:
         return [tag for tag, count in hashtag_counts.most_common(20)]
         
     except Exception as e:
-        print(f"❌ [TREND] Hashtag extraction failed: {e}")
+        print(f"❌ [TREND] Chartmetric hashtag extraction failed: {e}")
         return []
 
 
-def extract_trending_sounds(api_data: Dict[str, Any]) -> List[str]:
+def extract_chartmetric_sounds(api_data: Dict[str, Any]) -> List[str]:
     """
-    TikTok API verisinden trending sesleri çıkar
+    Chartmetric API verisinden trending sesleri çıkar
     """
     try:
         sounds = []
         
-        # API verisinden ses bilgilerini çıkar
-        videos = api_data.get("data", {}).get("videos", [])
+        # Chartmetric API verisinden ses bilgilerini çıkar
+        trends = api_data.get("data", {}).get("trends", [])
         
-        for video in videos:
+        for trend in trends:
             # Ses bilgilerini çıkar
-            music_info = video.get("music", {})
-            if music_info:
-                title = music_info.get("title", "")
+            audio_info = trend.get("audio", {})
+            if audio_info:
+                title = audio_info.get("title", "")
+                artist = audio_info.get("artist", "")
                 if title:
-                    sounds.append(title)
+                    if artist:
+                        sounds.append(f"{artist} - {title}")
+                    else:
+                        sounds.append(title)
+            
+            # Müzik bilgilerini çıkar
+            music_info = trend.get("music", {})
+            if music_info:
+                track_name = music_info.get("track_name", "")
+                if track_name:
+                    sounds.append(track_name)
         
         # En popüler sesleri döndür
         from collections import Counter
@@ -5456,23 +5473,23 @@ def extract_trending_sounds(api_data: Dict[str, Any]) -> List[str]:
         return [sound for sound, count in sound_counts.most_common(10)]
         
     except Exception as e:
-        print(f"❌ [TREND] Sound extraction failed: {e}")
+        print(f"❌ [TREND] Chartmetric sound extraction failed: {e}")
         return []
 
 
-def extract_trending_formats(api_data: Dict[str, Any]) -> List[str]:
+def extract_chartmetric_formats(api_data: Dict[str, Any]) -> List[str]:
     """
-    TikTok API verisinden trending formatları çıkar
+    Chartmetric API verisinden trending formatları çıkar
     """
     try:
         formats = []
         
-        # API verisinden format bilgilerini çıkar
-        videos = api_data.get("data", {}).get("videos", [])
+        # Chartmetric API verisinden format bilgilerini çıkar
+        trends = api_data.get("data", {}).get("trends", [])
         
-        for video in videos:
+        for trend in trends:
             # Video özelliklerini analiz et
-            duration = video.get("duration", 0)
+            duration = trend.get("duration", 0)
             if duration < 15:
                 formats.append("short form")
             elif duration < 60:
@@ -5481,13 +5498,22 @@ def extract_trending_formats(api_data: Dict[str, Any]) -> List[str]:
                 formats.append("long form")
             
             # Video türünü belirle
-            description = video.get("description", "").lower()
+            description = trend.get("description", "").lower()
             if "tutorial" in description or "how to" in description:
                 formats.append("tutorial")
             elif "challenge" in description:
                 formats.append("challenge")
             elif "reaction" in description:
                 formats.append("reaction")
+            elif "dance" in description:
+                formats.append("dance")
+            elif "comedy" in description or "funny" in description:
+                formats.append("comedy")
+            
+            # Trend türünü belirle
+            trend_type = trend.get("type", "")
+            if trend_type:
+                formats.append(trend_type.lower())
         
         # En popüler formatları döndür
         from collections import Counter
@@ -5495,36 +5521,40 @@ def extract_trending_formats(api_data: Dict[str, Any]) -> List[str]:
         return [fmt for fmt, count in format_counts.most_common(10)]
         
     except Exception as e:
-        print(f"❌ [TREND] Format extraction failed: {e}")
+        print(f"❌ [TREND] Chartmetric format extraction failed: {e}")
         return []
 
 
-def analyze_trend_timing(api_data: Dict[str, Any]) -> float:
+def analyze_chartmetric_timing(api_data: Dict[str, Any]) -> float:
     """
-    Trend timing analizi - erken/peak/geç
+    Chartmetric trend timing analizi - erken/peak/geç
     """
     try:
-        # Basit timing analizi
-        # Gerçek implementasyon için daha gelişmiş analiz gerekli
-        
-        videos = api_data.get("data", {}).get("videos", [])
-        if not videos:
+        trends = api_data.get("data", {}).get("trends", [])
+        if not trends:
             return 0.0
         
-        # Video sayısına göre trend durumu
-        video_count = len(videos)
+        # Trend performansına göre timing belirle
+        total_score = 0
+        for trend in trends:
+            # Trend skorunu al
+            trend_score = trend.get("score", 0)
+            total_score += trend_score
         
-        if video_count > 50:
+        avg_score = total_score / len(trends) if trends else 0
+        
+        # Skora göre trend durumu
+        if avg_score > 80:
             return 0.3  # Peak trend
-        elif video_count > 20:
+        elif avg_score > 50:
             return 0.2  # Rising trend
-        elif video_count > 5:
+        elif avg_score > 20:
             return 0.1  # Early trend
         else:
             return 0.0  # Unknown
         
     except Exception as e:
-        print(f"❌ [TREND] Trend timing analysis failed: {e}")
+        print(f"❌ [TREND] Chartmetric timing analysis failed: {e}")
         return 0.0
 
 
