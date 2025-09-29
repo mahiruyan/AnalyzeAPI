@@ -81,7 +81,13 @@ def download_video(url: str, dest_path: str, timeout: int = 60) -> None:
             },
             # User agent ve headers
             'http_headers': {
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+                'Accept-Language': 'en-US,en;q=0.5',
+                'Accept-Encoding': 'gzip, deflate',
+                'DNT': '1',
+                'Connection': 'keep-alive',
+                'Upgrade-Insecure-Requests': '1',
             }
         }
         try:
@@ -93,17 +99,30 @@ def download_video(url: str, dest_path: str, timeout: int = 60) -> None:
         except Exception as e:
             print(f"❌ yt-dlp failed: {e}")
             print(f"❌ Error details: {str(e)}")
-            # ddinstagram fallback
+            # Instagram alternatif yöntemler
             if "instagram.com" in url:
-                alt = url.replace("instagram.com", "ddinstagram.com")
+                # 1. instagram.com.tr deneyelim
+                alt1 = url.replace("instagram.com", "instagram.com.tr")
                 try:
-                    print(f"🔄 Retrying with ddinstagram: {alt}")
+                    print(f"🔄 Retrying with instagram.com.tr: {alt1}")
                     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-                        ydl.download([alt])
-                    print(f"✅ Download completed (ddinstagram): {dest_path}")
+                        ydl.download([alt1])
+                    print(f"✅ Download completed (instagram.com.tr): {dest_path}")
                     return
                 except Exception as e2:
-                    print(f"❌ ddinstagram failed: {e2}")
+                    print(f"❌ instagram.com.tr failed: {e2}")
+                
+                # 2. embed format deneyelim
+                alt2 = url.replace("/reel/", "/embed/reel/")
+                try:
+                    print(f"🔄 Retrying with embed format: {alt2}")
+                    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                        ydl.download([alt2])
+                    print(f"✅ Download completed (embed): {dest_path}")
+                    return
+                except Exception as e3:
+                    print(f"❌ embed format failed: {e3}")
+            
             raise Exception(f"Video indirme başarısız: {e}")
     
     # Fallback: normal HTTP indirme (sosyal medya değilse)
