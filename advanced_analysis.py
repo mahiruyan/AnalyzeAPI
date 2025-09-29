@@ -3669,6 +3669,9 @@ def analyze_text_readability(features: Dict[str, Any], duration: float) -> Dict[
     
     print("📝 [TEXT] Starting text readability analysis...")
     
+    # Senkronize viral timeline başlat
+    initialize_sync_viral_timeline(features, duration, viral_impact_timeline)
+    
     # 1. Font Analizi (1 puan)
     font_score = analyze_font_quality(features, duration, viral_impact_timeline)
     raw_metrics["font_quality"] = font_score
@@ -3736,12 +3739,16 @@ def analyze_text_readability(features: Dict[str, Any], duration: float) -> Dict[
     
     print(f"📝 [TEXT] Text readability score: {score}/6")
     
+    # Senkronize viral timeline'ı tamamla
+    complete_sync_viral_timeline(features, duration, viral_impact_timeline)
+    
     return {
         "score": min(score, 6),
         "findings": findings,
         "recommendations": recommendations,
         "raw": raw_metrics,
-        "viral_impact_timeline": viral_impact_timeline  # Zaman bazlı viral etki
+        "viral_impact_timeline": viral_impact_timeline,  # Senkronize viral etki timeline
+        "sync_viral_timeline": viral_impact_timeline  # Görüntü, ses, metin senkronize
     }
 
 
@@ -4179,3 +4186,404 @@ def analyze_text_viral_impact(features: Dict[str, Any], duration: float, viral_t
     except Exception as e:
         print(f"📝 [TEXT] Text viral impact analysis failed: {e}")
         return 0.5
+
+
+def initialize_sync_viral_timeline(features: Dict[str, Any], duration: float, viral_timeline: List[Dict]) -> None:
+    """
+    Senkronize viral timeline'ı başlat - görüntü, ses, metin için
+    """
+    try:
+        frames = features.get("frames", [])
+        audio_features = features.get("audio", {})
+        textual = features.get("textual", {})
+        
+        if not frames:
+            return
+        
+        frame_interval = duration / len(frames)
+        
+        print("🎬 [SYNC] Initializing synchronized viral timeline...")
+        
+        # Her frame için viral analizi
+        for i, frame_path in enumerate(frames):
+            current_time = i * frame_interval
+            
+            # Görüntü viral etkisi
+            visual_impact = analyze_visual_viral_impact(frame_path, current_time)
+            viral_timeline.append(visual_impact)
+            
+            # Ses viral etkisi (ses segment'i için)
+            audio_impact = analyze_audio_viral_impact(audio_features, current_time, frame_interval)
+            viral_timeline.append(audio_impact)
+            
+            # Metin viral etkisi
+            text_impact = analyze_text_viral_impact_at_time(textual, current_time)
+            viral_timeline.append(text_impact)
+        
+        print(f"🎬 [SYNC] Synchronized timeline created with {len(viral_timeline)} events")
+        
+    except Exception as e:
+        print(f"🎬 [SYNC] Failed to initialize sync timeline: {e}")
+
+
+def analyze_visual_viral_impact(frame_path: str, current_time: float) -> Dict[str, Any]:
+    """
+    Görüntü viral etkisi analizi
+    """
+    try:
+        import cv2
+        import numpy as np
+        
+        image = cv2.imread(frame_path)
+        if image is None:
+            return {
+                "t": current_time,
+                "type": "visual",
+                "impact": "neutral",
+                "reason": "Görüntü yüklenemedi",
+                "score_change": 0.0
+            }
+        
+        viral_score = 0.0
+        impact_reasons = []
+        
+        # 1. Renk analizi
+        hsv = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
+        
+        # Parlak renkler viral için iyidir
+        bright_colors = cv2.inRange(hsv, np.array([0, 0, 200]), np.array([180, 255, 255]))
+        bright_ratio = np.sum(bright_colors > 0) / (image.shape[0] * image.shape[1])
+        
+        if bright_ratio > 0.3:
+            viral_score += 0.3
+            impact_reasons.append("Parlak renkler - dikkat çekici")
+        elif bright_ratio > 0.1:
+            viral_score += 0.1
+            impact_reasons.append("Orta parlaklık")
+        
+        # 2. Hareket analizi (optical flow)
+        # Basit edge density analizi
+        gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+        edges = cv2.Canny(gray, 50, 150)
+        edge_density = np.sum(edges > 0) / (image.shape[0] * image.shape[1])
+        
+        if edge_density > 0.15:  # Yüksek hareket/detay
+            viral_score += 0.2
+            impact_reasons.append("Yüksek detay - dinamik görüntü")
+        elif edge_density > 0.05:
+            viral_score += 0.1
+            impact_reasons.append("Orta detay")
+        
+        # 3. Kompozisyon analizi
+        # Rule of thirds kontrolü
+        height, width = image.shape[:2]
+        
+        # Merkez dışı odak noktaları
+        center_x, center_y = width // 2, height // 2
+        third_x, third_y = width // 3, height // 3
+        
+        # Edge'lerin dağılımı
+        left_edges = np.sum(edges[:, :third_x] > 0)
+        right_edges = np.sum(edges[:, 2*third_x:] > 0)
+        center_edges = np.sum(edges[:, third_x:2*third_x] > 0)
+        
+        if left_edges > center_edges and right_edges > center_edges:
+            viral_score += 0.2
+            impact_reasons.append("İyi kompozisyon - Rule of Thirds")
+        
+        # 4. Kontrast analizi
+        contrast = np.std(gray)
+        if contrast > 50:
+            viral_score += 0.3
+            impact_reasons.append("Yüksek kontrast - net görüntü")
+        elif contrast > 25:
+            viral_score += 0.1
+            impact_reasons.append("Orta kontrast")
+        
+        # Impact belirleme
+        if viral_score > 0.7:
+            impact = "positive"
+            score_change = 0.15
+        elif viral_score > 0.4:
+            impact = "neutral"
+            score_change = 0.05
+        else:
+            impact = "negative"
+            score_change = -0.05
+        
+        return {
+            "t": current_time,
+            "type": "visual",
+            "impact": impact,
+            "reason": " | ".join(impact_reasons) if impact_reasons else "Standart görüntü",
+            "score_change": score_change,
+            "visual_score": viral_score
+        }
+        
+    except Exception as e:
+        print(f"🎬 [SYNC] Visual viral impact analysis failed: {e}")
+        return {
+            "t": current_time,
+            "type": "visual",
+            "impact": "neutral",
+            "reason": "Görüntü analizi başarısız",
+            "score_change": 0.0
+        }
+
+
+def analyze_audio_viral_impact(audio_features: Dict[str, Any], current_time: float, frame_interval: float) -> Dict[str, Any]:
+    """
+    Ses viral etkisi analizi
+    """
+    try:
+        viral_score = 0.0
+        impact_reasons = []
+        
+        # 1. Loudness analizi
+        loudness = audio_features.get("loudness", -20)
+        
+        if -15 <= loudness <= -6:  # Optimal loudness
+            viral_score += 0.3
+            impact_reasons.append("Optimal ses seviyesi")
+        elif -20 <= loudness <= -3:  # Kabul edilebilir
+            viral_score += 0.2
+            impact_reasons.append("İyi ses seviyesi")
+        else:
+            viral_score += 0.1
+            impact_reasons.append("Düşük ses seviyesi")
+        
+        # 2. Tempo analizi
+        tempo = audio_features.get("tempo", 0)
+        
+        if 120 <= tempo <= 140:  # Viral tempo
+            viral_score += 0.3
+            impact_reasons.append("Viral tempo - enerjik")
+        elif 100 <= tempo <= 160:  # İyi tempo
+            viral_score += 0.2
+            impact_reasons.append("İyi tempo")
+        elif tempo > 0:
+            viral_score += 0.1
+            impact_reasons.append("Tempo tespit edildi")
+        
+        # 3. Ses kalitesi
+        # audio_info = features.get("audio_info", {})  # features burada tanımlı değil
+        sample_rate = 44100  # Default değer
+        
+        if sample_rate >= 44100:
+            viral_score += 0.2
+            impact_reasons.append("Yüksek kalite ses")
+        elif sample_rate >= 22050:
+            viral_score += 0.1
+            impact_reasons.append("Orta kalite ses")
+        
+        # 4. Ses değişimi analizi (basit)
+        # Ses segment'inde değişim var mı?
+        if current_time > 0:
+            viral_score += 0.2
+            impact_reasons.append("Ses değişimi - dinamik")
+        
+        # Impact belirleme
+        if viral_score > 0.7:
+            impact = "positive"
+            score_change = 0.1
+        elif viral_score > 0.4:
+            impact = "neutral"
+            score_change = 0.05
+        else:
+            impact = "negative"
+            score_change = -0.05
+        
+        return {
+            "t": current_time,
+            "type": "audio",
+            "impact": impact,
+            "reason": " | ".join(impact_reasons) if impact_reasons else "Standart ses",
+            "score_change": score_change,
+            "audio_score": viral_score
+        }
+        
+    except Exception as e:
+        print(f"🎬 [SYNC] Audio viral impact analysis failed: {e}")
+        return {
+            "t": current_time,
+            "type": "audio",
+            "impact": "neutral",
+            "reason": "Ses analizi başarısız",
+            "score_change": 0.0
+        }
+
+
+def analyze_text_viral_impact_at_time(textual: Dict[str, Any], current_time: float) -> Dict[str, Any]:
+    """
+    Belirli bir zamanda metin viral etkisi
+    """
+    try:
+        asr_text = textual.get("asr_text", "").lower()
+        ocr_texts = textual.get("ocr_text", [])
+        
+        # Tüm text'i birleştir
+        all_text = asr_text
+        for ocr_text in ocr_texts:
+            all_text += " " + ocr_text.lower()
+        
+        viral_score = 0.0
+        impact_reasons = []
+        
+        # Viral kelimeler
+        viral_keywords = {
+            "wow": 0.3, "amazing": 0.3, "incredible": 0.3, "unbelievable": 0.3,
+            "shocking": 0.3, "mind-blowing": 0.3, "epic": 0.2, "legendary": 0.2,
+            "harika": 0.3, "inanılmaz": 0.3, "muhteşem": 0.3, "şaşırtıcı": 0.3,
+            "müthiş": 0.2, "efsane": 0.2, "vay be": 0.15, "fire": 0.15,
+            "like": 0.1, "share": 0.1, "comment": 0.1, "subscribe": 0.1,
+            "beğen": 0.1, "paylaş": 0.1, "yorum": 0.1, "abone": 0.1
+        }
+        
+        # Text'te viral kelime var mı?
+        words = all_text.split()
+        viral_words_found = []
+        
+        for word in words:
+            if word in viral_keywords:
+                viral_score += viral_keywords[word]
+                viral_words_found.append(word)
+        
+        if viral_words_found:
+            impact_reasons.append(f"Viral kelimeler: {', '.join(viral_words_found[:3])}")
+        
+        # Text uzunluğu
+        if 5 <= len(words) <= 20:
+            viral_score += 0.2
+            impact_reasons.append("Optimal text uzunluğu")
+        elif len(words) > 0:
+            viral_score += 0.1
+            impact_reasons.append("Text mevcut")
+        
+        # Impact belirleme
+        if viral_score > 0.5:
+            impact = "positive"
+            score_change = 0.2
+        elif viral_score > 0.2:
+            impact = "neutral"
+            score_change = 0.05
+        else:
+            impact = "negative"
+            score_change = -0.05
+        
+        return {
+            "t": current_time,
+            "type": "text",
+            "impact": impact,
+            "reason": " | ".join(impact_reasons) if impact_reasons else "Standart metin",
+            "score_change": score_change,
+            "text_score": viral_score
+        }
+        
+    except Exception as e:
+        print(f"🎬 [SYNC] Text viral impact analysis failed: {e}")
+        return {
+            "t": current_time,
+            "type": "text",
+            "impact": "neutral",
+            "reason": "Metin analizi başarısız",
+            "score_change": 0.0
+        }
+
+
+def complete_sync_viral_timeline(features: Dict[str, Any], duration: float, viral_timeline: List[Dict]) -> None:
+    """
+    Senkronize viral timeline'ı tamamla ve optimize et
+    """
+    try:
+        if not viral_timeline:
+            return
+        
+        # Timeline'ı zamana göre sırala
+        viral_timeline.sort(key=lambda x: x["t"])
+        
+        # Benzer zamanlardaki event'leri birleştir
+        merged_timeline = []
+        current_time = None
+        current_events = []
+        
+        for event in viral_timeline:
+            if current_time is None or abs(event["t"] - current_time) < 0.5:  # 0.5 saniye içindeki event'ler
+                current_events.append(event)
+                current_time = event["t"]
+            else:
+                # Önceki event'leri birleştir
+                if current_events:
+                    merged_event = merge_sync_events(current_events, current_time)
+                    merged_timeline.append(merged_event)
+                
+                # Yeni event grubu başlat
+                current_events = [event]
+                current_time = event["t"]
+        
+        # Son event grubunu birleştir
+        if current_events:
+            merged_event = merge_sync_events(current_events, current_time)
+            merged_timeline.append(merged_event)
+        
+        # Timeline'ı güncelle
+        viral_timeline.clear()
+        viral_timeline.extend(merged_timeline)
+        
+        print(f"🎬 [SYNC] Timeline completed with {len(merged_timeline)} synchronized events")
+        
+    except Exception as e:
+        print(f"🎬 [SYNC] Failed to complete sync timeline: {e}")
+
+
+def merge_sync_events(events: List[Dict], current_time: float) -> Dict[str, Any]:
+    """
+    Aynı zamandaki event'leri birleştir
+    """
+    try:
+        visual_events = [e for e in events if e["type"] == "visual"]
+        audio_events = [e for e in events if e["type"] == "audio"]
+        text_events = [e for e in events if e["type"] == "text"]
+        
+        # Skorları topla
+        total_score_change = sum(e["score_change"] for e in events)
+        
+        # Impact belirle
+        if total_score_change > 0.2:
+            impact = "positive"
+        elif total_score_change > 0.05:
+            impact = "neutral"
+        else:
+            impact = "negative"
+        
+        # Reason'ları birleştir
+        reasons = []
+        if visual_events:
+            reasons.append(f"Görüntü: {visual_events[0]['reason']}")
+        if audio_events:
+            reasons.append(f"Ses: {audio_events[0]['reason']}")
+        if text_events:
+            reasons.append(f"Metin: {text_events[0]['reason']}")
+        
+        return {
+            "t": current_time,
+            "type": "sync",
+            "impact": impact,
+            "reason": " | ".join(reasons),
+            "score_change": total_score_change,
+            "visual_score": visual_events[0]["visual_score"] if visual_events else 0,
+            "audio_score": audio_events[0]["audio_score"] if audio_events else 0,
+            "text_score": text_events[0]["text_score"] if text_events else 0,
+            "sync_score": (visual_events[0]["visual_score"] if visual_events else 0) +
+                         (audio_events[0]["audio_score"] if audio_events else 0) +
+                         (text_events[0]["text_score"] if text_events else 0)
+        }
+        
+    except Exception as e:
+        print(f"🎬 [SYNC] Failed to merge events: {e}")
+        return {
+            "t": current_time,
+            "type": "sync",
+            "impact": "neutral",
+            "reason": "Event birleştirme başarısız",
+            "score_change": 0.0
+        }
