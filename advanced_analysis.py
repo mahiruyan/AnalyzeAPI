@@ -4805,7 +4805,15 @@ def analyze_speech_content(asr_text: str) -> Dict[str, Any]:
             "story": ["hikaye", "olay", "anlatayım", "bir gün", "geçen gün"],
             "fact": ["gerçek", "doğru", "aslında", "bilimsel", "araştırma"],
             "shock": ["inanılmaz", "şaşırtıcı", "imkansız", "mucize"],
-            "call_to_action": ["beğen", "paylaş", "yorum", "abone", "takip"]
+            "call_to_action": ["beğen", "paylaş", "yorum", "abone", "takip"],
+            "lifestyle_tip": ["ipucu", "tavsiye", "öneri", "deneyin", "mutlaka", "kesinlikle", "harika", "mükemmel"],
+            "routine": ["rutin", "günlük", "her gün", "sabah", "akşam", "alışkanlık"],
+            "transformation": ["önce", "sonra", "değişim", "dönüşüm", "fark", "farklı"],
+            "tutorial": ["nasıl yapılır", "adım adım", "tutorial", "rehber", "öğren", "yap"],
+            "review": ["inceleme", "review", "deneyim", "denedim", "kullandım", "aldım"],
+            "exclusive_event": ["davet", "etkinlik", "özel", "exclusive", "netflix", "amazon", "google", "apple", "microsoft", "etkinlik", "lansman", "premiere", "galası"],
+            "collaboration": ["işbirliği", "collaboration", "ortaklık", "partnership", "sponsor", "destek", "birlikte", "beraber"],
+            "behind_scenes": ["arkada", "perde", "behind", "scenes", "sahne", "kamera", "çekim", "set"]
         }
         
         # İçerik türü tespiti
@@ -4830,6 +4838,30 @@ def analyze_speech_content(asr_text: str) -> Dict[str, Any]:
                     elif content_type == "call_to_action":
                         viral_score += 0.2
                         description = "Çağrı eylemi - etkileşim artırıcı"
+                    elif content_type == "exclusive_event":
+                        viral_score += 0.5
+                        description = "Özel etkinlik - çok viral potansiyeli!"
+                    elif content_type == "collaboration":
+                        viral_score += 0.4
+                        description = "İşbirliği - güvenilirlik artırıcı"
+                    elif content_type == "behind_scenes":
+                        viral_score += 0.3
+                        description = "Perde arkası - merak uyandırıcı"
+                    elif content_type == "lifestyle_tip":
+                        viral_score += 0.25
+                        description = "Lifestyle ipucu - faydalı içerik"
+                    elif content_type == "routine":
+                        viral_score += 0.2
+                        description = "Rutin paylaşımı - ilham verici"
+                    elif content_type == "transformation":
+                        viral_score += 0.35
+                        description = "Dönüşüm - motivasyon artırıcı"
+                    elif content_type == "tutorial":
+                        viral_score += 0.3
+                        description = "Tutorial - eğitici içerik"
+                    elif content_type == "review":
+                        viral_score += 0.25
+                        description = "İnceleme - güvenilir içerik"
                     break
         
         if not detected_types:
@@ -4865,7 +4897,12 @@ def detect_topic_from_speech(asr_text: str) -> Dict[str, Any]:
             "spor": ["futbol", "basketbol", "spor", "oyun", "takım", "maç"],
             "müzik": ["müzik", "şarkı", "sanatçı", "konser", "enstrüman"],
             "yemek": ["yemek", "tarif", "mutfak", "pişirme", "lezzet"],
-            "seyahat": ["seyahat", "gezi", "ülke", "şehir", "turizm", "tatil"]
+            "seyahat": ["seyahat", "gezi", "ülke", "şehir", "turizm", "tatil"],
+            "lifestyle": ["lifestyle", "yaşam", "günlük", "rutin", "alışkanlık", "hobi", "moda", "stil", "outfit", "makyaj", "güzellik", "fitness", "wellness", "meditation", "yoga", "morning routine", "evening routine", "self care", "wellness", "mindfulness"],
+            "moda": ["moda", "fashion", "outfit", "kıyafet", "stil", "trend", "giyim", "aksesuar", "ayakkabı", "çanta", "takı", "mücevher"],
+            "güzellik": ["güzellik", "beauty", "makyaj", "makeup", "cilt bakımı", "skincare", "saç", "nail art", "tırnak", "parfüm", "kozmetik"],
+            "ev": ["ev", "home", "dekorasyon", "interior", "mobilya", "ev dekoru", "bahçe", "bitki", "ev temizliği", "organizasyon", "minimalist"],
+            "kişisel": ["kişisel", "personal", "development", "gelişim", "motivasyon", "başarı", "hedef", "alışkanlık", "disiplin", "zaman yönetimi"]
         }
         
         asr_lower = asr_text.lower()
@@ -4986,7 +5023,12 @@ def detect_topic_from_ocr(ocr_texts: List[str]) -> Dict[str, Any]:
             "spor": ["futbol", "basketbol", "spor", "oyun", "takım"],
             "müzik": ["müzik", "şarkı", "sanatçı", "konser"],
             "yemek": ["yemek", "tarif", "mutfak", "pişirme"],
-            "seyahat": ["seyahat", "gezi", "ülke", "şehir", "turizm"]
+            "seyahat": ["seyahat", "gezi", "ülke", "şehir", "turizm"],
+            "lifestyle": ["lifestyle", "yaşam", "günlük", "rutin", "alışkanlık", "hobi", "moda", "stil", "outfit", "makyaj", "güzellik", "fitness", "wellness", "meditation", "yoga", "morning routine", "evening routine", "self care", "wellness", "mindfulness"],
+            "moda": ["moda", "fashion", "outfit", "kıyafet", "stil", "trend", "giyim", "aksesuar", "ayakkabı", "çanta", "takı", "mücevher"],
+            "güzellik": ["güzellik", "beauty", "makyaj", "makeup", "cilt bakımı", "skincare", "saç", "nail art", "tırnak", "parfüm", "kozmetik"],
+            "ev": ["ev", "home", "dekorasyon", "interior", "mobilya", "ev dekoru", "bahçe", "bitki", "ev temizliği", "organizasyon", "minimalist"],
+            "kişisel": ["kişisel", "personal", "development", "gelişim", "motivasyon", "başarı", "hedef", "alışkanlık", "disiplin", "zaman yönetimi"]
         }
         
         topic_scores = {}
@@ -5086,6 +5128,51 @@ def analyze_topic_consistency(combined_analysis: Dict[str, Any]) -> Dict[str, An
             "question" in content_types):
             consistency_score += 0.5
             description += " - Tarih konusu + Soru (mükemmel kombinasyon!)"
+        
+        # Lifestyle kombinasyonları
+        elif (topic_detection.get("topic") in ["lifestyle", "moda", "güzellik"] and
+              "title" in content_types and
+              "person" in object_types):
+            consistency_score += 0.4
+            description += " - Lifestyle + Başlık + İnsan (viral kombinasyon!)"
+        
+        # Moda + Güzellik kombinasyonu
+        elif (topic_detection.get("topic") in ["moda", "güzellik"] and
+              topic_from_text.get("topic") in ["moda", "güzellik"] and
+              "person" in object_types):
+            consistency_score += 0.45
+            description += " - Moda/Güzellik + İnsan (mükemmel lifestyle kombinasyonu!)"
+        
+        # Fitness + Wellness kombinasyonu
+        elif (topic_detection.get("topic") == "lifestyle" and
+              "fitness" in str(combined_analysis.get("topic_detection", {}).get("all_scores", {})) and
+              "person" in object_types):
+            consistency_score += 0.4
+            description += " - Fitness + İnsan (motivasyon artırıcı!)"
+        
+        # Ev dekorasyonu + Lifestyle
+        elif (topic_detection.get("topic") == "ev" and
+              "title" in content_types):
+            consistency_score += 0.3
+            description += " - Ev dekorasyonu + Başlık (ilham verici!)"
+        
+        # Netflix/Özel Etkinlik kombinasyonu
+        elif ("exclusive_event" in content_types and
+              "person" in object_types):
+            consistency_score += 0.6
+            description += " - Özel etkinlik + İnsan (çok viral kombinasyon!)"
+        
+        # İşbirliği + Özel Etkinlik
+        elif ("collaboration" in content_types and
+              "exclusive_event" in content_types):
+            consistency_score += 0.7
+            description += " - İşbirliği + Özel Etkinlik (mükemmel kombinasyon!)"
+        
+        # Perde Arkası + İşbirliği
+        elif ("behind_scenes" in content_types and
+              "collaboration" in content_types):
+            consistency_score += 0.5
+            description += " - Perde Arkası + İşbirliği (merak uyandırıcı!)"
         
         return {
             "consistent": consistency_score > 0.6,
