@@ -24,32 +24,18 @@ try:
 except Exception:
     cv2 = None
 
-# scenedetect temporarily disabled for Railway deploy
-# try:
-#     from scenedetect import VideoManager, SceneManager
-#     from scenedetect.detectors import ContentDetector
-# except Exception:
-#     VideoManager = None
-#     SceneManager = None
-#     ContentDetector = None
+try:
+    from scenedetect import VideoManager, SceneManager
+    from scenedetect.detectors import ContentDetector
+except Exception:
+    VideoManager = None
+    SceneManager = None
+    ContentDetector = None
 
-VideoManager = None
-SceneManager = None
-ContentDetector = None
-
-# OCR temporarily disabled for Railway deploy
-# try:
-#     from paddleocr import PaddleOCR
-# except Exception:
-#     PaddleOCR = None
-
-# try:
-#     import easyocr
-# except Exception:
-#     easyocr = None
-
-PaddleOCR = None
-easyocr = None
+try:
+    from paddleocr import PaddleOCR
+except Exception:
+    PaddleOCR = None
 
 try:
     from faster_whisper import WhisperModel
@@ -138,7 +124,12 @@ def _fallback_text_detection(frames: List[str]) -> List[str]:
     """
     texts = []
     
-    # EasyOCR fallback
+    # EasyOCR fallback (opsiyonel, devrede değil)
+    try:
+        import importlib
+        easyocr = importlib.import_module("easyocr")
+    except Exception:
+        easyocr = None
     if easyocr is not None:
         try:
             print("🔄 [OCR] Trying EasyOCR fallback...")

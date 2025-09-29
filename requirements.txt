@@ -4,10 +4,11 @@ httpx==0.25.2
 pydantic==2.5.0
 numpy==1.24.3
 opencv-python-headless==4.8.1.78
-# scenedetect
-# OCR temporarily disabled for Railway deploy
-# paddlepaddle==2.6.1
-# paddleocr==2.8.1
+scenedetect==0.6.3
+# OCR
+paddlepaddle==2.5.2
+paddleocr==2.7.0.3
+# easyocr opsiyonel (gerekirse açılabilir)
 # easyocr==1.7.0
 pillow==10.1.0
 librosa==0.10.1
