@@ -298,6 +298,7 @@ def analyze_performance_api(data: AnalyzeRequest):
             total_score = (hook_result["score"] + pacing_result["score"] + 
                           legacy_scores.get("overall_score", 0))
             advanced_scores["total_score"] = total_score
+            advanced_scores["overall_score"] = total_score  # Frontend için
             
             # Legacy öneriler
             print("💡 [DEBUG] Generating legacy suggestions...")
@@ -337,7 +338,9 @@ def analyze_performance_api(data: AnalyzeRequest):
                 "suggestions": all_suggestions[:10],  # En önemli 10 öneri
                 "findings": all_findings,  # Zaman kodlu bulgular
                 "hook_analysis": hook_result,  # Detaylı hook analizi
-                "pacing_analysis": pacing_result  # Detaylı pacing analizi
+                "pacing_analysis": pacing_result,  # Detaylı pacing analizi
+                "score": total_score,  # Frontend için direkt score
+                "overall_score": total_score  # Frontend için
             }
     except Exception as e:
         print(f"❌ [ERROR] Analysis failed: {str(e)}")
@@ -353,7 +356,9 @@ def analyze_performance_api(data: AnalyzeRequest):
             "viral": False,
             "mode": data.mode or "UNKNOWN",
             "analysis_complete": False,
-            "suggestions": [f"Video analiz hatası: {str(e)}"]
+            "suggestions": [f"Video analiz hatası: {str(e)}"],
+            "score": 0,  # Frontend için
+            "overall_score": 0  # Frontend için
         }
 
 @app.post("/analyze", response_model=AnalyzeResponse)
@@ -365,7 +370,7 @@ def analyze_performance(data: AnalyzeRequest):
     return AnalyzeResponse(
         score=result.get("scores", {}).get("overall_score", 0),
         verdict=result.get("verdict", "mid"),
-        suggestions=result.get("suggestions", {}).get("tips", [])
+        suggestions=result.get("suggestions", [])  # Artık direkt liste
     )
 
 # main.py import'u kaldırıldı - circular import sorunu yaratıyordu
