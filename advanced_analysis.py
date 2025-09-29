@@ -5209,6 +5209,422 @@ def analyze_topic_consistency(combined_analysis: Dict[str, Any]) -> Dict[str, An
         }
 
 
+def analyze_content_type_suitability(features: Dict[str, Any], duration: float) -> Dict[str, Any]:
+    """
+    İçerik Tipi Uygunluğu Analizi (6 puan)
+    İçerik tipi tespiti ve platform uygunluğu
+    """
+    score = 0
+    findings = []
+    recommendations = []
+    raw_metrics = {}
+    
+    print("📋 [CONTENT] Starting content type suitability analysis...")
+    
+    try:
+        # 1. Görsel içerik tipi tespiti (2 puan)
+        visual_content_result = analyze_visual_content_type(features)
+        score += visual_content_result["score"]
+        findings.extend(visual_content_result["findings"])
+        raw_metrics["visual_content"] = visual_content_result
+        
+        # 2. Ses içerik tipi tespiti (2 puan)
+        audio_content_result = analyze_audio_content_type(features)
+        score += audio_content_result["score"]
+        findings.extend(audio_content_result["findings"])
+        raw_metrics["audio_content"] = audio_content_result
+        
+        # 3. Platform uygunluğu analizi (2 puan)
+        platform_suitability_result = analyze_platform_suitability(features, duration)
+        score += platform_suitability_result["score"]
+        findings.extend(platform_suitability_result["findings"])
+        raw_metrics["platform_suitability"] = platform_suitability_result
+        
+        # Genel değerlendirme
+        if score >= 5:
+            recommendations.append("Mükemmel içerik tipi uygunluğu!")
+        elif score >= 3:
+            recommendations.append("İyi içerik tipi, platform optimizasyonu yapılabilir")
+        elif score >= 1:
+            recommendations.append("İçerik tipi tespiti geliştirilebilir")
+        else:
+            recommendations.append("İçerik tipi analizi ve optimizasyon gerekli")
+        
+        print(f"✅ [CONTENT] Analysis completed: {score}/6")
+        
+        return {
+            "score": min(score, 6),
+            "findings": findings,
+            "recommendations": recommendations,
+            "raw": raw_metrics
+        }
+        
+    except Exception as e:
+        print(f"❌ [CONTENT] Analysis failed: {e}")
+        return {
+            "score": 0,
+            "findings": [f"İçerik tipi analizi başarısız: {e}"],
+            "recommendations": ["İçerik tipi analizi geliştirilmeli"],
+            "raw": {}
+        }
+
+
+def analyze_visual_content_type(features: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Görsel içerik tipi tespiti
+    """
+    try:
+        score = 0
+        findings = []
+        detected_types = []
+        
+        frames = features.get("frames", [])
+        if not frames:
+            return {"score": 0, "findings": ["Görüntü bulunamadı"], "types": []}
+        
+        # İçerik kategorileri
+        content_categories = {
+            "lifestyle": {
+                "keywords": ["moda", "güzellik", "ev", "alışveriş", "stil", "outfit"],
+                "visual_cues": ["insan", "kıyafet", "aksesuar", "ev dekoru"]
+            },
+            "education": {
+                "keywords": ["tutorial", "bilgi", "öğren", "ders", "nasıl", "rehber"],
+                "visual_cues": ["kitap", "yazı", "diagram", "grafik"]
+            },
+            "entertainment": {
+                "keywords": ["komedi", "müzik", "dans", "eğlence", "gül", "şaka"],
+                "visual_cues": ["insan", "müzik", "dans", "oyun"]
+            },
+            "food": {
+                "keywords": ["yemek", "tarif", "mutfak", "lezzet", "pişirme", "tarif"],
+                "visual_cues": ["yemek", "mutfak", "pişirme", "tabak"]
+            },
+            "travel": {
+                "keywords": ["seyahat", "gezi", "turizm", "ülke", "şehir", "tatil"],
+                "visual_cues": ["doğa", "şehir", "bina", "yol", "harita"]
+            },
+            "fitness": {
+                "keywords": ["spor", "egzersiz", "fitness", "sağlık", "antrenman"],
+                "visual_cues": ["spor", "egzersiz", "fitness", "sağlık"]
+            },
+            "technology": {
+                "keywords": ["teknoloji", "gadget", "app", "software", "bilgisayar"],
+                "visual_cues": ["bilgisayar", "telefon", "teknoloji", "ekran"]
+            },
+            "business": {
+                "keywords": ["iş", "kariyer", "girişim", "finans", "başarı"],
+                "visual_cues": ["ofis", "toplantı", "doküman", "grafik"]
+            }
+        }
+        
+        # Her frame için içerik analizi
+        for i, frame_path in enumerate(frames[:3]):
+            try:
+                import cv2
+                import numpy as np
+                
+                image = cv2.imread(frame_path)
+                if image is None:
+                    continue
+                
+                # Basit nesne tespiti (Haar Cascade)
+                gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+                
+                # Yüz tespiti (insan)
+                face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
+                faces = face_cascade.detectMultiScale(gray, 1.1, 4)
+                
+                if len(faces) > 0:
+                    detected_types.append("insan")
+                    score += 0.2
+                
+                # Renk analizi
+                hsv = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
+                
+                # Yeşil renk (doğa)
+                green_mask = cv2.inRange(hsv, np.array([40, 40, 40]), np.array([80, 255, 255]))
+                green_ratio = np.sum(green_mask > 0) / (image.shape[0] * image.shape[1])
+                
+                if green_ratio > 0.3:
+                    detected_types.append("doğa")
+                    score += 0.1
+                
+                # Mavi renk (gökyüzü, su)
+                blue_mask = cv2.inRange(hsv, np.array([100, 40, 40]), np.array([130, 255, 255]))
+                blue_ratio = np.sum(blue_mask > 0) / (image.shape[0] * image.shape[1])
+                
+                if blue_ratio > 0.3:
+                    detected_types.append("gökyüzü_su")
+                    score += 0.1
+                
+                # Parlaklık analizi (iç mekan vs dış mekan)
+                brightness = np.mean(hsv[:,:,2])
+                if brightness > 150:
+                    detected_types.append("iç_mekan")
+                    score += 0.1
+                elif brightness < 100:
+                    detected_types.append("dış_mekan")
+                    score += 0.1
+                
+            except Exception as e:
+                print(f"⚠️ [CONTENT] Visual analysis failed for frame {i}: {e}")
+                continue
+        
+        # Metin analizi ile görsel tespiti birleştir
+        textual = features.get("textual", {})
+        asr_text = textual.get("asr_text", "").lower()
+        ocr_texts = textual.get("ocr_text", [])
+        
+        all_text = asr_text + " " + " ".join(ocr_texts).lower()
+        
+        # Kategori tespiti
+        detected_categories = []
+        for category, data in content_categories.items():
+            category_score = 0
+            
+            # Anahtar kelime kontrolü
+            for keyword in data["keywords"]:
+                if keyword in all_text:
+                    category_score += 1
+            
+            # Görsel ipucu kontrolü
+            for visual_cue in data["visual_cues"]:
+                if visual_cue in detected_types:
+                    category_score += 1
+            
+            if category_score > 0:
+                detected_categories.append(category)
+                score += 0.2
+        
+        if detected_categories:
+            findings.append(f"İçerik kategorileri tespit edildi: {', '.join(detected_categories[:3])}")
+        
+        if detected_types:
+            findings.append(f"Görsel öğeler: {', '.join(detected_types[:3])}")
+        
+        return {
+            "score": min(score, 2),
+            "findings": findings,
+            "types": list(set(detected_types)),
+            "categories": detected_categories
+        }
+        
+    except Exception as e:
+        print(f"❌ [CONTENT] Visual content type analysis failed: {e}")
+        return {
+            "score": 0,
+            "findings": [f"Görsel içerik analizi başarısız: {e}"],
+            "types": [],
+            "categories": []
+        }
+
+
+def analyze_audio_content_type(features: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Ses içerik tipi tespiti
+    """
+    try:
+        score = 0
+        findings = []
+        detected_types = []
+        
+        audio_info = features.get("audio_info", {})
+        if not audio_info:
+            return {"score": 0, "findings": ["Ses bilgisi bulunamadı"], "types": []}
+        
+        # Ses özellikleri
+        loudness = audio_info.get("loudness", 0)
+        tempo = audio_info.get("tempo", 0)
+        spectral_centroid = audio_info.get("spectral_centroid", 0)
+        
+        # Ses türü kategorileri
+        audio_categories = {
+            "music": {
+                "tempo_range": (60, 180),
+                "loudness_range": (-20, 0),
+                "spectral_centroid_range": (1000, 5000),
+                "keywords": ["müzik", "şarkı", "melodi", "ritim"]
+            },
+            "speech": {
+                "tempo_range": (80, 160),
+                "loudness_range": (-30, -10),
+                "spectral_centroid_range": (500, 2000),
+                "keywords": ["konuşma", "ses", "anlat", "söyle"]
+            },
+            "nature": {
+                "tempo_range": (20, 80),
+                "loudness_range": (-40, -20),
+                "spectral_centroid_range": (200, 1000),
+                "keywords": ["doğa", "kuş", "rüzgar", "yağmur"]
+            },
+            "urban": {
+                "tempo_range": (60, 120),
+                "loudness_range": (-25, -5),
+                "spectral_centroid_range": (800, 3000),
+                "keywords": ["şehir", "trafik", "kalabalık", "gürültü"]
+            }
+        }
+        
+        # Ses özelliklerine göre tür tespiti
+        for category, criteria in audio_categories.items():
+            category_score = 0
+            
+            # Tempo kontrolü
+            if criteria["tempo_range"][0] <= tempo <= criteria["tempo_range"][1]:
+                category_score += 0.3
+            
+            # Loudness kontrolü
+            if criteria["loudness_range"][0] <= loudness <= criteria["loudness_range"][1]:
+                category_score += 0.3
+            
+            # Spectral centroid kontrolü
+            if criteria["spectral_centroid_range"][0] <= spectral_centroid <= criteria["spectral_centroid_range"][1]:
+                category_score += 0.3
+            
+            if category_score >= 0.6:
+                detected_types.append(category)
+                score += 0.3
+        
+        # Metin analizi ile ses tespiti birleştir
+        textual = features.get("textual", {})
+        asr_text = textual.get("asr_text", "").lower()
+        
+        for category, criteria in audio_categories.items():
+            for keyword in criteria["keywords"]:
+                if keyword in asr_text:
+                    if category not in detected_types:
+                        detected_types.append(category)
+                    score += 0.2
+                    break
+        
+        # Özel ses türleri
+        if loudness > -10:
+            detected_types.append("yüksek_ses")
+            score += 0.1
+        
+        if tempo > 120:
+            detected_types.append("hızlı_tempo")
+            score += 0.1
+        elif tempo < 60:
+            detected_types.append("yavaş_tempo")
+            score += 0.1
+        
+        if detected_types:
+            findings.append(f"Ses türleri: {', '.join(detected_types[:3])}")
+        
+        return {
+            "score": min(score, 2),
+            "findings": findings,
+            "types": list(set(detected_types))
+        }
+        
+    except Exception as e:
+        print(f"❌ [CONTENT] Audio content type analysis failed: {e}")
+        return {
+            "score": 0,
+            "findings": [f"Ses içerik analizi başarısız: {e}"],
+            "types": []
+        }
+
+
+def analyze_platform_suitability(features: Dict[str, Any], duration: float) -> Dict[str, Any]:
+    """
+    Platform uygunluğu analizi
+    """
+    try:
+        score = 0
+        findings = []
+        
+        # Platform özellikleri
+        platform_requirements = {
+            "instagram": {
+                "optimal_duration": (15, 60),  # 15-60 saniye
+                "aspect_ratio": "vertical",  # Dikey format
+                "content_types": ["lifestyle", "fashion", "beauty", "food", "travel"],
+                "audio_requirements": "music_or_speech"
+            },
+            "tiktok": {
+                "optimal_duration": (15, 180),  # 15-180 saniye
+                "aspect_ratio": "vertical",  # Dikey format
+                "content_types": ["entertainment", "dance", "comedy", "education", "trending"],
+                "audio_requirements": "trending_music"
+            }
+        }
+        
+        # Süre analizi
+        if 15 <= duration <= 60:
+            score += 0.5
+            findings.append("Instagram için optimal süre")
+        elif 15 <= duration <= 180:
+            score += 0.3
+            findings.append("TikTok için optimal süre")
+        else:
+            findings.append("Süre optimizasyonu gerekli")
+        
+        # Görsel format analizi (basit)
+        frames = features.get("frames", [])
+        if frames:
+            try:
+                import cv2
+                image = cv2.imread(frames[0])
+                if image is not None:
+                    height, width = image.shape[:2]
+                    aspect_ratio = height / width
+                    
+                    if aspect_ratio > 1.5:  # Dikey format
+                        score += 0.5
+                        findings.append("Dikey format - mobil platformlar için uygun")
+                    elif aspect_ratio < 0.8:  # Yatay format
+                        score += 0.2
+                        findings.append("Yatay format - YouTube için uygun")
+                    else:  # Kare format
+                        score += 0.3
+                        findings.append("Kare format - Instagram feed için uygun")
+            except Exception as e:
+                print(f"⚠️ [CONTENT] Format analysis failed: {e}")
+        
+        # İçerik türü uygunluğu
+        textual = features.get("textual", {})
+        asr_text = textual.get("asr_text", "").lower()
+        
+        # Instagram uygun içerik türleri
+        instagram_keywords = ["moda", "güzellik", "ev", "alışveriş", "stil", "lifestyle"]
+        instagram_score = sum(1 for keyword in instagram_keywords if keyword in asr_text)
+        
+        # TikTok uygun içerik türleri
+        tiktok_keywords = ["komedi", "dans", "trend", "eğlence", "şaka", "müzik"]
+        tiktok_score = sum(1 for keyword in tiktok_keywords if keyword in asr_text)
+        
+        if instagram_score > 0:
+            score += 0.3
+            findings.append(f"Instagram içerik türü uygunluğu: {instagram_score} eşleşme")
+        
+        if tiktok_score > 0:
+            score += 0.3
+            findings.append(f"TikTok içerik türü uygunluğu: {tiktok_score} eşleşme")
+        
+        # Ses uygunluğu
+        audio_info = features.get("audio_info", {})
+        if audio_info:
+            loudness = audio_info.get("loudness", 0)
+            if -20 <= loudness <= -5:  # Optimal ses seviyesi
+                score += 0.2
+                findings.append("Optimal ses seviyesi")
+        
+        return {
+            "score": min(score, 2),
+            "findings": findings
+        }
+        
+    except Exception as e:
+        print(f"❌ [CONTENT] Platform suitability analysis failed: {e}")
+        return {
+            "score": 0,
+            "findings": [f"Platform uygunluğu analizi başarısız: {e}"]
+        }
+
+
 def analyze_trend_originality(features: Dict[str, Any], duration: float) -> Dict[str, Any]:
     """
     Trend & Orijinallik Analizi (8 puan)
