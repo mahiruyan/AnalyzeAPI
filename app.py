@@ -65,7 +65,7 @@ class TikTokIngest(BaseModel):
 class AnalyzeRequest(BaseModel):
     platform: str = Field(..., pattern="^(instagram|tiktok)$")
     file_url: str = Field(..., description="Video URL to analyze")
-    mode: Optional[str] = Field("FAST", description="Analysis mode: FAST or FULL")
+    mode: Optional[str] = Field("FULL", description="Analysis mode: FULL (fast mode removed)")
     title: Optional[str] = ""
     caption: Optional[str] = ""
     tags: Optional[List[str]] = []
@@ -261,7 +261,7 @@ def analyze_performance_api(data: AnalyzeRequest):
             # Frame'ler kar - ok hzl
             safe_print(" [DEBUG] Extracting frames...")
             try:
-                frames = grab_frames(video_path, frames_dir, max_frames=3)  # 3 frame'e drdk (hz iin)
+                frames = grab_frames(video_path, frames_dir, max_frames=10)  # 10 frame - FULL analiz
                 safe_print(f"[DEBUG] Frames extracted: {len(frames)} frames")
             except Exception as e:
                 raise Exception(f"Frame karma baarsz: {e}")
@@ -280,13 +280,13 @@ def analyze_performance_api(data: AnalyzeRequest):
                 title=data.title or "",
                 tags=data.tags or [],
                 duration_seconds=duration,
-                fast_mode=(data.mode == "FAST")
+                fast_mode=False  # Her zaman FULL mode - fast mode sikik
             )
             safe_print("[DEBUG] Features extracted")
             
             # Eski skorlar hesapla
             safe_print("[DEBUG] Calculating legacy scores...")
-            legacy_scores = score_features(features, data.platform, (data.mode == "FAST"))
+            legacy_scores = score_features(features, data.platform, False)  # Her zaman FULL mode
             safe_print("[DEBUG] Legacy scores calculated")
             
             # YEN: Hook analizi (hzl versiyon - 3 frame)

@@ -132,10 +132,8 @@ def _ocr_frames(frames: List[str], fast_mode: bool = False) -> List[str]:
     """
     texts = []
     
-    # FAST modda OCR atla
-    if fast_mode:
-        safe_print("[OCR] Skipped (fast mode)")
-        return texts
+    # OCR her zaman çalışır - fast mode kaldırıldı
+    safe_print("[OCR] Starting OCR analysis...")
     
     try:
         if pytesseract is None or Image is None:
@@ -145,8 +143,8 @@ def _ocr_frames(frames: List[str], fast_mode: bool = False) -> List[str]:
         safe_print("[OCR] Using Tesseract OCR...")
         safe_print(f"[OCR] Tesseract initialized, processing {len(frames)} frames")
         
-        # Hzl analiz iin sadece ilk 3 kare
-        for i, f in enumerate(frames[:3]):
+        # Tüm frame'leri analiz et - FULL mode
+        for i, f in enumerate(frames):
             try:
                 # Grnty a ve OCR uygula
                 image = Image.open(f)
