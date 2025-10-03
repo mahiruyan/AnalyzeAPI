@@ -15,21 +15,21 @@ def score_features(features: Dict[str, Any], platform: str = "", fast_mode: bool
     textual = features.get("textual", {})
     duration = float(features.get("duration_seconds", 0.0))
 
-    # Heuristik normalizasyon aralıkları
+    # Heuristik normalizasyon aralklar
     loudness = float(audio.get("loudness_lufs", 0.0))
     tempo = float(audio.get("tempo_bpm", 0.0))
     flow = float(visual.get("optical_flow_mean", 0.0))
     scene_count = float(visual.get("scene_count", 0.0))
 
-    # Hook: ilk saniyelerde yüksek hareket + güçlü metin ipucu
+    # Hook: ilk saniyelerde yksek hareket + gl metin ipucu
     text_len = len((textual.get("caption", "") + " " + textual.get("title", "") + " " + textual.get("asr_text", "")).strip())
     hook_score = 0.6 * _normalize(flow, 0.0, 3.0) + 0.4 * _normalize(text_len, 0.0, 240)
 
-    # Flow: optik akışın dengeli olması ve sahne geçişleri
+    # Flow: optik akn dengeli olmas ve sahne geileri
     flow_score = 0.7 * _normalize(flow, 0.2, 2.0) + 0.3 * _normalize(scene_count, 0.0, 12.0)
 
-    # Audio quality: loudness (yaklaşık -23 ile -10 LUFS arası), tempo 70-160 bpm
-    loudness_score = _normalize(-loudness, -(-23.0), -(-10.0))  # -23 .. -10 aralığına yakınsa iyi
+    # Audio quality: loudness (yaklak -23 ile -10 LUFS aras), tempo 70-160 bpm
+    loudness_score = _normalize(-loudness, -(-23.0), -(-10.0))  # -23 .. -10 aralna yaknsa iyi
     tempo_score = _normalize(tempo, 70.0, 160.0)
     audio_quality_score = 0.6 * loudness_score + 0.4 * tempo_score
 
@@ -39,14 +39,14 @@ def score_features(features: Dict[str, Any], platform: str = "", fast_mode: bool
         # FAST modda sadece caption ve title kullan
         text_blob = (textual.get("caption", "") + " " + textual.get("title", "")).lower()
     else:
-        # FULL modda tüm metinleri kullan
+        # FULL modda tm metinleri kullan
         text_blob = (textual.get("caption", "") + " " + textual.get("title", "") + " " + textual.get("ocr_text", "") + " " + textual.get("asr_text", "")).lower()
     tag_hits = sum(1 for t in tags if t in text_blob)
     content_fit_score = _normalize(tag_hits, 0.0, max(3.0, float(len(tags) or 1)))
 
-    # Süre uygunluğu (platforma göre kabaca)
+    # Sre uygunluu (platforma gre kabaca)
     if platform.lower() in {"tiktok", "instagram", "reels", "shorts", "youtube"}:
-        # 6 - 60 sn arası ideal varsayımı
+        # 6 - 60 sn aras ideal varsaym
         duration_score = 1.0 - abs((duration - 30.0) / 30.0)
         duration_score = float(np.clip(duration_score, 0.0, 1.0))
     else:

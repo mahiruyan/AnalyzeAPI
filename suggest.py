@@ -12,7 +12,7 @@ def _rule_based_suggestions(
 ) -> Dict[str, Any]:
     suggestions: List[str] = []
     
-    # Gerçek video verilerini al
+    # Gerek video verilerini al
     audio = features.get("audio", {})
     visual = features.get("visual", {})
     textual = features.get("textual", {})
@@ -24,91 +24,91 @@ def _rule_based_suggestions(
     ocr_text = textual.get("ocr_text", "")
     asr_text = textual.get("asr_text", "")
     
-    # BPM analizi - doğal konuşma tarzında
+    # BPM analizi - doal konuma tarznda
     if tempo > 0:
         if tempo < 60:
-            suggestions.append(f"Müziğiniz {tempo:.0f} BPM'de çok sakin. Biraz daha hareketli bir şarkı seçseniz izleyiciler daha çok dikkat eder.")
+            suggestions.append(f"Mziiniz {tempo:.0f} BPM'de ok sakin. Biraz daha hareketli bir ark seseniz izleyiciler daha ok dikkat eder.")
         elif tempo < 80:
-            suggestions.append(f"{tempo:.0f} BPM güzel bir tempo ama viral olmak için 100-120 BPM arası daha etkili. Biraz daha hızlı müzik deneyin.")
+            suggestions.append(f"{tempo:.0f} BPM gzel bir tempo ama viral olmak iin 100-120 BPM aras daha etkili. Biraz daha hzl mzik deneyin.")
         elif tempo < 100:
-            suggestions.append(f"{tempo:.0f} BPM mükemmel! Bu tempoyu kesinlikle koruyun, çok dengeli.")
+            suggestions.append(f"{tempo:.0f} BPM mkemmel! Bu tempoyu kesinlikle koruyun, ok dengeli.")
         elif tempo < 140:
-            suggestions.append(f"{tempo:.0f} BPM çok enerjik! Bu hız viral içerik için harika, çok dikkat çekici.")
+            suggestions.append(f"{tempo:.0f} BPM ok enerjik! Bu hz viral ierik iin harika, ok dikkat ekici.")
         else:
-            suggestions.append(f"{tempo:.0f} BPM biraz fazla hızlı olmuş. Bazı izleyiciler rahatsız olabilir, biraz yavaşlatın.")
+            suggestions.append(f"{tempo:.0f} BPM biraz fazla hzl olmu. Baz izleyiciler rahatsz olabilir, biraz yavalatn.")
     
-    # Ses seviyesi analizi - doğal konuşma tarzında
+    # Ses seviyesi analizi - doal konuma tarznda
     if loudness != 0:
         if loudness < -25:
-            suggestions.append(f" Sesiniz çok kısık ({loudness:.1f} LUFS). Biraz daha yükseltirseniz dinleyiciler daha rahat duyar.")
+            suggestions.append(f" Sesiniz ok ksk ({loudness:.1f} LUFS). Biraz daha ykseltirseniz dinleyiciler daha rahat duyar.")
         elif loudness < -18:
-            suggestions.append(f" Ses seviyeniz biraz düşük ({loudness:.1f} LUFS). Biraz daha açsanız çok daha iyi olur.")
+            suggestions.append(f" Ses seviyeniz biraz dk ({loudness:.1f} LUFS). Biraz daha asanz ok daha iyi olur.")
         elif loudness < -12:
-            suggestions.append(f" Ses seviyeniz harika ({loudness:.1f} LUFS)! Tam ideal seviyede, böyle devam edin.")
+            suggestions.append(f" Ses seviyeniz harika ({loudness:.1f} LUFS)! Tam ideal seviyede, byle devam edin.")
         elif loudness < -8:
-            suggestions.append(f" Ses biraz yüksek ({loudness:.1f} LUFS). Hafifçe kısarsanız daha rahat dinlenir.")
+            suggestions.append(f" Ses biraz yksek ({loudness:.1f} LUFS). Hafife ksarsanz daha rahat dinlenir.")
         else:
-            suggestions.append(f" Ses çok yüksek ({loudness:.1f} LUFS). Biraz kısın, dinleyiciler rahatsız olabilir.")
+            suggestions.append(f" Ses ok yksek ({loudness:.1f} LUFS). Biraz ksn, dinleyiciler rahatsz olabilir.")
     
-    # Görsel hareket analizi - doğal konuşma tarzında
+    # Grsel hareket analizi - doal konuma tarznda
     if flow > 0:
         if flow < 0.3:
-            suggestions.append(f" Videonuz çok statik görünüyor. Biraz daha kamera hareketi veya zoom ekleseniz daha canlı olur.")
+            suggestions.append(f" Videonuz ok statik grnyor. Biraz daha kamera hareketi veya zoom ekleseniz daha canl olur.")
         elif flow < 0.8:
-            suggestions.append(f" Hareket seviyeniz orta ({flow:.2f}). Biraz daha dinamik çekimler deneyin, daha dikkat çekici olur.")
+            suggestions.append(f" Hareket seviyeniz orta ({flow:.2f}). Biraz daha dinamik ekimler deneyin, daha dikkat ekici olur.")
         elif flow < 2.0:
-            suggestions.append(f" Hareket dengeniz harika ({flow:.2f})! Bu seviyeyi kesinlikle koruyun, çok profesyonel.")
+            suggestions.append(f" Hareket dengeniz harika ({flow:.2f})! Bu seviyeyi kesinlikle koruyun, ok profesyonel.")
         elif flow < 3.5:
-            suggestions.append(f" Çok yoğun hareket var ({flow:.2f}). Bazı sahneleri biraz yavaşlatırsanız daha rahat izlenir.")
+            suggestions.append(f" ok youn hareket var ({flow:.2f}). Baz sahneleri biraz yavalatrsanz daha rahat izlenir.")
         else:
-            suggestions.append(f" Geçişler çok hızlı ({flow:.2f}). Biraz daha yavaş edit yaparsanız izleyiciler takip edebilir.")
+            suggestions.append(f" Geiler ok hzl ({flow:.2f}). Biraz daha yava edit yaparsanz izleyiciler takip edebilir.")
     
-    # Metin tespiti - doğal konuşma tarzında
+    # Metin tespiti - doal konuma tarznda
     if len(ocr_text) > 0:
-        suggestions.append(f"Videonuzda '{ocr_text[:50]}...' yazısı var. Bu güzel bir başlangıç, yazılar çok etkili!")
+        suggestions.append(f"Videonuzda '{ocr_text[:50]}...' yazs var. Bu gzel bir balang, yazlar ok etkili!")
         if len(ocr_text) < 30:
-            suggestions.append("Biraz daha yazı ekleseniz harika olur. Metinler viral içerik için süper etkili.")
+            suggestions.append("Biraz daha yaz ekleseniz harika olur. Metinler viral ierik iin sper etkili.")
     else:
-        suggestions.append("Videonuzda hiç yazı göremiyorum. Anahtar kelimeleri ekranda gösterirseniz çok daha etkili olur.")
+        suggestions.append("Videonuzda hi yaz gremiyorum. Anahtar kelimeleri ekranda gsterirseniz ok daha etkili olur.")
     
-    # Konuşma analizi - doğal konuşma tarzında
+    # Konuma analizi - doal konuma tarznda
     if len(asr_text) > 0:
-        suggestions.append(f" Konuşmanızı duyuyorum: '{asr_text[:40]}...' - Bu çok güzel!")
+        suggestions.append(f" Konumanz duyuyorum: '{asr_text[:40]}...' - Bu ok gzel!")
         if len(asr_text) < 50:
-            suggestions.append(" Biraz daha uzun konuşsanız harika olur. Detaylı açıklamalar viral için çok etkili.")
+            suggestions.append(" Biraz daha uzun konusanz harika olur. Detayl aklamalar viral iin ok etkili.")
     else:
-        suggestions.append(" Videonuzda konuşma duymuyorum. Sesli açıklama eklerseniz çok daha etkileşimli olur.")
+        suggestions.append(" Videonuzda konuma duymuyorum. Sesli aklama eklerseniz ok daha etkileimli olur.")
     
-    # Süre analizi - doğal konuşma tarzında
+    # Sre analizi - doal konuma tarznda
     if duration > 0:
-        suggestions.append(f"Videonuz {duration:.1f} saniye sürüyor.")
+        suggestions.append(f"Videonuz {duration:.1f} saniye sryor.")
         if platform.lower() == "instagram":
             if duration < 20:
-                suggestions.append("Instagram Reels için biraz kısa. En az 30 saniye yaparsanız daha etkili olur.")
+                suggestions.append("Instagram Reels iin biraz ksa. En az 30 saniye yaparsanz daha etkili olur.")
             elif duration > 90:
-                suggestions.append("Instagram için biraz uzun olmuş. 60 saniyeden kısa tutarsanız daha iyi.")
+                suggestions.append("Instagram iin biraz uzun olmu. 60 saniyeden ksa tutarsanz daha iyi.")
             else:
-                suggestions.append("Süre Instagram için mükemmel! Bu uzunlukta devam edin.")
+                suggestions.append("Sre Instagram iin mkemmel! Bu uzunlukta devam edin.")
     
-    # Skorlara göre spesifik öneriler - doğal konuşma tarzında
+    # Skorlara gre spesifik neriler - doal konuma tarznda
     hook_score = scores.get("hook_score", 0)
     flow_score = scores.get("flow_score", 0)
     audio_score = scores.get("audio_quality_score", 0)
     
     if hook_score < 0.5:
-        suggestions.append("İlk 3 saniyeniz biraz sönük. Daha güçlü bir açılış yaparsanız çok daha dikkat çeker.")
+        suggestions.append("lk 3 saniyeniz biraz snk. Daha gl bir al yaparsanz ok daha dikkat eker.")
     elif hook_score < 0.7:
-        suggestions.append("Açılışınız orta seviyede. Biraz daha dikkat çekici bir başlangıç denerseniz harika olur.")
+        suggestions.append("Alnz orta seviyede. Biraz daha dikkat ekici bir balang denerseniz harika olur.")
     
     if flow_score < 0.5:
-        suggestions.append("Video akışınız biraz yavaş. Daha hızlı edit yaparsanız daha canlı olur.")
+        suggestions.append("Video aknz biraz yava. Daha hzl edit yaparsanz daha canl olur.")
     elif flow_score < 0.7:
-        suggestions.append("Akışınız güzel ama biraz daha ritmik olabilir. Biraz daha hızlı geçişler deneyin.")
+        suggestions.append("Aknz gzel ama biraz daha ritmik olabilir. Biraz daha hzl geiler deneyin.")
     
     if audio_score < 0.5:
-        suggestions.append(" Ses kaliteniz biraz düşük. Daha temiz bir kayıt yaparsanız çok daha profesyonel olur.")
+        suggestions.append(" Ses kaliteniz biraz dk. Daha temiz bir kayt yaparsanz ok daha profesyonel olur.")
     elif audio_score < 0.7:
-        suggestions.append(" Ses kaliteniz orta seviyede. Biraz daha iyileştirirseniz mükemmel olur.")
+        suggestions.append(" Ses kaliteniz orta seviyede. Biraz daha iyiletirirseniz mkemmel olur.")
     
     return {
         "tips": suggestions,
@@ -126,7 +126,7 @@ def _rule_based_suggestions(
     }
 
 
-# Mock OpenAI fonksiyonu kaldırıldı - sadece gerçek analiz kullanılıyor
+# Mock OpenAI fonksiyonu kaldrld - sadece gerek analiz kullanlyor
 
 
 def generate_suggestions(
@@ -138,7 +138,7 @@ def generate_suggestions(
     scores: Dict[str, float],
     fast_mode: bool = False,
 ) -> Dict[str, Any]:
-    # Sadece gerçek analiz kullan - mock OpenAI fonksiyonunu kullanma
+    # Sadece gerek analiz kullan - mock OpenAI fonksiyonunu kullanma
     return _rule_based_suggestions(platform, caption, title, tags, features, scores)
 
 

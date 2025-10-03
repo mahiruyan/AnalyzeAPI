@@ -1,10 +1,32 @@
+
+def safe_print(*args, **kwargs):
+    """Safe print function that handles Unicode errors"""
+    try:
+        print(*args, **kwargs)
+    except UnicodeEncodeError:
+        # Replace problematic characters and try again
+        safe_args = []
+        for arg in args:
+            if isinstance(arg, str):
+                safe_arg = arg.encode('ascii', 'replace').decode('ascii')
+                safe_args.append(safe_arg)
+            else:
+                safe_args.append(arg)
+        print(*safe_args, **kwargs)
+
+
 from typing import Dict, Any, List
 from pathlib import Path
 
 import numpy as np
 
-# Opsiyonel bağımlılıklar: bulunamazsa özellikler kısıtlı hesaplanır
+# Opsiyonel bamllklar: bulunamazsa zellikler kstl hesaplanr
 try:
+    # aifc polyfill for Python 3.13
+    import sys
+    sys.modules['aifc'] = __import__('aifc_polyfill')
+    # audioop polyfill for Python 3.13
+    sys.modules['audioop'] = __import__('audioop_polyfill')
     import librosa
 except Exception:
     librosa = None
@@ -39,7 +61,7 @@ except Exception:
     SceneManager = None
     ContentDetector = None
 
-# PaddleOCR kaldırıldı - sadece Tesseract kullanıyoruz
+# PaddleOCR kaldrld - sadece Tesseract kullanyoruz
 
 try:
     from faster_whisper import WhisperModel
@@ -71,61 +93,87 @@ def _compute_loudness(audio_path: str) -> float:
 
 
 def _compute_tempo(audio_path: str) -> float:
-    if librosa is None:
-        return 0.0
-    y, sr = librosa.load(audio_path, sr=22050, mono=True)
-    tempo, _ = librosa.beat.beat_track(y=y, sr=sr)
-    return float(tempo)
+    """Tempo hesaplama - soundfile ile fallback"""
+    if librosa is not None:
+        try:
+            y, sr = librosa.load(audio_path, sr=22050, mono=True)
+            tempo, _ = librosa.beat.beat_track(y=y, sr=sr)
+            return float(tempo)
+        except Exception as e:
+            safe_print(f"Librosa tempo hatas: {e}")
+    
+    # Fallback: simple tempo estimation
+    try:
+        if sf is not None:
+            data, sr = sf.read(audio_path)
+            if len(data.shape) > 1:
+                data = data[:, 0]  # Mono
+            # Simple tempo estimation based on audio energy
+            window_size = int(sr * 0.1)  # 100ms windows
+            energy = []
+            for i in range(0, len(data) - window_size, window_size):
+                energy.append(np.mean(data[i:i+window_size]**2))
+            energy = np.array(energy)
+            # Find peaks in energy (beat estimation)
+            peaks = np.where(energy > np.mean(energy) + np.std(energy))[0]
+            if len(peaks) > 1:
+                avg_interval = np.mean(np.diff(peaks)) * 0.1  # Convert to seconds
+                tempo = 60.0 / avg_interval if avg_interval > 0 else 120.0
+                return min(max(tempo, 60.0), 200.0)  # Clamp to reasonable range
+        return 120.0  # Default tempo
+    except Exception as e:
+        safe_print(f"Fallback tempo hatas: {e}")
+        return 120.0
 
 
 def _ocr_frames(frames: List[str], fast_mode: bool = False) -> List[str]:
     """
-    Frame'lerden Tesseract OCR ile metin çıkarır
+    Frame'lerden Tesseract OCR ile metin karr
     """
     texts = []
     
     # FAST modda OCR atla
     if fast_mode:
-        print("[OCR] Skipped (fast mode)")
+        safe_print("[OCR] Skipped (fast mode)")
         return texts
     
     try:
         if pytesseract is None or Image is None:
-            print("[OCR] Tesseract not available")
+            safe_print("[OCR] Tesseract not available")
             return texts
             
-        print("[OCR] Using Tesseract OCR...")
-        print(f"[OCR] Tesseract initialized, processing {len(frames)} frames")
+        safe_print("[OCR] Using Tesseract OCR...")
+        safe_print(f"[OCR] Tesseract initialized, processing {len(frames)} frames")
         
-        # Hızlı analiz için sadece ilk 3 kare
+        # Hzl analiz iin sadece ilk 3 kare
         for i, f in enumerate(frames[:3]):
             try:
-                # Görüntüyü aç ve OCR uygula
+                # Grnty a ve OCR uygula
                 image = Image.open(f)
-                # İngilizce ve Türkçe için OCR
+                # ngilizce ve Trke iin OCR
                 text = pytesseract.image_to_string(image, lang='eng+tur')
                 
-                # Metni satırlara böl ve temizle
+                # Metni satrlara bl ve temizle
                 lines = text.split('\n')
                 for line in lines:
                     line = line.strip()
-                    if len(line) > 1:  # Boş satırları atla
+                    if len(line) > 1:  # Bo satrlar atla
                         texts.append(line)
                         
-                print(f"[OCR] Frame {i+1}: {len([t for t in texts if t])} texts found")
+                safe_print(f"[OCR] Frame {i+1}: {len([t for t in texts if t])} texts found")
             except Exception as e:
-                print(f"[OCR] Failed for frame {i+1}: {e}")
+                safe_print(f"[OCR] Failed for frame {i+1}: {e}")
                 continue
         
-        print(f"[OCR] Completed: {len(texts)} total texts found")
+        safe_print(f"[OCR] Completed: {len(texts)} total texts found")
         return texts[:10]  # Maksimum 10 text
         
     except Exception as e:
-        print(f"[OCR] Tesseract failed: {e}")
+        safe_print(f"[OCR] Tesseract failed: {e}")
         return []
 
 
-# Fallback fonksiyonu kaldırıldı - artık sadece Tesseract kullanıyoruz
+# Fallback fonksiyonu kaldrld - artk sadece Tesseract kullanyoruz
 
 
 def _optical_flow(frames: List[str]) -> float:
@@ -136,8 +184,8 @@ def _optical_flow(frames: List[str]) -> float:
     if prev is None:
         return 0.0
     prev_gray = cv2.cvtColor(prev, cv2.COLOR_BGR2GRAY)
-    # Hızlı analiz için sadece ilk 8 kare
-    for f in frames[1:8]:  # 15'ten 8'e düşürdük
+    # Hzl analiz iin sadece ilk 8 kare
+    for f in frames[1:8]:  # 15'ten 8'e drdk
         img = cv2.imread(f)
         if img is None:
             continue
@@ -193,8 +241,8 @@ def extract_features(
     ocr_texts = _ocr_frames(frames, fast_mode)
     ocr_text = " ".join(ocr_texts)[:2000]
     asr_text = _asr(audio_path, fast_mode)
-    # Sahne sayısı tahmini için frame dosyalarından video yoluna geri dönmek zor olabilir; bu nedenle frames listesinden klasörü bulup video path'ini çıkaramıyoruz.
-    # Bu yüzden scene detect'i atlıyoruz veya kullanıcı video yolunu features'a ekleyebilir. Şimdilik 0 döndürelim.
+    # Sahne says tahmini iin frame dosyalarndan video yoluna geri dnmek zor olabilir; bu nedenle frames listesinden klasr bulup video path'ini karamyoruz.
+    # Bu yzden scene detect'i atlyoruz veya kullanc video yolunu features'a ekleyebilir. imdilik 0 dndrelim.
     scene_count = 0
 
     return {

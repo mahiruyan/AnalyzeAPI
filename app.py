@@ -1,10 +1,27 @@
+
+def safe_print(*args, **kwargs):
+    """Safe print function that handles Unicode errors"""
+    try:
+        print(*args, **kwargs)
+    except UnicodeEncodeError:
+        # Replace problematic characters and try again
+        safe_args = []
+        for arg in args:
+            if isinstance(arg, str):
+                safe_arg = arg.encode('ascii', 'replace').decode('ascii')
+                safe_args.append(safe_arg)
+            else:
+                safe_args.append(arg)
+        print(*safe_args, **kwargs)
+
+
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 from typing import Dict, Any, Optional, List
 import os
 
-# Railway için ana uygulama dosyası
+# Railway iin ana uygulama dosyas
 app = FastAPI(title="analyzeAPI", version="0.2.0")
 
 # CORS middleware
@@ -62,16 +79,16 @@ class AnalyzeResponse(BaseModel):
     verdict: str = Field(..., pattern="^(low|mid|high)$")
     suggestions: List[str]
 
-# Hata yakalama middleware - detaylı hata mesajları
+# Hata yakalama middleware - detayl hata mesajlar
 @app.exception_handler(Exception)
 async def global_exception_handler(request, exc):
     import traceback
     error_detail = str(exc)
     error_traceback = traceback.format_exc()
     
-    # Detaylı hata döndür
+    # Detayl hata dndr
     return {
-        "error": f"Backend hatası: {error_detail}",
+        "error": f"Backend hatas: {error_detail}",
         "error_type": type(exc).__name__,
         "traceback": error_traceback[-1000:],  # Son 1000 karakter
         "duration_seconds": 0,
@@ -82,18 +99,18 @@ async def global_exception_handler(request, exc):
         "mode": "ERROR",
         "analysis_complete": False,
         "suggestions": {
-            "tips": [f"Sistem hatası: {error_detail}"]
+            "tips": [f"Sistem hatas: {error_detail}"]
         }
     }
 
 @app.get("/healthz")
 def health_check():
-    """Railway sağlık kontrolü endpoint'i"""
+    """Railway salk kontrol endpoint'i"""
     return {"status": "ok"}
 
 @app.get("/api/health")
 def api_health_check():
-    """Railway API sağlık kontrolü endpoint'i"""
+    """Railway API salk kontrol endpoint'i"""
     return {"status": "ok"}
 
 @app.get("/api/test")
@@ -146,7 +163,7 @@ def test_dependencies():
 
 @app.get("/api/ping")
 def ping():
-    """Keep-alive endpoint - Railway'i uyanık tutmak için"""
+    """Keep-alive endpoint - Railway'i uyank tutmak iin"""
     return {"status": "awake", "timestamp": "2025-01-25"}
 
 @app.get("/")
@@ -157,13 +174,13 @@ def root():
 @app.post("/ingest_ig")
 def ingest_instagram(data: InstagramIngest):
     """Instagram metriklerini al"""
-    # Burada veritabanına kaydetme işlemi yapılabilir
+    # Burada veritabanna kaydetme ilemi yaplabilir
     return {"status": "success", "media_id": data.media_id}
 
 @app.post("/ingest_tt")
 def ingest_tiktok(data: TikTokIngest):
     """TikTok metriklerini al"""
-    # Burada veritabanına kaydetme işlemi yapılabilir
+    # Burada veritabanna kaydetme ilemi yaplabilir
     return {"status": "success", "video_id": data.video_id}
 
 @app.post("/api/analyze")
@@ -171,38 +188,41 @@ def analyze_performance_api(data: AnalyzeRequest):
     """Real video analysis - no mock responses"""
     
     try:
-        print(f"[DEBUG] Request received: mode={data.mode}")
-        print(f"[DEBUG] File URL: {data.file_url}")
-        print(f"[DEBUG] Platform: {data.platform}")
+        safe_print(f"[DEBUG] Request received: mode={data.mode}")
+        safe_print(f"[DEBUG] File URL: {data.file_url}")
+        safe_print(f"[DEBUG] Platform: {data.platform}")
         
-        print("[DEBUG] Starting imports...")
+        safe_print("[DEBUG] Starting imports...")
         import tempfile
         import os
         from pathlib import Path
-        print("[DEBUG] Basic imports OK")
+        safe_print("[DEBUG] Basic imports OK")
         
         from utils import download_video, extract_audio_via_ffmpeg, grab_frames, get_video_duration
-        print("[DEBUG] Utils import OK")
+        safe_print("[DEBUG] Utils import OK")
         
         from features import extract_features
-        print("[DEBUG] Features import OK")
+        safe_print("[DEBUG] Features import OK")
         
         from scoring import score_features
-        print("[DEBUG] Scoring import OK")
+        safe_print("[DEBUG] Scoring import OK")
         
         from suggest import generate_suggestions
-        print("[DEBUG] Suggest import OK")
+        safe_print("[DEBUG] Suggest import OK")
         
         from advanced_analysis import analyze_hook, analyze_pacing_retention, analyze_cta_interaction, analyze_message_clarity, analyze_technical_quality, analyze_transition_quality, analyze_loop_final, analyze_text_readability, analyze_trend_originality, analyze_content_type_suitability, analyze_music_sync, analyze_accessibility
-        print("[DEBUG] Advanced analysis import OK")
+        safe_print("[DEBUG] Advanced analysis import OK")
         
     except Exception as e:
-        print(f"[ERROR] Import failed: {str(e)}")
-        print(f"[ERROR] Error type: {type(e)}")
+        safe_print(f"[ERROR] Import failed: {str(e)}")
+        safe_print(f"[ERROR] Error type: {type(e)}")
         import traceback
-        print(f"[ERROR] Traceback: {traceback.format_exc()}")
+        try:
+            safe_print(f"[ERROR] Traceback: {traceback.format_exc()}")
+        except UnicodeEncodeError:
+            safe_print("[ERROR] Traceback: (Unicode error in traceback)")
         return {
-            "error": f"Import hatası: {str(e)}",
+            "error": f"Import hatas: {str(e)}",
             "duration_seconds": 0,
             "features": {},
             "scores": {},
@@ -215,44 +235,44 @@ def analyze_performance_api(data: AnalyzeRequest):
     
     # Video indirme ve analiz
     try:
-        print("[DEBUG] Starting FULL analysis...")
+        safe_print("[DEBUG] Starting FULL analysis...")
         with tempfile.TemporaryDirectory() as temp_dir:
             video_path = os.path.join(temp_dir, "video.mp4")
             audio_path = os.path.join(temp_dir, "audio.wav")
             frames_dir = os.path.join(temp_dir, "frames")
-            print(f"[DEBUG] Temp directory created: {temp_dir}")
+            safe_print(f"[DEBUG] Temp directory created: {temp_dir}")
             
             # Video indir - timeout ile
-            print(f"[DEBUG] Downloading video from: {data.file_url}")
+            safe_print(f"[DEBUG] Downloading video from: {data.file_url}")
             try:
                 download_video(data.file_url, video_path, timeout=30)  # 30 saniye timeout
-                print(f"[DEBUG] Video downloaded to: {video_path}")
+                safe_print(f"[DEBUG] Video downloaded to: {video_path}")
             except Exception as e:
-                raise Exception(f"Video indirme başarısız (30s timeout): {e}")
+                raise Exception(f"Video indirme baarsz (30s timeout): {e}")
             
-            # Ses çıkar - hızlı
-            print(" [DEBUG] Extracting audio...")
+            # Ses kar - hzl
+            safe_print(" [DEBUG] Extracting audio...")
             try:
                 extract_audio_via_ffmpeg(video_path, audio_path, sample_rate=16000, mono=True)
-                print(f"[DEBUG] Audio extracted to: {audio_path}")
+                safe_print(f"[DEBUG] Audio extracted to: {audio_path}")
             except Exception as e:
-                raise Exception(f"Ses çıkarma başarısız: {e}")
+                raise Exception(f"Ses karma baarsz: {e}")
             
-            # Frame'ler çıkar - çok hızlı
-            print("️ [DEBUG] Extracting frames...")
+            # Frame'ler kar - ok hzl
+            safe_print(" [DEBUG] Extracting frames...")
             try:
-                frames = grab_frames(video_path, frames_dir, max_frames=3)  # 3 frame'e düşürdük (hız için)
-                print(f"[DEBUG] Frames extracted: {len(frames)} frames")
+                frames = grab_frames(video_path, frames_dir, max_frames=3)  # 3 frame'e drdk (hz iin)
+                safe_print(f"[DEBUG] Frames extracted: {len(frames)} frames")
             except Exception as e:
-                raise Exception(f"Frame çıkarma başarısız: {e}")
+                raise Exception(f"Frame karma baarsz: {e}")
             
-            # Süre al
-            print("⏱️ [DEBUG] Getting video duration...")
+            # Sre al
+            safe_print(" [DEBUG] Getting video duration...")
             duration = get_video_duration(video_path)
-            print(f"[DEBUG] Duration: {duration} seconds")
+            safe_print(f"[DEBUG] Duration: {duration} seconds")
             
-            # Özellikler çıkar
-            print("🧠 [DEBUG] Extracting features...")
+            # zellikler kar
+            safe_print(" [DEBUG] Extracting features...")
             features = extract_features(
                 audio_path=audio_path,
                 frames=frames,
@@ -262,122 +282,122 @@ def analyze_performance_api(data: AnalyzeRequest):
                 duration_seconds=duration,
                 fast_mode=(data.mode == "FAST")
             )
-            print("[DEBUG] Features extracted")
+            safe_print("[DEBUG] Features extracted")
             
             # Eski skorlar hesapla
-            print("[DEBUG] Calculating legacy scores...")
+            safe_print("[DEBUG] Calculating legacy scores...")
             legacy_scores = score_features(features, data.platform, (data.mode == "FAST"))
-            print("[DEBUG] Legacy scores calculated")
+            safe_print("[DEBUG] Legacy scores calculated")
             
-            # YENİ: Hook analizi (hızlı versiyon - 3 frame)
-            print("[DEBUG] Analyzing hook (first 3 seconds)...")
+            # YEN: Hook analizi (hzl versiyon - 3 frame)
+            safe_print("[DEBUG] Analyzing hook (first 3 seconds)...")
             try:
                 hook_result = analyze_hook(video_path, audio_path, frames[:3], features, duration)
-                print(f"[DEBUG] Hook analysis completed: {hook_result['score']}/18")
+                safe_print(f"[DEBUG] Hook analysis completed: {hook_result['score']}/18")
             except Exception as e:
-                print(f"[DEBUG] Hook analysis failed: {e}")
-                raise Exception(f"Hook analizi başarısız: {e}")
+                safe_print(f"[DEBUG] Hook analysis failed: {e}")
+                raise Exception(f"Hook analizi baarsz: {e}")
             
-            # YENİ: Pacing analizi (hızlı versiyon - 3 frame)
-            print(" [DEBUG] Analyzing pacing & retention...")
+            # YEN: Pacing analizi (hzl versiyon - 3 frame)
+            safe_print(" [DEBUG] Analyzing pacing & retention...")
             try:
                 pacing_result = analyze_pacing_retention(frames, features, duration)
-                print(f"[DEBUG] Pacing analysis completed: {pacing_result['score']}/12")
+                safe_print(f"[DEBUG] Pacing analysis completed: {pacing_result['score']}/12")
             except Exception as e:
-                print(f"[DEBUG] Pacing analysis failed: {e}")
-                raise Exception(f"Pacing analizi başarısız: {e}")
+                safe_print(f"[DEBUG] Pacing analysis failed: {e}")
+                raise Exception(f"Pacing analizi baarsz: {e}")
             
-            # YENİ: CTA & Etkileşim analizi
-            print(" [DEBUG] Analyzing CTA & interaction...")
+            # YEN: CTA & Etkileim analizi
+            safe_print(" [DEBUG] Analyzing CTA & interaction...")
             try:
                 cta_result = analyze_cta_interaction(features, duration)
-                print(f"[DEBUG] CTA analysis completed: {cta_result['score']}/8")
+                safe_print(f"[DEBUG] CTA analysis completed: {cta_result['score']}/8")
             except Exception as e:
-                print(f"[DEBUG] CTA analysis failed: {e}")
-                raise Exception(f"CTA analizi başarısız: {e}")
+                safe_print(f"[DEBUG] CTA analysis failed: {e}")
+                raise Exception(f"CTA analizi baarsz: {e}")
             
-        # YENİ: Mesaj netliği analizi
-        print("[DEBUG] Analyzing message clarity...")
+        # YEN: Mesaj netlii analizi
+        safe_print("[DEBUG] Analyzing message clarity...")
         try:
             message_result = analyze_message_clarity(features, duration)
-            print(f"[DEBUG] Message analysis completed: {message_result['score']}/6")
+            safe_print(f"[DEBUG] Message analysis completed: {message_result['score']}/6")
         except Exception as e:
-            print(f"[DEBUG] Message analysis failed: {e}")
-            raise Exception(f"Mesaj analizi başarısız: {e}")
+            safe_print(f"[DEBUG] Message analysis failed: {e}")
+            raise Exception(f"Mesaj analizi baarsz: {e}")
         
-        # YENİ: Teknik kalite analizi
-        print("[DEBUG] Analyzing technical quality...")
+        # YEN: Teknik kalite analizi
+        safe_print("[DEBUG] Analyzing technical quality...")
         try:
             tech_result = analyze_technical_quality(features, duration)
-            print(f"[DEBUG] Technical analysis completed: {tech_result['score']}/15")
+            safe_print(f"[DEBUG] Technical analysis completed: {tech_result['score']}/15")
         except Exception as e:
-            print(f"[DEBUG] Technical analysis failed: {e}")
-            raise Exception(f"Teknik analiz başarısız: {e}")
+            safe_print(f"[DEBUG] Technical analysis failed: {e}")
+            raise Exception(f"Teknik analiz baarsz: {e}")
         
-        # YENİ: Geçiş kalitesi analizi
-        print("[DEBUG] Analyzing transition quality...")
+        # YEN: Gei kalitesi analizi
+        safe_print("[DEBUG] Analyzing transition quality...")
         try:
             transition_result = analyze_transition_quality(features, duration)
-            print(f"[DEBUG] Transition analysis completed: {transition_result['score']}/8")
+            safe_print(f"[DEBUG] Transition analysis completed: {transition_result['score']}/8")
         except Exception as e:
-            print(f"[DEBUG] Transition analysis failed: {e}")
-            raise Exception(f"Geçiş analizi başarısız: {e}")
+            safe_print(f"[DEBUG] Transition analysis failed: {e}")
+            raise Exception(f"Gei analizi baarsz: {e}")
         
-        # YENİ: Loop & final analizi
-        print("[DEBUG] Analyzing loop & final...")
+        # YEN: Loop & final analizi
+        safe_print("[DEBUG] Analyzing loop & final...")
         try:
             loop_result = analyze_loop_final(features, duration)
-            print(f"[DEBUG] Loop & final analysis completed: {loop_result['score']}/7")
+            safe_print(f"[DEBUG] Loop & final analysis completed: {loop_result['score']}/7")
         except Exception as e:
-            print(f"[DEBUG] Loop & final analysis failed: {e}")
-            raise Exception(f"Loop & final analizi başarısız: {e}")
+            safe_print(f"[DEBUG] Loop & final analysis failed: {e}")
+            raise Exception(f"Loop & final analizi baarsz: {e}")
         
-        # YENİ: Metin okunabilirlik analizi
-        print("[DEBUG] Analyzing text readability...")
+        # YEN: Metin okunabilirlik analizi
+        safe_print("[DEBUG] Analyzing text readability...")
         try:
             text_result = analyze_text_readability(features, duration)
-            print(f"[DEBUG] Text readability analysis completed: {text_result['score']}/6")
+            safe_print(f"[DEBUG] Text readability analysis completed: {text_result['score']}/6")
         except Exception as e:
-            print(f"[DEBUG] Text readability analysis failed: {e}")
-            raise Exception(f"Metin okunabilirlik analizi başarısız: {e}")
+            safe_print(f"[DEBUG] Text readability analysis failed: {e}")
+            raise Exception(f"Metin okunabilirlik analizi baarsz: {e}")
         
-        # YENİ: Trend & orijinallik analizi
-        print("[DEBUG] Analyzing trend & originality...")
+        # YEN: Trend & orijinallik analizi
+        safe_print("[DEBUG] Analyzing trend & originality...")
         try:
             trend_result = analyze_trend_originality(features, duration)
-            print(f"[DEBUG] Trend & originality analysis completed: {trend_result['score']}/8")
+            safe_print(f"[DEBUG] Trend & originality analysis completed: {trend_result['score']}/8")
         except Exception as e:
-            print(f"[DEBUG] Trend & originality analysis failed: {e}")
-            raise Exception(f"Trend & orijinallik analizi başarısız: {e}")
+            safe_print(f"[DEBUG] Trend & originality analysis failed: {e}")
+            raise Exception(f"Trend & orijinallik analizi baarsz: {e}")
         
-        # YENİ: İçerik tipi uygunluğu analizi
-        print("[DEBUG] Analyzing content type suitability...")
+        # YEN: erik tipi uygunluu analizi
+        safe_print("[DEBUG] Analyzing content type suitability...")
         try:
             content_result = analyze_content_type_suitability(features, duration)
-            print(f"[DEBUG] Content type analysis completed: {content_result['score']}/6")
+            safe_print(f"[DEBUG] Content type analysis completed: {content_result['score']}/6")
         except Exception as e:
-            print(f"[DEBUG] Content type analysis failed: {e}")
-            raise Exception(f"İçerik tipi analizi başarısız: {e}")
+            safe_print(f"[DEBUG] Content type analysis failed: {e}")
+            raise Exception(f"erik tipi analizi baarsz: {e}")
         
-        # YENİ: Müzik & senkron analizi
-        print("[DEBUG] Analyzing music & sync...")
+        # YEN: Mzik & senkron analizi
+        safe_print("[DEBUG] Analyzing music & sync...")
         try:
             music_result = analyze_music_sync(features, duration)
-            print(f"[DEBUG] Music & sync analysis completed: {music_result['score']}/5")
+            safe_print(f"[DEBUG] Music & sync analysis completed: {music_result['score']}/5")
         except Exception as e:
-            print(f"[DEBUG] Music & sync analysis failed: {e}")
-            raise Exception(f"Müzik & senkron analizi başarısız: {e}")
+            safe_print(f"[DEBUG] Music & sync analysis failed: {e}")
+            raise Exception(f"Mzik & senkron analizi baarsz: {e}")
         
-        # YENİ: Erişilebilirlik analizi
-        print("[DEBUG] Analyzing accessibility...")
+        # YEN: Eriilebilirlik analizi
+        safe_print("[DEBUG] Analyzing accessibility...")
         try:
             access_result = analyze_accessibility(features, duration)
-            print(f"[DEBUG] Accessibility analysis completed: {access_result['score']}/4")
+            safe_print(f"[DEBUG] Accessibility analysis completed: {access_result['score']}/4")
         except Exception as e:
-            print(f"[DEBUG] Accessibility analysis failed: {e}")
-            raise Exception(f"Erişilebilirlik analizi başarısız: {e}")
+            safe_print(f"[DEBUG] Accessibility analysis failed: {e}")
+            raise Exception(f"Eriilebilirlik analizi baarsz: {e}")
         
-        # Gelişmiş skorları birleştir
+        # Gelimi skorlar birletir
         advanced_scores = {
             "hook_score": hook_result["score"],
             "pacing_score": pacing_result["score"],
@@ -394,7 +414,7 @@ def analyze_performance_api(data: AnalyzeRequest):
             **legacy_scores  # Eski skorlar da dahil
         }
         
-        # Toplam skor (tüm analizler dahil)
+        # Toplam skor (tm analizler dahil)
         total_score = (hook_result["score"] + pacing_result["score"] + 
                       cta_result["score"] + message_result["score"] + 
                       tech_result["score"] + transition_result["score"] + 
@@ -404,10 +424,10 @@ def analyze_performance_api(data: AnalyzeRequest):
                       legacy_scores.get("overall_score", 0))
         
         advanced_scores["total_score"] = total_score
-        advanced_scores["overall_score"] = total_score  # Frontend için
+        advanced_scores["overall_score"] = total_score  # Frontend iin
         
-        # Legacy öneriler
-        print("[DEBUG] Generating legacy suggestions...")
+        # Legacy neriler
+        safe_print("[DEBUG] Generating legacy suggestions...")
         legacy_suggestions = generate_suggestions(
             platform=data.platform,
             caption=data.caption or "",
@@ -417,7 +437,7 @@ def analyze_performance_api(data: AnalyzeRequest):
             scores=legacy_scores
         )
         
-        # Advanced önerileri birleştir
+        # Advanced nerileri birletir
         all_suggestions = []
         all_suggestions.extend(hook_result.get("recommendations", []))
         all_suggestions.extend(pacing_result.get("recommendations", []))
@@ -433,7 +453,7 @@ def analyze_performance_api(data: AnalyzeRequest):
         all_suggestions.extend(access_result.get("recommendations", []))
         all_suggestions.extend(legacy_suggestions.get("tips", []))
         
-        # Findings birleştir
+        # Findings birletir
         all_findings = []
         all_findings.extend(hook_result.get("findings", []))
         all_findings.extend(pacing_result.get("findings", []))
@@ -448,10 +468,10 @@ def analyze_performance_api(data: AnalyzeRequest):
         all_findings.extend(music_result.get("findings", []))
         all_findings.extend(access_result.get("findings", []))
         
-        print("[DEBUG] Advanced suggestions generated")
-        print(f"[DEBUG] Total advanced score: {total_score}")
+        safe_print("[DEBUG] Advanced suggestions generated")
+        safe_print(f"[DEBUG] Total advanced score: {total_score}")
         
-        print("[DEBUG] Analysis completed successfully!")
+        safe_print("[DEBUG] Analysis completed successfully!")
         return {
             "duration_seconds": duration,
             "features": features,
@@ -461,37 +481,40 @@ def analyze_performance_api(data: AnalyzeRequest):
             "viral": total_score >= 70,
             "mode": data.mode,
             "analysis_complete": True,
-            "suggestions": all_suggestions[:10],  # En önemli 10 öneri
+            "suggestions": all_suggestions[:10],  # En nemli 10 neri
             "findings": all_findings,  # Zaman kodlu bulgular
-            "hook_analysis": hook_result,  # Detaylı hook analizi
-            "pacing_analysis": pacing_result,  # Detaylı pacing analizi
-            "cta_analysis": cta_result,  # Detaylı CTA analizi
-            "message_analysis": message_result,  # Detaylı mesaj analizi
-            "technical_analysis": tech_result,  # Detaylı teknik analiz
-            "transition_analysis": transition_result,  # Detaylı geçiş analizi
-            "loop_final_analysis": loop_result,  # Detaylı loop & final analizi
-            "text_readability_analysis": text_result,  # Detaylı metin okunabilirlik analizi
-            "trend_originality_analysis": trend_result,  # Detaylı trend & orijinallik analizi
-            "content_type_suitability_analysis": content_result,  # Detaylı içerik tipi uygunluğu analizi
-            "music_sync_analysis": music_result,  # Detaylı müzik & senkron analizi
-            "accessibility_analysis": access_result,  # Detaylı erişilebilirlik analizi
-            "nlp_analysis": message_result.get("raw", {}),  # NLP detayları
+            "hook_analysis": hook_result,  # Detayl hook analizi
+            "pacing_analysis": pacing_result,  # Detayl pacing analizi
+            "cta_analysis": cta_result,  # Detayl CTA analizi
+            "message_analysis": message_result,  # Detayl mesaj analizi
+            "technical_analysis": tech_result,  # Detayl teknik analiz
+            "transition_analysis": transition_result,  # Detayl gei analizi
+            "loop_final_analysis": loop_result,  # Detayl loop & final analizi
+            "text_readability_analysis": text_result,  # Detayl metin okunabilirlik analizi
+            "trend_originality_analysis": trend_result,  # Detayl trend & orijinallik analizi
+            "content_type_suitability_analysis": content_result,  # Detayl ierik tipi uygunluu analizi
+            "music_sync_analysis": music_result,  # Detayl mzik & senkron analizi
+            "accessibility_analysis": access_result,  # Detayl eriilebilirlik analizi
+            "nlp_analysis": message_result.get("raw", {}),  # NLP detaylar
             "emotion_analysis": message_result.get("raw", {}).get("emotions", {}),  # Duygu analizi
-            "intent_analysis": message_result.get("raw", {}).get("intent", "unknown"),  # Amaç analizi
+            "intent_analysis": message_result.get("raw", {}).get("intent", "unknown"),  # Ama analizi
             "readability_score": message_result.get("raw", {}).get("readability_score", 0.5),  # Okunabilirlik
-            "engagement_potential": message_result.get("raw", {}).get("engagement_potential", 0.5),  # Etkileşim potansiyeli
+            "engagement_potential": message_result.get("raw", {}).get("engagement_potential", 0.5),  # Etkileim potansiyeli
             "viral_keywords": message_result.get("raw", {}).get("viral_keywords", []),  # Viral kelimeler
             "language_quality": message_result.get("raw", {}).get("language_quality", 0.5),  # Dil kalitesi
-            "score": total_score,  # Frontend için direkt score
-            "overall_score": total_score  # Frontend için
+            "score": total_score,  # Frontend iin direkt score
+            "overall_score": total_score  # Frontend iin
         }
     except Exception as e:
-        print(f"[ERROR] Analysis failed: {str(e)}")
-        print(f"[ERROR] Error type: {type(e)}")
+        safe_print(f"[ERROR] Analysis failed: {str(e)}")
+        safe_print(f"[ERROR] Error type: {type(e)}")
         import traceback
-        print(f"[ERROR] Traceback: {traceback.format_exc()}")
+        try:
+            safe_print(f"[ERROR] Traceback: {traceback.format_exc()}")
+        except UnicodeEncodeError:
+            safe_print("[ERROR] Traceback: (Unicode error in traceback)")
         return {
-            "error": f"Analiz hatası: {str(e)}",
+            "error": f"Analiz hatas: {str(e)}",
             "duration_seconds": 0,
             "features": {},
             "scores": {},
@@ -499,39 +522,39 @@ def analyze_performance_api(data: AnalyzeRequest):
             "viral": False,
             "mode": data.mode or "UNKNOWN",
             "analysis_complete": False,
-            "suggestions": [f"Video analiz hatası: {str(e)}"],
-            "score": 0,  # Frontend için
-            "overall_score": 0  # Frontend için
+            "suggestions": [f"Video analiz hatas: {str(e)}"],
+            "score": 0,  # Frontend iin
+            "overall_score": 0  # Frontend iin
         }
 
 @app.post("/analyze", response_model=AnalyzeResponse)
 def analyze_performance(data: AnalyzeRequest):
     """Legacy endpoint - redirects to /api/analyze"""
-    # Gerçek analiz için /api/analyze'i çağır
+    # Gerek analiz iin /api/analyze'i ar
     result = analyze_performance_api(data)
     
     return AnalyzeResponse(
         score=result.get("scores", {}).get("overall_score", 0),
         verdict=result.get("verdict", "mid"),
-        suggestions=result.get("suggestions", [])  # Artık direkt liste
+        suggestions=result.get("suggestions", [])  # Artk direkt liste
     )
 
-# main.py import'u kaldırıldı - circular import sorunu yaratıyordu
+# main.py import'u kaldrld - circular import sorunu yaratyordu
 
 if __name__ == "__main__":
     import uvicorn
-    # Railway PORT environment variable'ını kontrol et
+    # Railway PORT environment variable'n kontrol et
     port_str = os.getenv("PORT")
     if port_str:
         try:
             port = int(port_str)
-            print(f"Using Railway PORT: {port}")
+            safe_print(f"Using Railway PORT: {port}")
         except ValueError:
             port = 8000
-            print(f"Invalid PORT value: {port_str}, using default: {port}")
+            safe_print(f"Invalid PORT value: {port_str}, using default: {port}")
     else:
         port = 8000
-        print(f"No PORT env var, using default: {port}")
+        safe_print(f"No PORT env var, using default: {port}")
     
-    print(f"Starting server on port {port}")
+    safe_print(f"Starting server on port {port}")
     uvicorn.run(app, host="0.0.0.0", port=port)

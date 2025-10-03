@@ -1,7 +1,24 @@
 """
-Advanced Video Analysis - Gerçek implementasyonlar
-12 metrik detaylı analiz sistemi
+Advanced Video Analysis - Gerek implementasyonlar
+12 metrik detayl analiz sistemi
 """
+
+
+def safe_print(*args, **kwargs):
+    """Safe print function that handles Unicode errors"""
+    try:
+        print(*args, **kwargs)
+    except UnicodeEncodeError:
+        # Replace problematic characters and try again
+        safe_args = []
+        for arg in args:
+            if isinstance(arg, str):
+                safe_arg = arg.encode('ascii', 'replace').decode('ascii')
+                safe_args.append(safe_arg)
+            else:
+                safe_args.append(arg)
+        print(*safe_args, **kwargs)
+
 
 from typing import Dict, Any, List, Tuple, Optional
 import numpy as np
@@ -12,25 +29,25 @@ import subprocess
 
 def analyze_hook(video_path: str, audio_path: str, frames: List[str], features: Dict[str, Any], duration: float) -> Dict[str, Any]:
     """
-    Hook Analizi - İlk 3 saniye detaylı analiz (18 puan)
-    Gerçek OpenCV ve frame analizi ile
+    Hook Analizi - lk 3 saniye detayl analiz (18 puan)
+    Gerek OpenCV ve frame analizi ile
     """
     score = 0
     findings = []
     recommendations = []
     raw_metrics = {}
     
-    print("[HOOK] Starting hook analysis...")
+    safe_print("[HOOK] Starting hook analysis...")
     
     if len(frames) < 3 or duration < 3:
         return {
             "score": 0,
-            "findings": [{"t": 0, "msg": "Video 3 saniyeden kısa - hook analizi yapılamadı"}],
-            "recommendations": ["Video en az 3 saniye olmalı"],
+            "findings": [{"t": 0, "msg": "Video 3 saniyeden ksa - hook analizi yaplamad"}],
+            "recommendations": ["Video en az 3 saniye olmal"],
             "raw": {}
         }
     
-    # 1. Görsel Sıçrama Analizi (Frame 0 vs Frame 1-2)
+    # 1. Grsel Srama Analizi (Frame 0 vs Frame 1-2)
     visual_jump_score = analyze_visual_jump(frames[:3])
     raw_metrics["visual_jump"] = visual_jump_score
     
@@ -39,22 +56,26 @@ def analyze_hook(video_path: str, audio_path: str, frames: List[str], features: 
         findings.append({
             "t": 0.5, 
             "type": "strong_visual_interrupt",
-            "msg": f"Güçlü görsel sıçrama ({visual_jump_score:.2f}) - dikkat çekici pattern interrupt!"
+            "msg": f"Gl grsel srama ({visual_jump_score:.2f}) - dikkat ekici pattern interrupt!"
         })
     elif visual_jump_score > 0.2:
         score += 3
         findings.append({
             "t": 0.5,
             "type": "moderate_visual_change", 
-            "msg": f"Orta seviye görsel değişim ({visual_jump_score:.2f})"
+            "msg": f"Orta seviye grsel deiim ({visual_jump_score:.2f})"
         })
-        recommendations.append("İlk saniyede daha keskin görsel değişim ekle (zoom, renk, açı)")
+        recommendations.append("lk saniyede daha keskin grsel deiim ekle (zoom, renk, a)")
     else:
         score += 1
-        # Gerçek analiz verisine göre öneri
-        recommendations.append(f"Görsel sıçrama çok düşük ({visual_jump_score:.2f}). İlk 3 saniyede ani zoom, renk değişimi veya yakın plan ekle.")
+        # Gerek analiz verisine gre neri
+        # Daha çeşitli öneriler
+        if visual_jump_score < 0.1:
+            recommendations.append(f"Çok statik görüntü ({visual_jump_score:.2f}) - dinamik kamera hareketleri veya geçiş efektleri ekle")
+        else:
+            recommendations.append(f"Düşük görsel değişim ({visual_jump_score:.2f}) - sahne kompozisyonunu veya ışık değişimini artır")
     
-    # 2. Metin Kancası Analizi (OCR)
+    # 2. Metin Kancas Analizi (OCR)
     hook_text_score = analyze_hook_text(features)
     raw_metrics["hook_text_strength"] = hook_text_score
     
@@ -63,20 +84,20 @@ def analyze_hook(video_path: str, audio_path: str, frames: List[str], features: 
         findings.append({
             "t": 1.0,
             "type": "powerful_hook_text",
-            "msg": "Güçlü kanca metni tespit edildi - merak uyandırıcı!"
+            "msg": "Gl kanca metni tespit edildi - merak uyandrc!"
         })
     elif hook_text_score > 0.4:
         score += 2
-        recommendations.append("Kanca metnini daha güçlü yap - 'Kimse söylemiyor ama...' tarzı")
+        recommendations.append("Kanca metnini daha gl yap - 'Kimse sylemiyor ama...' tarz")
     else:
-        # Gerçek OCR verisine göre öneri
+        # Gerek OCR verisine gre neri
         ocr_text = features.get("textual", {}).get("ocr_text", "")
         if len(ocr_text) > 0:
-            recommendations.append(f"Metin tespit edildi ama kanca gücü düşük ({hook_text_score:.2f}). '{ocr_text[:30]}...' metnini daha dikkat çekici yap.")
+            recommendations.append(f"Metin tespit edildi ama kanca gc dk ({hook_text_score:.2f}). '{ocr_text[:30]}...' metnini daha dikkat ekici yap.")
         else:
-            recommendations.append(f"Hiç metin tespit edilmedi ({hook_text_score:.2f}). İlk 3 saniyede güçlü bir kanca metni ekle.")
+            recommendations.append(f"Hi metin tespit edilmedi ({hook_text_score:.2f}). lk 3 saniyede gl bir kanca metni ekle.")
     
-    # 3. Ses/Beat Giriş Analizi + GERÇEK beat detection
+    # 3. Ses/Beat Giri Analizi + GEREK beat detection
     audio_intro_score = analyze_audio_intro(features)
     beat_drop_score = detect_beat_drop_in_intro(audio_path)
     raw_metrics["audio_intro_energy"] = audio_intro_score
@@ -90,15 +111,15 @@ def analyze_hook(video_path: str, audio_path: str, frames: List[str], features: 
         findings.append({
             "t": 1.5,
             "type": "energetic_intro",
-            "msg": "Enerjik ses girişi - beat drop veya enerji artışı var"
+            "msg": "Enerjik ses girii - beat drop veya enerji art var"
         })
     elif audio_intro_score > 0.3:
         score += 1
-        recommendations.append("Giriş için daha enerjik müzik veya beat drop kullan")
+        recommendations.append("Giri iin daha enerjik mzik veya beat drop kullan")
     else:
-        recommendations.append("İlk 2 saniyede belirgin bir beat/enerji artışı ekle")
+        recommendations.append("lk 2 saniyede belirgin bir beat/enerji art ekle")
     
-    # 4. Hemen Konu Girişi (Anti-greeting)
+    # 4. Hemen Konu Girii (Anti-greeting)
     direct_start_score = analyze_direct_start(features)
     raw_metrics["direct_start"] = direct_start_score
     
@@ -107,20 +128,20 @@ def analyze_hook(video_path: str, audio_path: str, frames: List[str], features: 
         findings.append({
             "t": 2.0,
             "type": "direct_topic_start",
-            "msg": "Mükemmel! Selamlaşma olmadan direkt konuya giriş"
+            "msg": "Mkemmel! Selamlama olmadan direkt konuya giri"
         })
     elif direct_start_score > 0.5:
         score += 2
-        recommendations.append("Selamlaşmayı kısalt, daha hızlı konuya geç")
+        recommendations.append("Selamlamay ksalt, daha hzl konuya ge")
     else:
         score += 1
-        # Gerçek ASR verisine göre öneri
+        # Gerek ASR verisine gre neri
         asr_text = features.get("textual", {}).get("asr_text", "")
         if len(asr_text) > 0:
             first_words = asr_text.split()[:5]
-            recommendations.append(f"Konuşma tespit edildi ama direkt başlangıç yok ({direct_start_score:.2f}). '{' '.join(first_words)}...' yerine direkt konuyla başla.")
+            recommendations.append(f"Konuma tespit edildi ama direkt balang yok ({direct_start_score:.2f}). '{' '.join(first_words)}...' yerine direkt konuyla bala.")
         else:
-            recommendations.append(f"Konuşma tespit edilmedi ({direct_start_score:.2f}). 'Merhaba' yerine direkt konuyla başla.")
+            recommendations.append(f"Konuma tespit edilmedi ({direct_start_score:.2f}). 'Merhaba' yerine direkt konuyla bala.")
     
     # 5. Erken Foreshadowing (Gelecek vaat)
     foreshadow_score = analyze_foreshadowing(features)
@@ -131,18 +152,18 @@ def analyze_hook(video_path: str, audio_path: str, frames: List[str], features: 
         findings.append({
             "t": 2.5,
             "type": "good_foreshadowing",
-            "msg": "İyi foreshadowing - 'Sonunda göreceksin' tarzı vaat var"
+            "msg": "yi foreshadowing - 'Sonunda greceksin' tarz vaat var"
         })
     else:
-        # Gerçek metin verisine göre öneri
+        # Gerek metin verisine gre neri
         combined_text = (features.get("textual", {}).get("ocr_text", "") + " " + 
                         features.get("textual", {}).get("asr_text", "")).lower()
-        if "sonunda" in combined_text or "göreceksin" in combined_text:
-            recommendations.append(f"Foreshadowing var ama yeterince güçlü değil ({foreshadow_score:.2f}). 'Sonunda X'i göreceksin' ifadesini daha belirgin yap.")
+        if "sonunda" in combined_text or "greceksin" in combined_text:
+            recommendations.append(f"Foreshadowing var ama yeterince gl deil ({foreshadow_score:.2f}). 'Sonunda X'i greceksin' ifadesini daha belirgin yap.")
         else:
-            recommendations.append(f"Hiç foreshadowing yok ({foreshadow_score:.2f}). 0-3 saniye arası 'Sonunda X'i göreceksin' tarzı vaat ekle.")
+            recommendations.append(f"Hi foreshadowing yok ({foreshadow_score:.2f}). 0-3 saniye aras 'Sonunda X'i greceksin' tarz vaat ekle.")
     
-    print(f"[HOOK] Hook score: {score}/18")
+    safe_print(f"[HOOK] Hook score: {score}/18")
     
     return {
         "score": min(score, 18),
@@ -154,8 +175,8 @@ def analyze_hook(video_path: str, audio_path: str, frames: List[str], features: 
 
 def analyze_visual_jump(frames: List[str]) -> float:
     """
-    Görsel sıçrama analizi - gerçek OpenCV implementation
-    İlk frame'ler arası histogram ve edge farkı
+    Grsel srama analizi - gerek OpenCV implementation
+    lk frame'ler aras histogram ve edge fark
     """
     if len(frames) < 2:
         return 0.0
@@ -166,7 +187,7 @@ def analyze_visual_jump(frames: List[str]) -> float:
         img2 = cv2.imread(frames[1])
         
         if img1 is None or img2 is None:
-            print("[HOOK] Frame okuma hatası")
+            safe_print("[HOOK] Frame okuma hatas")
             return 0.0
         
         # Resize for faster processing
@@ -175,7 +196,7 @@ def analyze_visual_jump(frames: List[str]) -> float:
         img1_small = cv2.resize(img1, target_size)
         img2_small = cv2.resize(img2, target_size)
         
-        # 1. Histogram farkı (renk değişimi)
+        # 1. Histogram fark (renk deiimi)
         hist1 = cv2.calcHist([img1_small], [0, 1, 2], None, [16, 16, 16], [0, 256, 0, 256, 0, 256])
         hist2 = cv2.calcHist([img2_small], [0, 1, 2], None, [16, 16, 16], [0, 256, 0, 256, 0, 256])
         
@@ -183,7 +204,7 @@ def analyze_visual_jump(frames: List[str]) -> float:
         hist_diff = cv2.compareHist(hist1, hist2, cv2.HISTCMP_CHISQR)
         hist_score = min(hist_diff / 50000, 1.0)  # Normalize
         
-        # 2. Edge farkı (şekil/kompozisyon değişimi)
+        # 2. Edge fark (ekil/kompozisyon deiimi)
         gray1 = cv2.cvtColor(img1_small, cv2.COLOR_BGR2GRAY)
         gray2 = cv2.cvtColor(img2_small, cv2.COLOR_BGR2GRAY)
         
@@ -192,62 +213,62 @@ def analyze_visual_jump(frames: List[str]) -> float:
         
         edge_diff = np.mean(np.abs(edges1.astype(float) - edges2.astype(float))) / 255.0
         
-        # 3. Optical Flow (hareket şiddeti)
+        # 3. Optical Flow (hareket iddeti)
         flow = cv2.calcOpticalFlowPyrLK(gray1, gray2, 
                                        corners=cv2.goodFeaturesToTrack(gray1, maxCorners=50, qualityLevel=0.3, minDistance=7),
                                        nextPts=None)[0]
         
         flow_magnitude = 0.0
         if flow is not None and len(flow) > 0:
-            # Hareket büyüklüğü
+            # Hareket bykl
             flow_magnitude = np.mean(np.sqrt(np.sum(flow**2, axis=1)))
             flow_magnitude = min(flow_magnitude / 20.0, 1.0)  # Normalize
         
-        # Birleşik skor
+        # Birleik skor
         combined_score = (hist_score * 0.4) + (edge_diff * 0.3) + (flow_magnitude * 0.3)
         
-        print(f"[HOOK] Visual jump - hist: {hist_score:.2f}, edge: {edge_diff:.2f}, flow: {flow_magnitude:.2f}, combined: {combined_score:.2f}")
+        safe_print(f"[HOOK] Visual jump - hist: {hist_score:.2f}, edge: {edge_diff:.2f}, flow: {flow_magnitude:.2f}, combined: {combined_score:.2f}")
         
         return combined_score
         
     except Exception as e:
-        print(f"[HOOK] Visual jump analysis failed: {e}")
+        safe_print(f"[HOOK] Visual jump analysis failed: {e}")
         return 0.0
 
 
 def analyze_hook_text(features: Dict[str, Any]) -> float:
     """
-    Kanca metni analizi - gerçek OCR text analysis
+    Kanca metni analizi - gerek OCR text analysis
     """
     ocr_text = features.get("textual", {}).get("ocr_text", "").lower()
     
     if not ocr_text:
         return 0.0
     
-    # Güçlü kanca kelimeleri (ağırlıklı)
+    # Gl kanca kelimeleri (arlkl)
     hook_keywords = {
         "kimse": 0.9,
         "gizli": 0.8, 
-        "sır": 0.8,
-        "şok": 0.7,
-        "inanamayacaksın": 0.9,
-        "bu yöntem": 0.6,
-        "hiç kimse": 0.9,
+        "sr": 0.8,
+        "ok": 0.7,
+        "inanamayacaksn": 0.9,
+        "bu yntem": 0.6,
+        "hi kimse": 0.9,
         "asla": 0.7,
         "kesinlikle": 0.6,
         "muhtemelen": 0.5,
         "bilmiyor": 0.7,
         "fark": 0.6,
-        "özel": 0.5,
+        "zel": 0.5,
         "yeni": 0.4,
         "ilk kez": 0.7,
         "sadece": 0.6
     }
     
-    # Soru formatları (çok etkili)
+    # Soru formatlar (ok etkili)
     question_patterns = [
-        "neden", "nasıl", "ne zaman", "hangi", "kim", 
-        "niçin", "nereden", "ne kadar", "kaç"
+        "neden", "nasl", "ne zaman", "hangi", "kim", 
+        "niin", "nereden", "ne kadar", "ka"
     ]
     
     # Kanca skoru hesapla
@@ -257,38 +278,38 @@ def analyze_hook_text(features: Dict[str, Any]) -> float:
     for keyword, weight in hook_keywords.items():
         if keyword in ocr_text:
             score += weight
-            print(f"[HOOK] Hook keyword found: '{keyword}' (+{weight})")
+            safe_print(f"[HOOK] Hook keyword found: '{keyword}' (+{weight})")
     
-    # Soru formatı bonus
+    # Soru format bonus
     question_bonus = 0.0
     for pattern in question_patterns:
         if pattern in ocr_text and "?" in ocr_text:
             question_bonus = 0.3
-            print(f"[HOOK] Question format found: '{pattern}' (+0.3)")
+            safe_print(f"[HOOK] Question format found: '{pattern}' (+0.3)")
             break
     
     score += question_bonus
     
-    # Kelime sayısı kontrolü (ideal: 3-10 kelime)
+    # Kelime says kontrol (ideal: 3-10 kelime)
     word_count = len(ocr_text.split())
     if 3 <= word_count <= 10:
         score += 0.2
-        print(f"[HOOK] Good word count: {word_count} words (+0.2)")
+        safe_print(f"[HOOK] Good word count: {word_count} words (+0.2)")
     elif word_count > 15:
         score -= 0.3
-        print(f"[HOOK] Too many words: {word_count} (penalty)")
+        safe_print(f"[HOOK] Too many words: {word_count} (penalty)")
     
     # Normalize (0-1)
     final_score = min(score / 1.5, 1.0)  # Max 1.5 puan normalize to 1.0
     
-    print(f"[HOOK] Hook text analysis: '{ocr_text[:50]}...' = {final_score:.2f}")
+    safe_print(f"[HOOK] Hook text analysis: '{ocr_text[:50]}...' = {final_score:.2f}")
     
     return final_score
 
 
 def analyze_audio_intro(features: Dict[str, Any]) -> float:
     """
-    Ses giriş analizi - BPM ve enerji
+    Ses giri analizi - BPM ve enerji
     """
     audio = features.get("audio", {})
     bpm = audio.get("tempo_bpm", 0)
@@ -296,59 +317,59 @@ def analyze_audio_intro(features: Dict[str, Any]) -> float:
     
     score = 0.0
     
-    # BPM enerji değerlendirmesi
+    # BPM enerji deerlendirmesi
     if bpm > 120:
-        score += 0.4  # Yüksek enerji
-        print(f"[HOOK] High energy BPM: {bpm}")
+        score += 0.4  # Yksek enerji
+        safe_print(f"[HOOK] High energy BPM: {bpm}")
     elif bpm > 100:
-        score += 0.3  # Orta-yüksek enerji
+        score += 0.3  # Orta-yksek enerji
     elif bpm > 80:
         score += 0.2  # Orta enerji
     else:
-        print(f"[HOOK] Low energy BPM: {bpm}")
+        safe_print(f"[HOOK] Low energy BPM: {bpm}")
     
-    # Ses seviyesi (intro için önemli)
+    # Ses seviyesi (intro iin nemli)
     if -15 <= loudness <= -8:
-        score += 0.3  # İdeal seviye
-        print(f"[HOOK] Good intro volume: {loudness:.1f} LUFS")
+        score += 0.3  # deal seviye
+        safe_print(f"[HOOK] Good intro volume: {loudness:.1f} LUFS")
     elif loudness < -20:
-        score += 0.1  # Çok kısık
-        print(f"[HOOK] Intro too quiet: {loudness:.1f} LUFS")
+        score += 0.1  # ok ksk
+        safe_print(f"[HOOK] Intro too quiet: {loudness:.1f} LUFS")
     elif loudness > -5:
-        score += 0.1  # Çok yüksek
-        print(f"[HOOK] Intro too loud: {loudness:.1f} LUFS")
+        score += 0.1  # ok yksek
+        safe_print(f"[HOOK] Intro too loud: {loudness:.1f} LUFS")
     else:
         score += 0.2
     
-    print(f"[HOOK] Audio intro score: {score:.2f}")
+    safe_print(f"[HOOK] Audio intro score: {score:.2f}")
     return min(score, 1.0)
 
 
 def detect_beat_drop_in_intro(audio_path: str) -> float:
     """
-    GERÇEK beat detection - librosa ile ilk 3 saniyede beat/drop tespit
+    GEREK beat detection - librosa ile ilk 3 saniyede beat/drop tespit
     """
     try:
         import librosa
         import librosa.beat
         
-        print(f"[HOOK] Analyzing beats in: {audio_path}")
+        safe_print(f"[HOOK] Analyzing beats in: {audio_path}")
         
-        # İlk 3 saniyeyi yükle
+        # lk 3 saniyeyi ykle
         y, sr = librosa.load(audio_path, sr=22050, duration=3.0)
         
         if len(y) == 0:
-            print("[HOOK] Audio file empty or not found")
+            safe_print("[HOOK] Audio file empty or not found")
             return 0.0
         
         # Beat tracking
         tempo, beats = librosa.beat.beat_track(y=y, sr=sr, hop_length=512)
         beat_times = librosa.frames_to_time(beats, sr=sr, hop_length=512)
         
-        # Onset detection (beat drop'lar için)
+        # Onset detection (beat drop'lar iin)
         onset_frames = librosa.onset.onset_detect(y=y, sr=sr, hop_length=512, units='time')
         
-        # İlk 3 saniyede beat/onset var mı?
+        # lk 3 saniyede beat/onset var m?
         early_beats = [t for t in beat_times if t <= 3.0]
         early_onsets = [t for t in onset_frames if t <= 3.0]
         
@@ -356,16 +377,16 @@ def detect_beat_drop_in_intro(audio_path: str) -> float:
         
         # Beat drop scoring
         if len(early_onsets) >= 2:
-            score += 0.4  # Çoklu onset = drop efekti
-            print(f"[HOOK] Multiple beat drops in intro: {len(early_onsets)} onsets at {early_onsets}")
+            score += 0.4  # oklu onset = drop efekti
+            safe_print(f"[HOOK] Multiple beat drops in intro: {len(early_onsets)} onsets at {early_onsets}")
         elif len(early_onsets) >= 1:
             score += 0.2  # Tek onset
-            print(f"[HOOK] Beat drop detected at {early_onsets[0]:.1f}s")
+            safe_print(f"[HOOK] Beat drop detected at {early_onsets[0]:.1f}s")
         
-        # İlk 1 saniyede onset varsa bonus
+        # lk 1 saniyede onset varsa bonus
         if any(t <= 1.0 for t in early_onsets):
             score += 0.3
-            print(f"[HOOK] Early beat drop (within 1s) - very powerful!")
+            safe_print(f"[HOOK] Early beat drop (within 1s) - very powerful!")
         
         # Beat consistency check
         if tempo > 0 and len(early_beats) > 0:
@@ -375,38 +396,38 @@ def detect_beat_drop_in_intro(audio_path: str) -> float:
             
             if consistency > 0.7:
                 score += 0.1
-                print(f"[HOOK] Good beat consistency: {consistency:.2f} ({actual_beats}/{expected_beats_in_3s:.1f})")
+                safe_print(f"[HOOK] Good beat consistency: {consistency:.2f} ({actual_beats}/{expected_beats_in_3s:.1f})")
         
-        print(f"[HOOK] Beat drop analysis complete: {score:.2f}")
+        safe_print(f"[HOOK] Beat drop analysis complete: {score:.2f}")
         return min(score, 1.0)
         
     except Exception as e:
-        print(f"[HOOK] Beat detection failed: {e}")
+        safe_print(f"[HOOK] Beat detection failed: {e}")
         return 0.0
 
 
 def analyze_direct_start(features: Dict[str, Any]) -> float:
     """
-    Direkt başlangıç analizi - selamlaşma vs konu
+    Direkt balang analizi - selamlama vs konu
     """
     asr_text = features.get("textual", {}).get("asr_text", "").lower()
     
     if not asr_text:
-        return 0.5  # Konuşma yok, nötr
+        return 0.5  # Konuma yok, ntr
     
-    # İlk 50 karakter (yaklaşık ilk 3 saniye konuşma)
+    # lk 50 karakter (yaklak ilk 3 saniye konuma)
     first_part = asr_text[:50]
     
-    # Selamlaşma kalıpları (negatif)
+    # Selamlama kalplar (negatif)
     greetings = [
-        "merhaba", "selam", "hoş geldin", "kanalıma", "ben", "adım",
-        "bugün", "video", "hepinize", "arkadaşlar", "izleyiciler"
+        "merhaba", "selam", "ho geldin", "kanalma", "ben", "adm",
+        "bugn", "video", "hepinize", "arkadalar", "izleyiciler"
     ]
     
-    # Direkt konu kalıpları (pozitif)
+    # Direkt konu kalplar (pozitif)
     direct_patterns = [
-        "şunu", "bunu", "bu yöntem", "bu taktik", "bu durum",
-        "geçen", "dün", "şimdi", "hemen", "direkt"
+        "unu", "bunu", "bu yntem", "bu taktik", "bu durum",
+        "geen", "dn", "imdi", "hemen", "direkt"
     ]
     
     greeting_count = sum(1 for g in greetings if g in first_part)
@@ -414,17 +435,17 @@ def analyze_direct_start(features: Dict[str, Any]) -> float:
     
     # Skor hesapla
     if direct_count > 0 and greeting_count == 0:
-        score = 1.0  # Mükemmel direkt başlangıç
-        print(f"[HOOK] Perfect direct start - no greetings, direct topic")
+        score = 1.0  # Mkemmel direkt balang
+        safe_print(f"[HOOK] Perfect direct start - no greetings, direct topic")
     elif direct_count > greeting_count:
-        score = 0.7  # İyi, daha çok konu odaklı
-        print(f"[HOOK] Good direct start - more topic than greeting")
+        score = 0.7  # yi, daha ok konu odakl
+        safe_print(f"[HOOK] Good direct start - more topic than greeting")
     elif greeting_count <= 1:
-        score = 0.6  # Kısa selamlaşma, kabul edilebilir
-        print(f"[HOOK] Short greeting, acceptable")
+        score = 0.6  # Ksa selamlama, kabul edilebilir
+        safe_print(f"[HOOK] Short greeting, acceptable")
     else:
-        score = 0.3  # Uzun selamlaşma
-        print(f"[HOOK] Too much greeting - {greeting_count} greeting words")
+        score = 0.3  # Uzun selamlama
+        safe_print(f"[HOOK] Too much greeting - {greeting_count} greeting words")
     
     return score
 
@@ -437,17 +458,17 @@ def analyze_foreshadowing(features: Dict[str, Any]) -> float:
     asr_text = features.get("textual", {}).get("asr_text", "").lower()
     combined_text = ocr_text + " " + asr_text
     
-    # Foreshadowing kalıpları
+    # Foreshadowing kalplar
     foreshadow_patterns = [
-        "sonunda", "göreceksin", "öğreneceksin", "anlayacaksın",
-        "şaşıracaksın", "inanamayacaksın", "keşfedeceksin",
+        "sonunda", "greceksin", "reneceksin", "anlayacaksn",
+        "aracaksn", "inanamayacaksn", "kefedeceksin",
         "final", "sonda", "en son", "surprise", "plot twist"
     ]
     
-    # Vaat kalıpları
+    # Vaat kalplar
     promise_patterns = [
-        "garanti", "kesin", "mutlaka", "illa", "확실히", 
-        "works", "çalışır", "effect", "sonuç"
+        "garanti", "kesin", "mutlaka", "illa", "", 
+        "works", "alr", "effect", "sonu"
     ]
     
     score = 0.0
@@ -456,57 +477,61 @@ def analyze_foreshadowing(features: Dict[str, Any]) -> float:
     for pattern in foreshadow_patterns:
         if pattern in combined_text:
             score += 0.4
-            print(f"[HOOK] Foreshadowing found: '{pattern}'")
+            safe_print(f"[HOOK] Foreshadowing found: '{pattern}'")
             break
     
     # Vaat tespit
     for pattern in promise_patterns:
         if pattern in combined_text:
             score += 0.3
-            print(f"[HOOK] Promise found: '{pattern}'")
+            safe_print(f"[HOOK] Promise found: '{pattern}'")
             break
     
-    print(f"[HOOK] Foreshadowing score: {score:.2f}")
+    safe_print(f"[HOOK] Foreshadowing score: {score:.2f}")
     return min(score, 1.0)
 
 
 def analyze_pacing_retention(frames: List[str], features: Dict[str, Any], duration: float) -> Dict[str, Any]:
     """
     Pacing & Retention Analizi (12 puan)
-    Gerçek cut detection ve hareket analizi
+    Gerek cut detection ve hareket analizi
     """
     score = 0
     findings = []
     recommendations = []
     raw_metrics = {}
     
-    print("[PACING] Starting pacing analysis...")
+    safe_print("[PACING] Starting pacing analysis...")
     
-    # 1. Kesim Yoğunluğu Analizi (GERÇEK timing ile)
+    # 1. Kesim Younluu Analizi (GEREK timing ile)
     cuts_per_sec, cut_timestamps = detect_cuts_per_second(frames, duration)
     raw_metrics["cuts_per_sec"] = cuts_per_sec
     raw_metrics["cut_timestamps"] = cut_timestamps
     
-    # İdeal aralık: 0.25-0.7 cuts/sec (lifestyle için)
+    # deal aralk: 0.25-0.7 cuts/sec (lifestyle iin)
     if 0.25 <= cuts_per_sec <= 0.7:
         score += 4
         findings.append({
             "t": duration/2,
             "type": "perfect_pacing",
-            "msg": f"Mükemmel kesim temposu: {cuts_per_sec:.2f} kesim/saniye"
+            "msg": f"Mkemmel kesim temposu: {cuts_per_sec:.2f} kesim/saniye"
         })
     elif 0.15 <= cuts_per_sec < 0.25:
         score += 2
-        recommendations.append(f"Kesim temposunu artır - şu an {cuts_per_sec:.2f}, ideal 0.3-0.6 arası")
+        # Daha spesifik öneriler
+        if cuts_per_sec < 0.2:
+            recommendations.append(f"Çok yavaş kesim ({cuts_per_sec:.2f}) - daha hızlı geçişler ve dinamik montaj kullan")
+        else:
+            recommendations.append(f"Orta hızda kesim ({cuts_per_sec:.2f}) - kesim sayısını %30 artırarak ritmi hızlandır")
     elif 0.7 < cuts_per_sec <= 1.0:
         score += 3
-        recommendations.append(f"Biraz yavaşlat - {cuts_per_sec:.2f} çok hızlı, 0.5 civarı daha iyi")
+        recommendations.append(f"Biraz yavalat - {cuts_per_sec:.2f} ok hzl, 0.5 civar daha iyi")
     else:
         score += 1
         if cuts_per_sec < 0.15:
-            recommendations.append(f"Çok yavaş edit ({cuts_per_sec:.2f} kesim/saniye) - daha fazla kesim ekle. İdeal: 0.3-0.6 arası.")
+            recommendations.append(f"ok yava edit ({cuts_per_sec:.2f} kesim/saniye) - daha fazla kesim ekle. deal: 0.3-0.6 aras.")
         else:
-            recommendations.append(f"Çok hızlı edit ({cuts_per_sec:.2f} kesim/saniye) - izleyici kaybedebilir. Biraz yavaşlat.")
+            recommendations.append(f"ok hzl edit ({cuts_per_sec:.2f} kesim/saniye) - izleyici kaybedebilir. Biraz yavalat.")
     
     # 2. Hareket Ritmi Analizi
     movement_rhythm = analyze_movement_rhythm(frames)
@@ -517,16 +542,16 @@ def analyze_pacing_retention(frames: List[str], features: Dict[str, Any], durati
         findings.append({
             "t": duration*0.6,
             "type": "rhythmic_movement",
-            "msg": f"Ritmik hareket paterni mükemmel ({movement_rhythm:.2f})"
+            "msg": f"Ritmik hareket paterni mkemmel ({movement_rhythm:.2f})"
         })
     elif movement_rhythm > 0.4:
         score += 2
-        recommendations.append("Hareket ritmini biraz daha düzenli yap")
+        recommendations.append("Hareket ritmini biraz daha dzenli yap")
     else:
         score += 1
-        recommendations.append(f"Hareket ritmi çok düşük ({movement_rhythm:.2f}). Daha ritmik hareket paterni oluştur - düzenli aralıklarla hareket ekle.")
+        recommendations.append(f"Hareket ritmi ok dk ({movement_rhythm:.2f}). Daha ritmik hareket paterni olutur - dzenli aralklarla hareket ekle.")
     
-    # 3. Ölü An Tespiti
+    # 3. l An Tespiti
     dead_time_penalty = detect_dead_time(frames, features, duration)
     raw_metrics["dead_time_penalty"] = dead_time_penalty
     
@@ -535,11 +560,11 @@ def analyze_pacing_retention(frames: List[str], features: Dict[str, Any], durati
         findings.append({
             "t": duration*0.7,
             "type": "no_dead_time",
-            "msg": "Hiç ölü an yok - sürekli ilgi çekici content"
+            "msg": "Hi l an yok - srekli ilgi ekici content"
         })
     else:
         score -= dead_time_penalty
-        recommendations.append(f"Ölü anları ({dead_time_penalty} tespit) B-roll veya müzikle doldur")
+        recommendations.append(f"l anlar ({dead_time_penalty} tespit) B-roll veya mzikle doldur")
     
     # 4. Retention Curve Tahmini
     retention_estimate = estimate_retention_curve(frames, features)
@@ -550,14 +575,14 @@ def analyze_pacing_retention(frames: List[str], features: Dict[str, Any], durati
         findings.append({
             "t": duration*0.8,
             "type": "high_retention",
-            "msg": f"Yüksek retention tahmini (%{retention_estimate*100:.0f})"
+            "msg": f"Yksek retention tahmini (%{retention_estimate*100:.0f})"
         })
     elif retention_estimate > 0.5:
         score += 1
     else:
-        recommendations.append("Retention'ı artır - daha sık hareket ve metin kullan")
+        recommendations.append("Retention' artr - daha sk hareket ve metin kullan")
     
-    print(f"[PACING] Pacing score: {score}/12")
+    safe_print(f"[PACING] Pacing score: {score}/12")
     
     return {
         "score": min(max(score, 0), 12),
@@ -569,7 +594,7 @@ def analyze_pacing_retention(frames: List[str], features: Dict[str, Any], durati
 
 def detect_cuts_per_second(frames: List[str], duration: float) -> Tuple[float, List[float]]:
     """
-    GERÇEK cut detection - histogram + edge + timing based
+    GEREK cut detection - histogram + edge + timing based
     Returns: (cuts_per_sec, cut_timestamps)
     """
     if len(frames) <= 1 or duration <= 0:
@@ -593,12 +618,12 @@ def detect_cuts_per_second(frames: List[str], duration: float) -> Tuple[float, L
             img1 = cv2.resize(img1, (128, 128))
             img2 = cv2.resize(img2, (128, 128))
             
-            # 1. Histogram farkı (renk değişimi)
+            # 1. Histogram fark (renk deiimi)
             hist1 = cv2.calcHist([img1], [0, 1, 2], None, [16, 16, 16], [0, 256, 0, 256, 0, 256])
             hist2 = cv2.calcHist([img2], [0, 1, 2], None, [16, 16, 16], [0, 256, 0, 256, 0, 256])
             hist_diff = cv2.compareHist(hist1, hist2, cv2.HISTCMP_CHISQR) / 10000.0
             
-            # 2. Edge farkı (kompozisyon değişimi)
+            # 2. Edge fark (kompozisyon deiimi)
             gray1 = cv2.cvtColor(img1, cv2.COLOR_BGR2GRAY)
             gray2 = cv2.cvtColor(img2, cv2.COLOR_BGR2GRAY)
             edges1 = cv2.Canny(gray1, 50, 150)
@@ -609,7 +634,7 @@ def detect_cuts_per_second(frames: List[str], duration: float) -> Tuple[float, L
             ssim_score = calculate_ssim(gray1, gray2)
             structure_diff = 1.0 - ssim_score
             
-            # Kombinasyon: üç metriğin weighted average'ı
+            # Kombinasyon:  metriin weighted average'
             combined_diff = (hist_diff * 0.4) + (edge_diff * 0.3) + (structure_diff * 0.3)
             
             # Cut threshold (adaptive)
@@ -618,21 +643,21 @@ def detect_cuts_per_second(frames: List[str], duration: float) -> Tuple[float, L
                 cut_time = i * frame_interval
                 cuts.append(combined_diff)
                 cut_timestamps.append(cut_time)
-                print(f"[PACING] CUT at {cut_time:.1f}s: hist={hist_diff:.3f}, edge={edge_diff:.3f}, struct={structure_diff:.3f}, combined={combined_diff:.3f}")
+                safe_print(f"[PACING] CUT at {cut_time:.1f}s: hist={hist_diff:.3f}, edge={edge_diff:.3f}, struct={structure_diff:.3f}, combined={combined_diff:.3f}")
         
         cuts_per_sec = len(cuts) / duration
-        print(f"[PACING] Cut detection complete: {len(cuts)} cuts in {duration:.1f}s = {cuts_per_sec:.3f} cuts/sec")
+        safe_print(f"[PACING] Cut detection complete: {len(cuts)} cuts in {duration:.1f}s = {cuts_per_sec:.3f} cuts/sec")
         
         return cuts_per_sec, cut_timestamps
         
     except Exception as e:
-        print(f"[PACING] Cut detection failed: {e}")
+        safe_print(f"[PACING] Cut detection failed: {e}")
         return len(frames) / duration, []  # Fallback
 
 
 def calculate_ssim(img1: np.ndarray, img2: np.ndarray) -> float:
     """
-    Structural Similarity Index - frame benzerliği
+    Structural Similarity Index - frame benzerlii
     """
     try:
         # Simple SSIM implementation
@@ -654,7 +679,7 @@ def calculate_ssim(img1: np.ndarray, img2: np.ndarray) -> float:
         return max(0.0, min(1.0, ssim))
         
     except Exception as e:
-        print(f"[PACING] SSIM calculation failed: {e}")
+        safe_print(f"[PACING] SSIM calculation failed: {e}")
         return 0.0
 
 
@@ -689,7 +714,7 @@ def analyze_movement_rhythm(frames: List[str]) -> float:
                 nextPts=None
             )[0]
             
-            # Hareket büyüklüğü
+            # Hareket bykl
             if flow is not None and len(flow) > 0:
                 movement = np.mean(np.sqrt(np.sum(flow**2, axis=1)))
                 movement_values.append(movement)
@@ -704,31 +729,31 @@ def analyze_movement_rhythm(frames: List[str]) -> float:
         movement_std = np.std(movement_array)
         movement_mean = np.mean(movement_array)
         
-        # Ritmik varsa std yüksek ama çok wild değil
+        # Ritmik varsa std yksek ama ok wild deil
         rhythm_score = 0.0
         if movement_mean > 0.1:  # En az biraz hareket var
             if 0.3 <= movement_std/movement_mean <= 1.2:  # Coefficient of variation
-                rhythm_score = 0.8  # İyi ritim
-                print(f"[PACING] Good movement rhythm: std/mean = {movement_std/movement_mean:.2f}")
+                rhythm_score = 0.8  # yi ritim
+                safe_print(f"[PACING] Good movement rhythm: std/mean = {movement_std/movement_mean:.2f}")
             else:
-                rhythm_score = 0.4  # Düzensiz
-                print(f"[PACING] Irregular movement: std/mean = {movement_std/movement_mean:.2f}")
+                rhythm_score = 0.4  # Dzensiz
+                safe_print(f"[PACING] Irregular movement: std/mean = {movement_std/movement_mean:.2f}")
         else:
-            rhythm_score = 0.1  # Çok az hareket
-            print(f"[PACING] Very low movement: mean = {movement_mean:.3f}")
+            rhythm_score = 0.1  # ok az hareket
+            safe_print(f"[PACING] Very low movement: mean = {movement_mean:.3f}")
         
         return rhythm_score
         
     except Exception as e:
-        print(f"[PACING] Movement rhythm analysis failed: {e}")
+        safe_print(f"[PACING] Movement rhythm analysis failed: {e}")
         return 0.0
 
 
 def detect_dead_time(frames: List[str], features: Dict[str, Any], duration: float) -> int:
     """
-    Ölü an tespiti - hareket yok + ses yok + metin yok
+    l an tespiti - hareket yok + ses yok + metin yok
     """
-    # Basit versiyon - geliştirilecek
+    # Basit versiyon - gelitirilecek
     visual = features.get("visual", {})
     flow = visual.get("optical_flow_mean", 0)
     
@@ -737,13 +762,13 @@ def detect_dead_time(frames: List[str], features: Dict[str, Any], duration: floa
     
     penalty = 0
     
-    # Çok düşük hareket + az metin = ölü an
+    # ok dk hareket + az metin = l an
     if flow < 0.2 and len(asr_text) < 20 and len(ocr_text) < 10:
         penalty = 2
-        print(f"[PACING] Dead time detected - low flow ({flow:.2f}), minimal text")
+        safe_print(f"[PACING] Dead time detected - low flow ({flow:.2f}), minimal text")
     elif flow < 0.4 and len(asr_text + ocr_text) < 30:
         penalty = 1
-        print(f"[PACING] Some boring moments detected")
+        safe_print(f"[PACING] Some boring moments detected")
     
     return penalty
 
@@ -752,7 +777,7 @@ def estimate_retention_curve(frames: List[str], features: Dict[str, Any]) -> flo
     """
     Retention curve tahmini
     """
-    # Hareket, metin ve ses verilerini birleştir
+    # Hareket, metin ve ses verilerini birletir
     visual = features.get("visual", {})
     flow = visual.get("optical_flow_mean", 0)
     
@@ -785,17 +810,17 @@ def estimate_retention_curve(frames: List[str], features: Dict[str, Any]) -> flo
 
 def analyze_cta_interaction(features: Dict[str, Any], duration: float) -> Dict[str, Any]:
     """
-    CTA & Etkileşim Analizi (8 puan)
-    Çağrı tespit ve analiz
+    CTA & Etkileim Analizi (8 puan)
+    ar tespit ve analiz
     """
     score = 0
     findings = []
     recommendations = []
     raw_metrics = {}
     
-    print("[CTA] Starting CTA & interaction analysis...")
+    safe_print("[CTA] Starting CTA & interaction analysis...")
     
-    # Tüm metinleri birleştir
+    # Tm metinleri birletir
     textual = features.get("textual", {})
     ocr_text = textual.get("ocr_text", "").lower()
     asr_text = textual.get("asr_text", "").lower()
@@ -813,16 +838,22 @@ def analyze_cta_interaction(features: Dict[str, Any], duration: float) -> Dict[s
         findings.append({
             "t": duration * 0.8,
             "type": "strong_cta",
-            "msg": "Güçlü çağrı tespit edildi - etkileşim artırıcı!"
+            "msg": "Gl ar tespit edildi - etkileim artrc!"
         })
     elif cta_score > 0.4:
         score += 2
-        recommendations.append("CTA'yı daha belirgin yap - 'beğen', 'takip et', 'yorum yap' ekle")
+        recommendations.append("CTA'y daha belirgin yap - 'been', 'takip et', 'yorum yap' ekle")
     else:
         score += 1
-        recommendations.append("Hiç CTA yok - video sonunda güçlü çağrı ekle")
+        # Daha yaratıcı CTA önerileri
+        cta_suggestions = [
+            "Video sonunda açık çağrı ekle - 'Beğenmeyi unutma' veya 'Yorumlarda yaz'",
+            "İzleyicileri harekete geçir - 'Hemen deneyin' veya 'Paylaşın' gibi net talimatlar",
+            "Son 5 saniyede güçlü kapanış - 'Takip et' veya 'Abone ol' çağrısı"
+        ]
+        recommendations.append(cta_suggestions[0])  # İlk öneriyi ekle
     
-    # 2. Etkileşim Teşviki (2 puan)
+    # 2. Etkileim Teviki (2 puan)
     interaction_score = detect_interaction_patterns(combined_text)
     raw_metrics["interaction_encouragement"] = interaction_score
     
@@ -831,13 +862,13 @@ def analyze_cta_interaction(features: Dict[str, Any], duration: float) -> Dict[s
         findings.append({
             "t": duration * 0.7,
             "type": "interaction_boost",
-            "msg": "Etkileşim teşviki var - beğeni/takip çağrısı"
+            "msg": "Etkileim teviki var - beeni/takip ars"
         })
     elif interaction_score > 0.3:
         score += 1
-        recommendations.append("Etkileşim çağrısını güçlendir")
+        recommendations.append("Etkileim arsn glendir")
     else:
-        recommendations.append("Etkileşim çağrısı ekle - 'beğenmeyi unutma' tarzı")
+        recommendations.append("Etkileim ars ekle - 'beenmeyi unutma' tarz")
     
     # 3. Zamanlama Analizi (2 puan)
     timing_score = analyze_cta_timing(features, duration)
@@ -848,15 +879,15 @@ def analyze_cta_interaction(features: Dict[str, Any], duration: float) -> Dict[s
         findings.append({
             "t": duration * 0.9,
             "type": "perfect_timing",
-            "msg": "CTA zamanlaması mükemmel - video sonunda"
+            "msg": "CTA zamanlamas mkemmel - video sonunda"
         })
     elif timing_score > 0.4:
         score += 1
-        recommendations.append("CTA'yı video sonuna taşı")
+        recommendations.append("CTA'y video sonuna ta")
     else:
-        recommendations.append("CTA çok erken - video sonunda olmalı")
+        recommendations.append("CTA zamanlaması yanlış - son 3 saniyeye taşı ve daha güçlü yap")
     
-    print(f"[CTA] CTA & interaction score: {score}/8")
+    safe_print(f"[CTA] CTA & interaction score: {score}/8")
     
     return {
         "score": min(score, 8),
@@ -870,58 +901,58 @@ def detect_cta_patterns(text: str) -> float:
     """
     CTA pattern tespiti
     """
-    # Güçlü CTA kalıpları
+    # Gl CTA kalplar
     strong_cta = [
-        "beğen", "like", "takip et", "follow", "abone ol", "subscribe",
-        "yorum yap", "comment", "paylaş", "share", "kaydet", "save",
-        "dm at", "dm", "mesaj", "message", "link", "linke tıkla"
+        "been", "like", "takip et", "follow", "abone ol", "subscribe",
+        "yorum yap", "comment", "payla", "share", "kaydet", "save",
+        "dm at", "dm", "mesaj", "message", "link", "linke tkla"
     ]
     
-    # Orta CTA kalıpları
+    # Orta CTA kalplar
     medium_cta = [
         "daha fazla", "more", "devam", "continue", "sonraki", "next",
-        "önceki", "previous", "kanal", "channel", "profil", "profile"
+        "nceki", "previous", "kanal", "channel", "profil", "profile"
     ]
     
-    # Zayıf CTA kalıpları
+    # Zayf CTA kalplar
     weak_cta = [
-        "bak", "look", "gör", "see", "dinle", "listen", "izle", "watch"
+        "bak", "look", "gr", "see", "dinle", "listen", "izle", "watch"
     ]
     
     score = 0.0
     
-    # Güçlü CTA'lar
+    # Gl CTA'lar
     for pattern in strong_cta:
         if pattern in text:
             score += 0.4
-            print(f"[CTA] Strong CTA found: '{pattern}' (+0.4)")
+            safe_print(f"[CTA] Strong CTA found: '{pattern}' (+0.4)")
     
     # Orta CTA'lar
     for pattern in medium_cta:
         if pattern in text:
             score += 0.2
-            print(f"[CTA] Medium CTA found: '{pattern}' (+0.2)")
+            safe_print(f"[CTA] Medium CTA found: '{pattern}' (+0.2)")
     
-    # Zayıf CTA'lar
+    # Zayf CTA'lar
     for pattern in weak_cta:
         if pattern in text:
             score += 0.1
-            print(f"[CTA] Weak CTA found: '{pattern}' (+0.1)")
+            safe_print(f"[CTA] Weak CTA found: '{pattern}' (+0.1)")
     
     return min(score, 1.0)
 
 
 def detect_interaction_patterns(text: str) -> float:
     """
-    Etkileşim teşviki tespiti
+    Etkileim teviki tespiti
     """
     interaction_patterns = [
-        "beğenmeyi unutma", "don't forget to like", "like if you",
+        "beenmeyi unutma", "don't forget to like", "like if you",
         "takip etmeyi unutma", "don't forget to follow", "follow for more",
-        "yorum yapmayı unutma", "don't forget to comment", "comment below",
-        "paylaşmayı unutma", "don't forget to share", "share this",
+        "yorum yapmay unutma", "don't forget to comment", "comment below",
+        "paylamay unutma", "don't forget to share", "share this",
         "kaydetmeyi unutma", "don't forget to save", "save this post",
-        "bildirimleri aç", "turn on notifications", "notifications on"
+        "bildirimleri a", "turn on notifications", "notifications on"
     ]
     
     score = 0.0
@@ -929,7 +960,7 @@ def detect_interaction_patterns(text: str) -> float:
     for pattern in interaction_patterns:
         if pattern in text:
             score += 0.3
-            print(f"[CTA] Interaction pattern found: '{pattern}' (+0.3)")
+            safe_print(f"[CTA] Interaction pattern found: '{pattern}' (+0.3)")
     
     return min(score, 1.0)
 
@@ -938,30 +969,30 @@ def analyze_cta_timing(features: Dict[str, Any], duration: float) -> float:
     """
     CTA zamanlama analizi
     """
-    # CTA'ların video sonunda olması ideal
-    # Şimdilik basit analiz - geliştirilecek
+    # CTA'larn video sonunda olmas ideal
+    # imdilik basit analiz - gelitirilecek
     
     asr_text = features.get("textual", {}).get("asr_text", "").lower()
     ocr_text = features.get("textual", {}).get("ocr_text", "").lower()
     
     # Video sonundaki metinleri kontrol et (son %20)
-    # Bu basit bir yaklaşım - gerçek zamanlama analizi için daha gelişmiş yöntem gerekli
+    # Bu basit bir yaklam - gerek zamanlama analizi iin daha gelimi yntem gerekli
     
-    cta_keywords = ["beğen", "takip", "abone", "yorum", "paylaş", "kaydet"]
+    cta_keywords = ["been", "takip", "abone", "yorum", "payla", "kaydet"]
     
-    # OCR ve ASR'da CTA var mı?
+    # OCR ve ASR'da CTA var m?
     has_cta = any(keyword in asr_text or keyword in ocr_text for keyword in cta_keywords)
     
     if has_cta:
-        # CTA var - zamanlama analizi yapılabilir
-        return 0.6  # Orta skor - gerçek zamanlama analizi geliştirilecek
+        # CTA var - zamanlama analizi yaplabilir
+        return 0.6  # Orta skor - gerek zamanlama analizi gelitirilecek
     else:
         return 0.0  # CTA yok
 
 
 def analyze_message_clarity(features: Dict[str, Any], duration: float) -> Dict[str, Any]:
     """
-    Mesaj Netliği Analizi (6 puan)
+    Mesaj Netlii Analizi (6 puan)
     4-7 saniye konu belirtme analizi
     """
     score = 0
@@ -969,7 +1000,7 @@ def analyze_message_clarity(features: Dict[str, Any], duration: float) -> Dict[s
     recommendations = []
     raw_metrics = {}
     
-    print("[MESSAGE] Starting message clarity analysis...")
+    safe_print("[MESSAGE] Starting message clarity analysis...")
     
     # 1. Erken Konu Belirtme (3 puan)
     early_topic_score = analyze_early_topic_mention(features, duration)
@@ -980,16 +1011,22 @@ def analyze_message_clarity(features: Dict[str, Any], duration: float) -> Dict[s
         findings.append({
             "t": 3.0,
             "type": "clear_early_topic",
-            "msg": "Konu 4-7 saniye içinde net belirtilmiş"
+            "msg": "Konu 4-7 saniye iinde net belirtilmi"
         })
     elif early_topic_score > 0.4:
         score += 2
         recommendations.append("Konuyu daha erken belirt - ilk 5 saniyede")
     else:
         score += 1
-        recommendations.append("Konu belirsiz - ilk 7 saniyede net konu belirt")
+        # Daha spesifik mesaj önerileri
+        message_suggestions = [
+            "İlk 5 saniyede ana konuyu net belirt - 'Bu videoda X'i göstereceğim'",
+            "Mesaj karmaşık - tek bir ana fikir üzerinde odaklan",
+            "Konu geçişleri belirsiz - her bölümde net başlık kullan"
+        ]
+        recommendations.append(message_suggestions[0])
     
-    # 2. Mesaj Tutarlılığı (2 puan)
+    # 2. Mesaj Tutarll (2 puan)
     consistency_score = analyze_message_consistency(features)
     raw_metrics["message_consistency"] = consistency_score
     
@@ -998,13 +1035,13 @@ def analyze_message_clarity(features: Dict[str, Any], duration: float) -> Dict[s
         findings.append({
             "t": duration * 0.5,
             "type": "consistent_message",
-            "msg": "Mesaj tutarlı - konu boyunca aynı tema"
+            "msg": "Mesaj tutarl - konu boyunca ayn tema"
         })
     elif consistency_score > 0.3:
         score += 1
-        recommendations.append("Mesajı daha tutarlı yap - konudan sapma")
+        recommendations.append("Mesaj daha tutarl yap - konudan sapma")
     else:
-        recommendations.append("Mesaj tutarsız - tek konuya odaklan")
+        recommendations.append("Mesaj tutarsz - tek konuya odaklan")
     
     # 3. Netlik Skoru (1 puan)
     clarity_score = analyze_message_clarity_score(features)
@@ -1015,12 +1052,12 @@ def analyze_message_clarity(features: Dict[str, Any], duration: float) -> Dict[s
         findings.append({
             "t": duration * 0.3,
             "type": "clear_message",
-            "msg": "Mesaj çok net ve anlaşılır"
+            "msg": "Mesaj ok net ve anlalr"
         })
     else:
-        recommendations.append("Mesajı daha net yap - basit kelimeler kullan")
+        recommendations.append("Mesaj daha net yap - basit kelimeler kullan")
     
-    print(f"[MESSAGE] Message clarity score: {score}/6")
+    safe_print(f"[MESSAGE] Message clarity score: {score}/6")
     
     return {
         "score": min(score, 6),
@@ -1041,14 +1078,14 @@ def analyze_early_topic_mention(features: Dict[str, Any], duration: float) -> fl
     
     # Konu belirten kelimeler
     topic_indicators = [
-        "bugün", "today", "şimdi", "now", "bu video", "this video",
-        "konu", "topic", "hakkında", "about", "ile ilgili", "related to",
-        "anlatacağım", "i will tell", "göstereceğim", "i will show",
-        "öğreneceksin", "you will learn", "göreceksin", "you will see"
+        "bugn", "today", "imdi", "now", "bu video", "this video",
+        "konu", "topic", "hakknda", "about", "ile ilgili", "related to",
+        "anlatacam", "i will tell", "gstereceim", "i will show",
+        "reneceksin", "you will learn", "greceksin", "you will see"
     ]
     
-    # İlk 7 saniyede konu belirtme kontrolü
-    # Basit yaklaşım - gerçek zamanlama analizi için daha gelişmiş yöntem gerekli
+    # lk 7 saniyede konu belirtme kontrol
+    # Basit yaklam - gerek zamanlama analizi iin daha gelimi yntem gerekli
     
     combined_text = f"{asr_text} {ocr_text} {caption} {title}"
     
@@ -1056,43 +1093,43 @@ def analyze_early_topic_mention(features: Dict[str, Any], duration: float) -> fl
     for indicator in topic_indicators:
         if indicator in combined_text:
             topic_mentions += 1
-            print(f"[MESSAGE] Topic indicator found: '{indicator}'")
+            safe_print(f"[MESSAGE] Topic indicator found: '{indicator}'")
     
     # Skor hesapla
     if topic_mentions >= 3:
-        return 1.0  # Mükemmel
+        return 1.0  # Mkemmel
     elif topic_mentions >= 2:
-        return 0.7  # İyi
+        return 0.7  # yi
     elif topic_mentions >= 1:
         return 0.4  # Orta
     else:
-        return 0.0  # Zayıf
+        return 0.0  # Zayf
 
 
 def analyze_message_consistency(features: Dict[str, Any]) -> float:
     """
-    Mesaj tutarlılığı analizi
+    Mesaj tutarll analizi
     """
     asr_text = features.get("textual", {}).get("asr_text", "").lower()
     ocr_text = features.get("textual", {}).get("ocr_text", "").lower()
     caption = features.get("textual", {}).get("caption", "").lower()
     title = features.get("textual", {}).get("title", "").lower()
     
-    # Ana konu kelimelerini çıkar
+    # Ana konu kelimelerini kar
     all_text = f"{asr_text} {ocr_text} {caption} {title}"
     
-    # Basit tutarlılık analizi - kelime tekrarı
+    # Basit tutarllk analizi - kelime tekrar
     words = all_text.split()
     if len(words) < 5:
         return 0.0
     
-    # En sık kullanılan kelimeler
+    # En sk kullanlan kelimeler
     word_freq = {}
     for word in words:
-        if len(word) > 3:  # Kısa kelimeleri atla
+        if len(word) > 3:  # Ksa kelimeleri atla
             word_freq[word] = word_freq.get(word, 0) + 1
     
-    # En sık kelimenin oranı
+    # En sk kelimenin oran
     if word_freq:
         max_freq = max(word_freq.values())
         total_words = len([w for w in words if len(w) > 3])
@@ -1110,12 +1147,12 @@ def analyze_message_consistency(features: Dict[str, Any]) -> float:
 
 def analyze_message_clarity_score(features: Dict[str, Any]) -> float:
     """
-    Mesaj netlik skoru - gelişmiş NLP ile
+    Mesaj netlik skoru - gelimi NLP ile
     """
     asr_text = features.get("textual", {}).get("asr_text", "")
     ocr_text = features.get("textual", {}).get("ocr_text", "")
     
-    # Gelişmiş NLP analizi
+    # Gelimi NLP analizi
     nlp_result = advanced_nlp_analysis(f"{asr_text} {ocr_text}")
     
     # Netlik skoru hesapla
@@ -1130,7 +1167,7 @@ def analyze_message_clarity_score(features: Dict[str, Any]) -> float:
     else:
         clarity_score += 0.1
     
-    # 2. Kelime karmaşıklığı
+    # 2. Kelime karmakl
     complexity = nlp_result.get("complexity", 0.5)
     if complexity < 0.3:  # Basit kelimeler
         clarity_score += 0.3
@@ -1139,16 +1176,16 @@ def analyze_message_clarity_score(features: Dict[str, Any]) -> float:
     else:
         clarity_score += 0.1
     
-    # 3. Cümle yapısı
+    # 3. Cmle yaps
     sentence_structure = nlp_result.get("sentence_structure", 0.5)
-    if sentence_structure > 0.7:  # İyi cümle yapısı
+    if sentence_structure > 0.7:  # yi cmle yaps
         clarity_score += 0.2
     elif sentence_structure > 0.4:
         clarity_score += 0.1
     
-    # 4. Anahtar kelime yoğunluğu
+    # 4. Anahtar kelime younluu
     keyword_density = nlp_result.get("keyword_density", 0.5)
-    if 0.3 <= keyword_density <= 0.7:  # Optimal yoğunluk
+    if 0.3 <= keyword_density <= 0.7:  # Optimal younluk
         clarity_score += 0.2
     else:
         clarity_score += 0.1
@@ -1168,7 +1205,7 @@ def analyze_message_clarity_score(features: Dict[str, Any]) -> float:
 
 def advanced_nlp_analysis(text: str) -> Dict[str, float]:
     """
-    Gelişmiş NLP analizi - sentiment, complexity, structure, emotion, intent, readability
+    Gelimi NLP analizi - sentiment, complexity, structure, emotion, intent, readability
     """
     if not text or len(text.strip()) < 10:
         return {
@@ -1191,13 +1228,13 @@ def advanced_nlp_analysis(text: str) -> Dict[str, float]:
     # 1. Sentiment Analizi
     sentiment_score = analyze_sentiment(text_lower)
     
-    # 2. Kelime Karmaşıklığı
+    # 2. Kelime Karmakl
     complexity_score = analyze_complexity(text_lower)
     
-    # 3. Cümle Yapısı
+    # 3. Cmle Yaps
     structure_score = analyze_sentence_structure(text_lower)
     
-    # 4. Anahtar Kelime Yoğunluğu
+    # 4. Anahtar Kelime Younluu
     keyword_density = analyze_keyword_density(text_lower)
     
     # 5. Entity Recognition
@@ -1242,32 +1279,32 @@ def advanced_nlp_analysis(text: str) -> Dict[str, float]:
 
 def analyze_sentiment(text: str) -> float:
     """
-    Sentiment analizi - pozitif/negatif/nötr
+    Sentiment analizi - pozitif/negatif/ntr
     """
     # Pozitif kelimeler
     positive_words = [
-        "harika", "mükemmel", "güzel", "iyi", "başarılı", "başarı", "kazanç", "kazan",
-        "kolay", "basit", "hızlı", "etkili", "güçlü", "büyük", "yüksek", "artış",
-        "çözüm", "çözmek", "başarmak", "başarı", "mutlu", "sevinç", "heyecan",
-        "beğen", "sev", "takdir", "övgü", "tebrik", "kutlama", "celebration",
+        "harika", "mkemmel", "gzel", "iyi", "baarl", "baar", "kazan", "kazan",
+        "kolay", "basit", "hzl", "etkili", "gl", "byk", "yksek", "art",
+        "zm", "zmek", "baarmak", "baar", "mutlu", "sevin", "heyecan",
+        "been", "sev", "takdir", "vg", "tebrik", "kutlama", "celebration",
         "great", "amazing", "wonderful", "excellent", "perfect", "awesome",
         "good", "best", "better", "improve", "success", "win", "profit"
     ]
     
     # Negatif kelimeler
     negative_words = [
-        "kötü", "berbat", "başarısız", "hata", "problem", "sorun", "zor", "karmaşık",
-        "yavaş", "düşük", "az", "kayıp", "kaybet", "başarısızlık", "hata", "yanlış",
-        "üzgün", "kızgın", "sinir", "stres", "endişe", "korku", "kaygı",
-        "beğenme", "sevme", "nefret", "kızgınlık", "öfke", "hayal kırıklığı",
+        "kt", "berbat", "baarsz", "hata", "problem", "sorun", "zor", "karmak",
+        "yava", "dk", "az", "kayp", "kaybet", "baarszlk", "hata", "yanl",
+        "zgn", "kzgn", "sinir", "stres", "endie", "korku", "kayg",
+        "beenme", "sevme", "nefret", "kzgnlk", "fke", "hayal krkl",
         "bad", "terrible", "awful", "horrible", "worst", "fail", "failure",
         "error", "mistake", "problem", "issue", "difficult", "hard", "complex"
     ]
     
-    # Nötr kelimeler
+    # Ntr kelimeler
     neutral_words = [
-        "video", "içerik", "kanal", "abone", "izleyici", "takip", "beğen",
-        "yorum", "paylaş", "kaydet", "bildirim", "link", "profil", "hesap",
+        "video", "ierik", "kanal", "abone", "izleyici", "takip", "been",
+        "yorum", "payla", "kaydet", "bildirim", "link", "profil", "hesap",
         "video", "content", "channel", "subscribe", "viewer", "follow", "like",
         "comment", "share", "save", "notification", "link", "profile", "account"
     ]
@@ -1289,35 +1326,35 @@ def analyze_sentiment(text: str) -> float:
     positive_ratio = positive_count / total_words
     negative_ratio = negative_count / total_words
     
-    # 0.0 (çok negatif) - 1.0 (çok pozitif)
+    # 0.0 (ok negatif) - 1.0 (ok pozitif)
     sentiment = 0.5 + (positive_ratio - negative_ratio) * 2
     sentiment = max(0.0, min(1.0, sentiment))
     
-    print(f"[NLP] Sentiment: {sentiment:.2f} (pos: {positive_count}, neg: {negative_count}, total: {total_words})")
+    safe_print(f"[NLP] Sentiment: {sentiment:.2f} (pos: {positive_count}, neg: {negative_count}, total: {total_words})")
     
     return sentiment
 
 
 def analyze_complexity(text: str) -> float:
     """
-    Kelime karmaşıklığı analizi
+    Kelime karmakl analizi
     """
     words = text.split()
     if not words:
         return 0.5
     
-    # Karmaşık kelimeler (uzun, teknik)
+    # Karmak kelimeler (uzun, teknik)
     complex_words = [
-        "algoritma", "teknoloji", "sistem", "mekanizma", "prosedür", "metodoloji",
-        "analiz", "sentez", "değerlendirme", "optimizasyon", "implementasyon",
+        "algoritma", "teknoloji", "sistem", "mekanizma", "prosedr", "metodoloji",
+        "analiz", "sentez", "deerlendirme", "optimizasyon", "implementasyon",
         "algorithm", "technology", "system", "mechanism", "procedure", "methodology",
         "analysis", "synthesis", "evaluation", "optimization", "implementation"
     ]
     
-    # Basit kelimeler (kısa, günlük)
+    # Basit kelimeler (ksa, gnlk)
     simple_words = [
-        "iyi", "kötü", "güzel", "çirkin", "büyük", "küçük", "hızlı", "yavaş",
-        "kolay", "zor", "basit", "karmaşık", "açık", "kapalı", "yeni", "eski",
+        "iyi", "kt", "gzel", "irkin", "byk", "kk", "hzl", "yava",
+        "kolay", "zor", "basit", "karmak", "ak", "kapal", "yeni", "eski",
         "good", "bad", "beautiful", "ugly", "big", "small", "fast", "slow",
         "easy", "hard", "simple", "complex", "open", "closed", "new", "old"
     ]
@@ -1329,19 +1366,19 @@ def analyze_complexity(text: str) -> float:
     if total_words == 0:
         return 0.5
     
-    # Ortalama kelime uzunluğu
+    # Ortalama kelime uzunluu
     avg_word_length = sum(len(word) for word in words) / total_words
     
-    # Karmaşıklık skoru
+    # Karmaklk skoru
     complexity_score = 0.0
     
-    # Kelime türü oranı
+    # Kelime tr oran
     if complex_count > simple_count:
         complexity_score += 0.4
     elif complex_count == simple_count:
         complexity_score += 0.2
     
-    # Ortalama kelime uzunluğu
+    # Ortalama kelime uzunluu
     if avg_word_length > 6:
         complexity_score += 0.3
     elif avg_word_length > 4:
@@ -1349,7 +1386,7 @@ def analyze_complexity(text: str) -> float:
     else:
         complexity_score += 0.1
     
-    # Teknik terim oranı
+    # Teknik terim oran
     technical_ratio = complex_count / total_words
     if technical_ratio > 0.3:
         complexity_score += 0.3
@@ -1360,19 +1397,19 @@ def analyze_complexity(text: str) -> float:
     
     complexity_score = min(complexity_score, 1.0)
     
-    print(f"[NLP] Complexity: {complexity_score:.2f} (complex: {complex_count}, simple: {simple_count}, avg_len: {avg_word_length:.1f})")
+    safe_print(f"[NLP] Complexity: {complexity_score:.2f} (complex: {complex_count}, simple: {simple_count}, avg_len: {avg_word_length:.1f})")
     
     return complexity_score
 
 
 def analyze_sentence_structure(text: str) -> float:
     """
-    Cümle yapısı analizi
+    Cmle yaps analizi
     """
-    # Cümle ayırıcıları
+    # Cmle ayrclar
     sentence_endings = [".", "!", "?", ":", ";"]
     
-    # Cümleleri ayır
+    # Cmleleri ayr
     sentences = []
     current_sentence = ""
     
@@ -1390,23 +1427,23 @@ def analyze_sentence_structure(text: str) -> float:
     
     structure_score = 0.0
     
-    # 1. Cümle uzunluğu çeşitliliği
+    # 1. Cmle uzunluu eitlilii
     sentence_lengths = [len(sentence.split()) for sentence in sentences]
     if sentence_lengths:
         avg_length = sum(sentence_lengths) / len(sentence_lengths)
         length_variance = sum((length - avg_length) ** 2 for length in sentence_lengths) / len(sentence_lengths)
         
-        # Optimal cümle uzunluğu (5-15 kelime)
+        # Optimal cmle uzunluu (5-15 kelime)
         if 5 <= avg_length <= 15:
             structure_score += 0.4
         elif 3 <= avg_length <= 20:
             structure_score += 0.2
         
-        # Çeşitlilik bonusu
-        if length_variance > 10:  # Farklı uzunlukta cümleler
+        # eitlilik bonusu
+        if length_variance > 10:  # Farkl uzunlukta cmleler
             structure_score += 0.2
     
-    # 2. Cümle başlangıçları çeşitliliği
+    # 2. Cmle balanglar eitlilii
     sentence_starts = [sentence.split()[0] if sentence.split() else "" for sentence in sentences]
     unique_starts = len(set(sentence_starts))
     total_sentences = len(sentences)
@@ -1418,31 +1455,31 @@ def analyze_sentence_structure(text: str) -> float:
         elif start_diversity > 0.5:
             structure_score += 0.1
     
-    # 3. Noktalama kullanımı
+    # 3. Noktalama kullanm
     punctuation_count = sum(1 for char in text if char in sentence_endings)
     if punctuation_count > 0:
         structure_score += 0.2
     
     structure_score = min(structure_score, 1.0)
     
-    print(f"[NLP] Sentence structure: {structure_score:.2f} (sentences: {len(sentences)}, avg_len: {avg_length:.1f})")
+    safe_print(f"[NLP] Sentence structure: {structure_score:.2f} (sentences: {len(sentences)}, avg_len: {avg_length:.1f})")
     
     return structure_score
 
 
 def analyze_keyword_density(text: str) -> float:
     """
-    Anahtar kelime yoğunluğu analizi
+    Anahtar kelime younluu analizi
     """
     words = text.split()
     if not words:
         return 0.5
     
-    # Anahtar kelimeler (video içeriği için)
+    # Anahtar kelimeler (video ierii iin)
     keywords = [
-        "video", "içerik", "kanal", "abone", "izleyici", "takip", "beğen",
-        "yorum", "paylaş", "kaydet", "bildirim", "link", "profil", "hesap",
-        "viral", "trend", "popüler", "başarı", "kazanç", "artış", "gelişim",
+        "video", "ierik", "kanal", "abone", "izleyici", "takip", "been",
+        "yorum", "payla", "kaydet", "bildirim", "link", "profil", "hesap",
+        "viral", "trend", "popler", "baar", "kazan", "art", "geliim",
         "video", "content", "channel", "subscribe", "viewer", "follow", "like",
         "comment", "share", "save", "notification", "link", "profile", "account",
         "viral", "trend", "popular", "success", "profit", "growth", "development"
@@ -1450,13 +1487,13 @@ def analyze_keyword_density(text: str) -> float:
     
     # Stop words (gereksiz kelimeler)
     stop_words = [
-        "ve", "ile", "için", "olan", "bu", "şu", "o", "bir", "her", "hiç",
-        "çok", "daha", "en", "da", "de", "ki", "mi", "mı", "mu", "mü",
+        "ve", "ile", "iin", "olan", "bu", "u", "o", "bir", "her", "hi",
+        "ok", "daha", "en", "da", "de", "ki", "mi", "m", "mu", "m",
         "and", "with", "for", "the", "a", "an", "this", "that", "is", "are",
         "was", "were", "be", "been", "have", "has", "had", "do", "does", "did"
     ]
     
-    # Kelime frekansları
+    # Kelime frekanslar
     word_freq = {}
     for word in words:
         if word not in stop_words and len(word) > 2:
@@ -1465,20 +1502,20 @@ def analyze_keyword_density(text: str) -> float:
     if not word_freq:
         return 0.5
     
-    # Anahtar kelime oranı
+    # Anahtar kelime oran
     keyword_count = sum(1 for word in words if word in keywords)
     total_words = len(words)
     keyword_ratio = keyword_count / total_words if total_words > 0 else 0
     
-    # En sık kelimenin oranı
+    # En sk kelimenin oran
     max_freq = max(word_freq.values())
     total_unique_words = len(word_freq)
     max_freq_ratio = max_freq / total_unique_words if total_unique_words > 0 else 0
     
-    # Yoğunluk skoru
+    # Younluk skoru
     density_score = 0.0
     
-    # Anahtar kelime oranı (optimal: %2-5)
+    # Anahtar kelime oran (optimal: %2-5)
     if 0.02 <= keyword_ratio <= 0.05:
         density_score += 0.5
     elif 0.01 <= keyword_ratio <= 0.08:
@@ -1486,7 +1523,7 @@ def analyze_keyword_density(text: str) -> float:
     else:
         density_score += 0.1
     
-    # En sık kelime oranı (optimal: %5-15)
+    # En sk kelime oran (optimal: %5-15)
     if 0.05 <= max_freq_ratio <= 0.15:
         density_score += 0.3
     elif 0.03 <= max_freq_ratio <= 0.25:
@@ -1494,7 +1531,7 @@ def analyze_keyword_density(text: str) -> float:
     else:
         density_score += 0.1
     
-    # Kelime çeşitliliği
+    # Kelime eitlilii
     if total_unique_words > 10:
         density_score += 0.2
     elif total_unique_words > 5:
@@ -1502,20 +1539,20 @@ def analyze_keyword_density(text: str) -> float:
     
     density_score = min(density_score, 1.0)
     
-    print(f"[NLP] Keyword density: {density_score:.2f} (keywords: {keyword_count}/{total_words}, max_freq: {max_freq_ratio:.2f})")
+    safe_print(f"[NLP] Keyword density: {density_score:.2f} (keywords: {keyword_count}/{total_words}, max_freq: {max_freq_ratio:.2f})")
     
     return density_score
 
 
 def extract_entities(text: str) -> List[str]:
     """
-    Entity recognition - kişi, yer, kurum tespiti
+    Entity recognition - kii, yer, kurum tespiti
     """
     entities = []
     
-    # Kişi isimleri (basit pattern matching)
+    # Kii isimleri (basit pattern matching)
     person_patterns = [
-        "ahmet", "mehmet", "ali", "ayşe", "fatma", "zeynep", "emre", "can",
+        "ahmet", "mehmet", "ali", "aye", "fatma", "zeynep", "emre", "can",
         "john", "michael", "david", "sarah", "emily", "jessica", "chris"
     ]
     
@@ -1544,25 +1581,25 @@ def extract_entities(text: str) -> List[str]:
         if pattern in text:
             entities.append(f"ORG:{pattern}")
     
-    print(f"[NLP] Entities found: {entities}")
+    safe_print(f"[NLP] Entities found: {entities}")
     
     return entities
 
 
 def extract_topics(text: str) -> List[str]:
     """
-    Topic modeling - ana konuları çıkar
+    Topic modeling - ana konular kar
     """
     topics = []
     
     # Konu kategorileri
     topic_categories = {
-        "teknoloji": ["teknoloji", "teknoloji", "bilgisayar", "telefon", "internet", "yazılım", "uygulama"],
-        "eğitim": ["eğitim", "öğrenme", "ders", "okul", "üniversite", "kurs", "öğretmen"],
-        "sağlık": ["sağlık", "doktor", "hastane", "ilaç", "tedavi", "beslenme", "spor"],
-        "iş": ["iş", "kariyer", "maaş", "şirket", "çalışma", "patron", "meslek"],
-        "eğlence": ["eğlence", "oyun", "film", "müzik", "parti", "tatil", "hobi"],
-        "alışveriş": ["alışveriş", "satın", "fiyat", "indirim", "mağaza", "ürün", "marka"],
+        "teknoloji": ["teknoloji", "teknoloji", "bilgisayar", "telefon", "internet", "yazlm", "uygulama"],
+        "eitim": ["eitim", "renme", "ders", "okul", "niversite", "kurs", "retmen"],
+        "salk": ["salk", "doktor", "hastane", "ila", "tedavi", "beslenme", "spor"],
+        "i": ["i", "kariyer", "maa", "irket", "alma", "patron", "meslek"],
+        "elence": ["elence", "oyun", "film", "mzik", "parti", "tatil", "hobi"],
+        "alveri": ["alveri", "satn", "fiyat", "indirim", "maaza", "rn", "marka"],
         "teknoloji": ["technology", "computer", "phone", "internet", "software", "app", "digital"],
         "education": ["education", "learning", "school", "university", "course", "teacher", "study"],
         "health": ["health", "doctor", "hospital", "medicine", "treatment", "nutrition", "fitness"],
@@ -1577,7 +1614,7 @@ def extract_topics(text: str) -> List[str]:
         if keyword_count >= 2:  # En az 2 anahtar kelime
             topics.append(topic)
     
-    print(f"[NLP] Topics found: {topics}")
+    safe_print(f"[NLP] Topics found: {topics}")
     
     return topics
 
@@ -1597,58 +1634,58 @@ def detect_emotions(text: str) -> Dict[str, float]:
         "anticipation": 0.0
     }
     
-    # Joy (Sevinç)
+    # Joy (Sevin)
     joy_words = [
-        "mutlu", "sevinç", "heyecan", "neşe", "gülümseme", "gülmek", "eğlence",
-        "harika", "mükemmel", "süper", "fantastik", "muhteşem", "wow", "amazing",
+        "mutlu", "sevin", "heyecan", "nee", "glmseme", "glmek", "elence",
+        "harika", "mkemmel", "sper", "fantastik", "muhteem", "wow", "amazing",
         "happy", "joy", "excitement", "fun", "smile", "laugh", "wonderful", "great"
     ]
     
-    # Anger (Öfke)
+    # Anger (fke)
     anger_words = [
-        "kızgın", "sinir", "öfke", "hiddet", "kızgınlık", "sinirlenmek", "küfür",
-        "berbat", "nefret", "tiksinti", "rahatsız", "angry", "mad", "furious",
+        "kzgn", "sinir", "fke", "hiddet", "kzgnlk", "sinirlenmek", "kfr",
+        "berbat", "nefret", "tiksinti", "rahatsz", "angry", "mad", "furious",
         "rage", "hate", "disgust", "annoyed", "irritated", "terrible", "awful"
     ]
     
     # Fear (Korku)
     fear_words = [
-        "korku", "endişe", "kaygı", "panik", "tedirgin", "korkmak", "endişelenmek",
+        "korku", "endie", "kayg", "panik", "tedirgin", "korkmak", "endielenmek",
         "tehlikeli", "risk", "riskli", "fear", "afraid", "scared", "worried",
         "anxiety", "panic", "dangerous", "risk", "threat", "concern"
     ]
     
-    # Sadness (Üzüntü)
+    # Sadness (znt)
     sadness_words = [
-        "üzgün", "hüzün", "keder", "mutsuz", "depresyon", "ağlamak", "gözyaşı",
-        "kayıp", "acı", "hüzünlü", "sad", "sadness", "depressed", "unhappy",
+        "zgn", "hzn", "keder", "mutsuz", "depresyon", "alamak", "gzya",
+        "kayp", "ac", "hznl", "sad", "sadness", "depressed", "unhappy",
         "cry", "tears", "loss", "pain", "grief", "melancholy"
     ]
     
-    # Surprise (Şaşkınlık)
+    # Surprise (aknlk)
     surprise_words = [
-        "şaşkın", "hayret", "şaşırmak", "inanılmaz", "inanamıyorum", "vay be",
+        "akn", "hayret", "armak", "inanlmaz", "inanamyorum", "vay be",
         "wow", "oh my god", "incredible", "unbelievable", "surprised", "shocked",
         "amazed", "astonished", "stunned", "speechless"
     ]
     
     # Disgust (Tiksinti)
     disgust_words = [
-        "tiksinti", "iğrenme", "tiksinmek", "iğrenç", "çirkin", "pis", "kirli",
+        "tiksinti", "irenme", "tiksinmek", "iren", "irkin", "pis", "kirli",
         "disgust", "disgusting", "gross", "nasty", "ugly", "dirty", "filthy",
         "revolting", "repulsive", "sickening"
     ]
     
-    # Trust (Güven)
+    # Trust (Gven)
     trust_words = [
-        "güven", "güvenmek", "güvenilir", "güvenli", "emin", "kesin", "garanti",
+        "gven", "gvenmek", "gvenilir", "gvenli", "emin", "kesin", "garanti",
         "trust", "trustworthy", "reliable", "safe", "secure", "confident",
         "certain", "guarantee", "promise", "assure"
     ]
     
     # Anticipation (Beklenti)
     anticipation_words = [
-        "beklenti", "beklemek", "umut", "umutlu", "heyecan", "merak", "sabırsızlık",
+        "beklenti", "beklemek", "umut", "umutlu", "heyecan", "merak", "sabrszlk",
         "anticipation", "expect", "hope", "hopeful", "excited", "curious",
         "impatient", "waiting", "looking forward", "eager"
     ]
@@ -1659,7 +1696,7 @@ def detect_emotions(text: str) -> Dict[str, float]:
     if total_words == 0:
         return emotions
     
-    # Her duygu için skor hesapla
+    # Her duygu iin skor hesapla
     emotion_word_lists = {
         "joy": joy_words,
         "anger": anger_words,
@@ -1675,81 +1712,81 @@ def detect_emotions(text: str) -> Dict[str, float]:
         count = sum(1 for word in words if word in word_list)
         emotions[emotion] = min(count / total_words * 10, 1.0)  # Normalize
     
-    # En güçlü duyguyu bul
+    # En gl duyguyu bul
     dominant_emotion = max(emotions, key=emotions.get)
-    print(f"[NLP] Emotions: {emotions}, dominant: {dominant_emotion}")
+    safe_print(f"[NLP] Emotions: {emotions}, dominant: {dominant_emotion}")
     
     return emotions
 
 
 def analyze_intent(text: str) -> str:
     """
-    Intent analysis - kullanıcının amacını tespit et
+    Intent analysis - kullancnn amacn tespit et
     """
     # Intent kategorileri
     intents = {
         "inform": 0.0,      # Bilgi verme
-        "persuade": 0.0,    # İkna etme
-        "entertain": 0.0,   # Eğlendirme
-        "educate": 0.0,     # Eğitme
-        "sell": 0.0,        # Satış
-        "engage": 0.0,      # Etkileşim
-        "inspire": 0.0,     # İlham verme
-        "warn": 0.0         # Uyarı
+        "persuade": 0.0,    # kna etme
+        "entertain": 0.0,   # Elendirme
+        "educate": 0.0,     # Eitme
+        "sell": 0.0,        # Sat
+        "engage": 0.0,      # Etkileim
+        "inspire": 0.0,     # lham verme
+        "warn": 0.0         # Uyar
     }
     
     # Inform (Bilgi verme)
     inform_words = [
-        "bilgi", "açıklama", "anlatmak", "göstermek", "öğretmek", "öğrenmek",
-        "nasıl", "neden", "ne", "hangi", "kim", "nerede", "ne zaman",
+        "bilgi", "aklama", "anlatmak", "gstermek", "retmek", "renmek",
+        "nasl", "neden", "ne", "hangi", "kim", "nerede", "ne zaman",
         "information", "explain", "tell", "show", "teach", "learn",
         "how", "why", "what", "which", "who", "where", "when"
     ]
     
-    # Persuade (İkna etme)
+    # Persuade (kna etme)
     persuade_words = [
-        "ikna", "ikna etmek", "tavsiye", "öneri", "öner", "kesinlikle", "mutlaka",
-        "gerekli", "önemli", "faydalı", "yararlı", "persuade", "convince",
+        "ikna", "ikna etmek", "tavsiye", "neri", "ner", "kesinlikle", "mutlaka",
+        "gerekli", "nemli", "faydal", "yararl", "persuade", "convince",
         "recommend", "suggest", "definitely", "must", "necessary", "important"
     ]
     
-    # Entertain (Eğlendirme)
+    # Entertain (Elendirme)
     entertain_words = [
-        "eğlence", "eğlenceli", "komik", "gülmek", "gülümseme", "şaka", "mizah",
-        "eğlendirmek", "eğlenmek", "entertainment", "fun", "funny", "laugh",
+        "elence", "elenceli", "komik", "glmek", "glmseme", "aka", "mizah",
+        "elendirmek", "elenmek", "entertainment", "fun", "funny", "laugh",
         "smile", "joke", "humor", "entertain", "enjoy"
     ]
     
-    # Educate (Eğitme)
+    # Educate (Eitme)
     educate_words = [
-        "eğitim", "eğitmek", "öğretmek", "ders", "kurs", "öğrenme", "bilgi",
+        "eitim", "eitmek", "retmek", "ders", "kurs", "renme", "bilgi",
         "education", "educate", "teach", "lesson", "course", "learning", "knowledge"
     ]
     
-    # Sell (Satış)
+    # Sell (Sat)
     sell_words = [
-        "satış", "satmak", "alışveriş", "fiyat", "indirim", "kampanya", "ürün",
-        "marka", "mağaza", "sale", "sell", "buy", "price", "discount", "product",
+        "sat", "satmak", "alveri", "fiyat", "indirim", "kampanya", "rn",
+        "marka", "maaza", "sale", "sell", "buy", "price", "discount", "product",
         "brand", "store", "shop", "purchase"
     ]
     
-    # Engage (Etkileşim)
+    # Engage (Etkileim)
     engage_words = [
-        "etkileşim", "katılım", "katılmak", "yorum", "beğen", "paylaş", "takip",
+        "etkileim", "katlm", "katlmak", "yorum", "been", "payla", "takip",
         "abone", "bildirim", "engagement", "interaction", "participate", "comment",
         "like", "share", "follow", "subscribe", "notification"
     ]
     
-    # Inspire (İlham verme)
+    # Inspire (lham verme)
     inspire_words = [
-        "ilham", "ilham vermek", "motivasyon", "motivasyonel", "başarı", "hedef",
-        "hayal", "rüya", "umut", "umutlu", "inspiration", "inspire", "motivation",
+        "ilham", "ilham vermek", "motivasyon", "motivasyonel", "baar", "hedef",
+        "hayal", "rya", "umut", "umutlu", "inspiration", "inspire", "motivation",
         "success", "goal", "dream", "hope", "hopeful"
     ]
     
-    # Warn (Uyarı)
+    # Warn (Uyar)
     warn_words = [
-        "uyarı", "uyarmak", "dikkat", "dikkatli", "tehlikeli", "risk", "riskli",
+        "uyar", "uyarmak", "dikkat", "dikkatli", "tehlikeli", "risk", "riskli",
         "warning", "warn", "careful", "dangerous", "risk", "risky", "caution"
     ]
     
@@ -1759,7 +1796,7 @@ def analyze_intent(text: str) -> str:
     if total_words == 0:
         return "unknown"
     
-    # Intent skorları
+    # Intent skorlar
     intent_word_lists = {
         "inform": inform_words,
         "persuade": persuade_words,
@@ -1775,9 +1812,9 @@ def analyze_intent(text: str) -> str:
         count = sum(1 for word in words if word in word_list)
         intents[intent] = count / total_words
     
-    # En yüksek skorlu intent
+    # En yksek skorlu intent
     dominant_intent = max(intents, key=intents.get)
-    print(f"[NLP] Intent: {dominant_intent} (scores: {intents})")
+    safe_print(f"[NLP] Intent: {dominant_intent} (scores: {intents})")
     
     return dominant_intent
 
@@ -1796,43 +1833,43 @@ def calculate_readability_score(text: str) -> float:
     word_count = len(words)
     sentence_count = len([s for s in sentences if s.strip()])
     
-    # Ortalama kelime uzunluğu
+    # Ortalama kelime uzunluu
     avg_word_length = sum(len(word) for word in words) / word_count
     
-    # Ortalama cümle uzunluğu
+    # Ortalama cmle uzunluu
     avg_sentence_length = word_count / sentence_count if sentence_count > 0 else 0
     
-    # Readability skoru (0-1, 1 = çok okunabilir)
+    # Readability skoru (0-1, 1 = ok okunabilir)
     readability = 1.0
     
-    # Kelime uzunluğu penaltısı
+    # Kelime uzunluu penalts
     if avg_word_length > 6:
         readability -= 0.3
     elif avg_word_length > 4:
         readability -= 0.1
     
-    # Cümle uzunluğu penaltısı
+    # Cmle uzunluu penalts
     if avg_sentence_length > 20:
         readability -= 0.3
     elif avg_sentence_length > 15:
         readability -= 0.1
     
-    # Karmaşık kelimeler penaltısı
-    complex_words = ["teknoloji", "algoritma", "sistem", "mekanizma", "prosedür"]
+    # Karmak kelimeler penalts
+    complex_words = ["teknoloji", "algoritma", "sistem", "mekanizma", "prosedr"]
     complex_count = sum(1 for word in words if word in complex_words)
-    if complex_count > word_count * 0.1:  # %10'dan fazla karmaşık kelime
+    if complex_count > word_count * 0.1:  # %10'dan fazla karmak kelime
         readability -= 0.2
     
     readability = max(0.0, min(1.0, readability))
     
-    print(f"[NLP] Readability: {readability:.2f} (avg_word: {avg_word_length:.1f}, avg_sentence: {avg_sentence_length:.1f})")
+    safe_print(f"[NLP] Readability: {readability:.2f} (avg_word: {avg_word_length:.1f}, avg_sentence: {avg_sentence_length:.1f})")
     
     return readability
 
 
 def calculate_engagement_potential(text: str, sentiment: float, emotions: Dict[str, float]) -> float:
     """
-    Engagement potential - etkileşim potansiyeli
+    Engagement potential - etkileim potansiyeli
     """
     engagement = 0.0
     
@@ -1850,15 +1887,15 @@ def calculate_engagement_potential(text: str, sentiment: float, emotions: Dict[s
         if emotions.get(emotion, 0) > 0.3:
             engagement += 0.2
     
-    # 3. Soru işareti bonusu
+    # 3. Soru iareti bonusu
     if "?" in text:
         engagement += 0.1
     
-    # 4. Ünlem işareti bonusu
+    # 4. nlem iareti bonusu
     if "!" in text:
         engagement += 0.1
     
-    # 5. Kişisel zamirler
+    # 5. Kiisel zamirler
     personal_pronouns = ["ben", "sen", "biz", "siz", "i", "you", "we", "us"]
     pronoun_count = sum(1 for word in text.split() if word in personal_pronouns)
     if pronoun_count > 0:
@@ -1872,20 +1909,20 @@ def calculate_engagement_potential(text: str, sentiment: float, emotions: Dict[s
     
     engagement = min(engagement, 1.0)
     
-    print(f"[NLP] Engagement potential: {engagement:.2f}")
+    safe_print(f"[NLP] Engagement potential: {engagement:.2f}")
     
     return engagement
 
 
 def extract_viral_keywords(text: str) -> List[str]:
     """
-    Viral keywords - viral potansiyeli yüksek kelimeler
+    Viral keywords - viral potansiyeli yksek kelimeler
     """
     viral_keywords = []
     
-    # Viral potansiyeli yüksek kelimeler
+    # Viral potansiyeli yksek kelimeler
     viral_words = [
-        "viral", "trend", "popüler", "hype", "boom", "explosive", "breakthrough",
+        "viral", "trend", "popler", "hype", "boom", "explosive", "breakthrough",
         "revolutionary", "game changer", "mind blowing", "insane", "crazy",
         "unbelievable", "incredible", "amazing", "shocking", "surprising",
         "secret", "hidden", "exclusive", "first time", "never seen before",
@@ -1896,8 +1933,8 @@ def extract_viral_keywords(text: str) -> List[str]:
     
     # Viral patterns
     viral_patterns = [
-        "kimse bilmiyor", "hiç kimse", "sadece ben", "sır", "gizli", "özel",
-        "sonunda", "göreceksin", "inanamayacaksın", "şaşıracaksın",
+        "kimse bilmiyor", "hi kimse", "sadece ben", "sr", "gizli", "zel",
+        "sonunda", "greceksin", "inanamayacaksn", "aracaksn",
         "nobody knows", "no one", "only me", "secret", "hidden", "exclusive",
         "finally", "you will see", "you won't believe", "you'll be shocked"
     ]
@@ -1914,7 +1951,7 @@ def extract_viral_keywords(text: str) -> List[str]:
         if pattern in text:
             viral_keywords.append(pattern)
     
-    print(f"[NLP] Viral keywords: {viral_keywords}")
+    safe_print(f"[NLP] Viral keywords: {viral_keywords}")
     
     return viral_keywords
 
@@ -1925,10 +1962,10 @@ def assess_language_quality(text: str, structure_score: float, complexity_score:
     """
     quality = 0.0
     
-    # 1. Cümle yapısı
+    # 1. Cmle yaps
     quality += structure_score * 0.4
     
-    # 2. Karmaşıklık dengesi (çok basit veya çok karmaşık olmamalı)
+    # 2. Karmaklk dengesi (ok basit veya ok karmak olmamal)
     if 0.3 <= complexity_score <= 0.7:
         quality += 0.3
     elif 0.2 <= complexity_score <= 0.8:
@@ -1936,7 +1973,7 @@ def assess_language_quality(text: str, structure_score: float, complexity_score:
     else:
         quality += 0.1
     
-    # 3. Kelime çeşitliliği
+    # 3. Kelime eitlilii
     words = text.split()
     unique_words = len(set(words))
     total_words = len(words)
@@ -1948,14 +1985,14 @@ def assess_language_quality(text: str, structure_score: float, complexity_score:
         elif diversity_ratio > 0.5:
             quality += 0.1
     
-    # 4. Noktalama kullanımı
+    # 4. Noktalama kullanm
     punctuation_count = sum(1 for char in text if char in ".,!?;:")
     if punctuation_count > 0:
         quality += 0.1
     
     quality = min(quality, 1.0)
     
-    print(f"[NLP] Language quality: {quality:.2f}")
+    safe_print(f"[NLP] Language quality: {quality:.2f}")
     
     return quality
 
@@ -1963,14 +2000,14 @@ def assess_language_quality(text: str, structure_score: float, complexity_score:
 def analyze_technical_quality(features: Dict[str, Any], duration: float) -> Dict[str, Any]:
     """
     Teknik Kalite Analizi (15 puan)
-    Çözünürlük, fps, blur, ses kalitesi, bitrate, görsel analiz
+    znrlk, fps, blur, ses kalitesi, bitrate, grsel analiz
     """
     score = 0
     findings = []
     recommendations = []
     raw_metrics = {}
     
-    print("[TECH] Starting technical quality analysis...")
+    safe_print("[TECH] Starting technical quality analysis...")
     
     # Video bilgileri
     video_info = features.get("video_info", {})
@@ -1984,7 +2021,7 @@ def analyze_technical_quality(features: Dict[str, Any], duration: float) -> Dict
     sample_rate = audio_info.get("sample_rate", 0)
     channels = audio_info.get("channels", 0)
     
-    # 1. Çözünürlük Analizi (3 puan)
+    # 1. znrlk Analizi (3 puan)
     resolution_score = analyze_resolution(width, height)
     raw_metrics["resolution"] = resolution_score
     
@@ -1993,14 +2030,14 @@ def analyze_technical_quality(features: Dict[str, Any], duration: float) -> Dict
         findings.append({
             "t": 0.0,
             "type": "high_resolution",
-            "msg": f"Yüksek çözünürlük: {width}x{height} - profesyonel kalite"
+            "msg": f"Yksek znrlk: {width}x{height} - profesyonel kalite"
         })
     elif resolution_score > 0.6:
         score += 2
-        recommendations.append("Çözünürlüğü artır - en az 1080p kullan")
+        recommendations.append("znrl artr - en az 1080p kullan")
     else:
         score += 1
-        recommendations.append("Çözünürlük çok düşük - 720p minimum gerekli")
+        recommendations.append("znrlk ok dk - 720p minimum gerekli")
     
     # 2. FPS Analizi (2 puan)
     fps_score = analyze_fps(fps)
@@ -2011,13 +2048,13 @@ def analyze_technical_quality(features: Dict[str, Any], duration: float) -> Dict
         findings.append({
             "t": 0.0,
             "type": "smooth_fps",
-            "msg": f"Yumuşak FPS: {fps} - akıcı görüntü"
+            "msg": f"Yumuak FPS: {fps} - akc grnt"
         })
     elif fps_score > 0.6:
         score += 1
-        recommendations.append("FPS'i artır - en az 30 FPS önerilir")
+        recommendations.append("FPS'i artr - en az 30 FPS nerilir")
     else:
-        recommendations.append("FPS çok düşük - 24 FPS minimum gerekli")
+        recommendations.append("FPS ok dk - 24 FPS minimum gerekli")
     
     # 3. Blur Analizi (2 puan)
     blur_score = analyze_blur(features)
@@ -2028,13 +2065,13 @@ def analyze_technical_quality(features: Dict[str, Any], duration: float) -> Dict
         findings.append({
             "t": duration * 0.5,
             "type": "sharp_video",
-            "msg": "Net görüntü - blur yok"
+            "msg": "Net grnt - blur yok"
         })
     elif blur_score > 0.4:
         score += 1
-        recommendations.append("Görüntüyü netleştir - odak sorunu var")
+        recommendations.append("Grnty netletir - odak sorunu var")
     else:
-        recommendations.append("Ciddi blur sorunu - kamera ayarlarını kontrol et")
+        recommendations.append("Ciddi blur sorunu - kamera ayarlarn kontrol et")
     
     # 4. Ses Kalitesi (2 puan)
     audio_score = analyze_audio_quality(sample_rate, channels, features)
@@ -2045,13 +2082,13 @@ def analyze_technical_quality(features: Dict[str, Any], duration: float) -> Dict
         findings.append({
             "t": 0.0,
             "type": "high_audio_quality",
-            "msg": f"Yüksek ses kalitesi: {sample_rate}Hz, {channels} kanal"
+            "msg": f"Yksek ses kalitesi: {sample_rate}Hz, {channels} kanal"
         })
     elif audio_score > 0.6:
         score += 1
-        recommendations.append("Ses kalitesini artır - 44.1kHz önerilir")
+        recommendations.append("Ses kalitesini artr - 44.1kHz nerilir")
     else:
-        recommendations.append("Ses kalitesi düşük - mikrofon ve kayıt ayarlarını kontrol et")
+        recommendations.append("Ses kalitesi dk - mikrofon ve kayt ayarlarn kontrol et")
     
     # 5. Bitrate Analizi (1 puan)
     bitrate_score = analyze_bitrate(features, duration_sec)
@@ -2062,12 +2099,12 @@ def analyze_technical_quality(features: Dict[str, Any], duration: float) -> Dict
         findings.append({
             "t": 0.0,
             "type": "optimal_bitrate",
-            "msg": "Optimal bitrate - kaliteli sıkıştırma"
+            "msg": "Optimal bitrate - kaliteli sktrma"
         })
     else:
-        recommendations.append("Bitrate'i artır - daha kaliteli sıkıştırma gerekli")
+        recommendations.append("Bitrate'i artr - daha kaliteli sktrma gerekli")
     
-    # 6. Görsel Analiz (5 puan)
+    # 6. Grsel Analiz (5 puan)
     visual_score = analyze_visual_quality(features)
     raw_metrics["visual_quality"] = visual_score
     
@@ -2076,16 +2113,16 @@ def analyze_technical_quality(features: Dict[str, Any], duration: float) -> Dict
         findings.append({
             "t": 0.0,
             "type": "excellent_visual",
-            "msg": "Mükemmel görsel kalite - viral potansiyeli yüksek"
+            "msg": "Mkemmel grsel kalite - viral potansiyeli yksek"
         })
     elif visual_score > 0.6:
         score += 3
-        recommendations.append("Görsel kaliteyi artır - renk ve kompozisyon önemli")
+        recommendations.append("Grsel kaliteyi artr - renk ve kompozisyon nemli")
     else:
         score += 1
-        recommendations.append("Görsel kalite düşük - renk, kompozisyon ve estetik iyileştir")
+        recommendations.append("Grsel kalite dk - renk, kompozisyon ve estetik iyiletir")
     
-    print(f"[TECH] Technical quality score: {score}/15")
+    safe_print(f"[TECH] Technical quality score: {score}/15")
     
     return {
         "score": min(score, 15),
@@ -2097,12 +2134,12 @@ def analyze_technical_quality(features: Dict[str, Any], duration: float) -> Dict
 
 def analyze_resolution(width: int, height: int) -> float:
     """
-    Çözünürlük analizi
+    znrlk analizi
     """
     if width == 0 or height == 0:
         return 0.0
     
-    # Çözünürlük kategorileri
+    # znrlk kategorileri
     if width >= 3840 and height >= 2160:  # 4K
         return 1.0
     elif width >= 1920 and height >= 1080:  # 1080p
@@ -2113,7 +2150,7 @@ def analyze_resolution(width: int, height: int) -> float:
         return 0.5
     elif width >= 640 and height >= 360:  # 360p
         return 0.3
-    else:  # 240p ve altı
+    else:  # 240p ve alt
         return 0.1
 
 
@@ -2133,63 +2170,63 @@ def analyze_fps(fps: float) -> float:
         return 0.6
     elif fps >= 15:  # 15-23 FPS
         return 0.4
-    else:  # 15 FPS altı
+    else:  # 15 FPS alt
         return 0.2
 
 
 def analyze_blur(features: Dict[str, Any]) -> float:
     """
-    Blur analizi - gerçek görüntü netliği tespiti
+    Blur analizi - gerek grnt netlii tespiti
     """
     try:
         # Frame'lerden blur analizi yap
         frames = features.get("frames", [])
         if not frames:
-            print("[TECH] No frames available for blur analysis")
+            safe_print("[TECH] No frames available for blur analysis")
             return 0.5
         
-        # İlk 3 frame'i analiz et
+        # lk 3 frame'i analiz et
         blur_scores = []
         for i, frame_path in enumerate(frames[:3]):
             try:
                 blur_score = calculate_frame_blur(frame_path)
                 blur_scores.append(blur_score)
-                print(f"[TECH] Frame {i+1} blur score: {blur_score:.2f}")
+                safe_print(f"[TECH] Frame {i+1} blur score: {blur_score:.2f}")
             except Exception as e:
-                print(f"[TECH] Frame {i+1} blur analysis failed: {e}")
+                safe_print(f"[TECH] Frame {i+1} blur analysis failed: {e}")
                 continue
         
         if not blur_scores:
-            print("[TECH] No valid blur scores calculated")
+            safe_print("[TECH] No valid blur scores calculated")
             return 0.5
         
         # Ortalama blur skoru
         avg_blur_score = sum(blur_scores) / len(blur_scores)
         
-        # Çözünürlük etkisi
+        # znrlk etkisi
         video_info = features.get("video_info", {})
         width = video_info.get("width", 0)
         height = video_info.get("height", 0)
         
-        # Çözünürlük bonusu/penaltısı
+        # znrlk bonusu/penalts
         if width >= 1920 and height >= 1080:  # 1080p+
             avg_blur_score += 0.1
-        elif width < 1280 or height < 720:  # 720p altı
+        elif width < 1280 or height < 720:  # 720p alt
             avg_blur_score -= 0.2
         
         # FPS etkisi
         fps = video_info.get("fps", 0)
         if fps < 24:
-            avg_blur_score -= 0.1  # Düşük FPS blur etkisi
+            avg_blur_score -= 0.1  # Dk FPS blur etkisi
         
         avg_blur_score = max(0.0, min(1.0, avg_blur_score))
         
-        print(f"[TECH] Average blur score: {avg_blur_score:.2f}")
+        safe_print(f"[TECH] Average blur score: {avg_blur_score:.2f}")
         
         return avg_blur_score
         
     except Exception as e:
-        print(f"[TECH] Blur analysis failed: {e}")
+        safe_print(f"[TECH] Blur analysis failed: {e}")
         return 0.5
 
 
@@ -2200,13 +2237,13 @@ def calculate_frame_blur(frame_path: str) -> float:
     import cv2
     import numpy as np
     
-    # Görüntüyü yükle
+    # Grnty ykle
     image = cv2.imread(frame_path)
     if image is None:
-        print(f"[TECH] Could not load frame: {frame_path}")
+        safe_print(f"[TECH] Could not load frame: {frame_path}")
         return 0.5
     
-    # Gri tonlamaya çevir
+    # Gri tonlamaya evir
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
     
     # 1. Laplacian variance (en etkili blur tespiti)
@@ -2230,7 +2267,7 @@ def calculate_frame_blur(frame_path: str) -> float:
     blur_score = 0.0
     
     # Laplacian variance (ana metrik)
-    if laplacian_var > 1000:  # Çok net
+    if laplacian_var > 1000:  # ok net
         blur_score += 0.4
     elif laplacian_var > 500:  # Net
         blur_score += 0.3
@@ -2240,7 +2277,7 @@ def calculate_frame_blur(frame_path: str) -> float:
         blur_score += 0.1
     
     # Sobel gradient
-    if sobel_var > 5000:  # Çok net
+    if sobel_var > 5000:  # ok net
         blur_score += 0.2
     elif sobel_var > 2000:  # Net
         blur_score += 0.15
@@ -2250,7 +2287,7 @@ def calculate_frame_blur(frame_path: str) -> float:
         blur_score += 0.05
     
     # Edge density
-    if edge_density > 0.1:  # Çok net
+    if edge_density > 0.1:  # ok net
         blur_score += 0.2
     elif edge_density > 0.05:  # Net
         blur_score += 0.15
@@ -2260,7 +2297,7 @@ def calculate_frame_blur(frame_path: str) -> float:
         blur_score += 0.05
     
     # Histogram std
-    if hist_std > 50:  # Çok net
+    if hist_std > 50:  # ok net
         blur_score += 0.2
     elif hist_std > 30:  # Net
         blur_score += 0.15
@@ -2271,7 +2308,7 @@ def calculate_frame_blur(frame_path: str) -> float:
     
     blur_score = min(blur_score, 1.0)
     
-    print(f"[TECH] Frame blur metrics - Laplacian: {laplacian_var:.1f}, Sobel: {sobel_var:.1f}, Edges: {edge_density:.3f}, Hist: {hist_std:.1f}")
+    safe_print(f"[TECH] Frame blur metrics - Laplacian: {laplacian_var:.1f}, Sobel: {sobel_var:.1f}, Edges: {edge_density:.3f}, Hist: {hist_std:.1f}")
     
     return blur_score
 
@@ -2289,10 +2326,10 @@ def analyze_audio_quality(sample_rate: int, channels: int, features: Dict[str, A
         audio_score += 0.3
     elif sample_rate >= 22050:  # 22.05kHz
         audio_score += 0.2
-    else:  # 22kHz altı
+    else:  # 22kHz alt
         audio_score += 0.1
     
-    # 2. Kanal sayısı analizi
+    # 2. Kanal says analizi
     if channels >= 2:  # Stereo
         audio_score += 0.3
     elif channels == 1:  # Mono
@@ -2308,12 +2345,12 @@ def analyze_audio_quality(sample_rate: int, channels: int, features: Dict[str, A
         audio_score += 0.3
     elif -30 <= loudness <= -3:  # Kabul edilebilir
         audio_score += 0.2
-    else:  # Çok düşük veya yüksek
+    else:  # ok dk veya yksek
         audio_score += 0.1
     
     audio_score = min(audio_score, 1.0)
     
-    print(f"[TECH] Audio quality: {audio_score:.2f} (sample_rate: {sample_rate}, channels: {channels})")
+    safe_print(f"[TECH] Audio quality: {audio_score:.2f} (sample_rate: {sample_rate}, channels: {channels})")
     
     return audio_score
 
@@ -2330,7 +2367,7 @@ def analyze_bitrate(features: Dict[str, Any], duration: float) -> float:
     if width == 0 or height == 0 or duration == 0:
         return 0.5
     
-    # Piksel sayısı
+    # Piksel says
     pixels = width * height
     
     # Tahmini bitrate (basit hesaplama)
@@ -2340,72 +2377,72 @@ def analyze_bitrate(features: Dict[str, Any], duration: float) -> float:
         estimated_bitrate = 5000   # 5 Mbps
     elif pixels >= 1280 * 720:   # 720p
         estimated_bitrate = 2500   # 2.5 Mbps
-    else:  # 480p ve altı
+    else:  # 480p ve alt
         estimated_bitrate = 1000   # 1 Mbps
     
     # Bitrate skoru
-    if estimated_bitrate >= 5000:  # Yüksek bitrate
+    if estimated_bitrate >= 5000:  # Yksek bitrate
         bitrate_score = 1.0
     elif estimated_bitrate >= 2500:  # Orta bitrate
         bitrate_score = 0.8
-    elif estimated_bitrate >= 1000:  # Düşük bitrate
+    elif estimated_bitrate >= 1000:  # Dk bitrate
         bitrate_score = 0.6
-    else:  # Çok düşük bitrate
+    else:  # ok dk bitrate
         bitrate_score = 0.3
     
-    print(f"[TECH] Bitrate score: {bitrate_score:.2f} (estimated: {estimated_bitrate} kbps)")
+    safe_print(f"[TECH] Bitrate score: {bitrate_score:.2f} (estimated: {estimated_bitrate} kbps)")
     
     return bitrate_score
 
 
 def analyze_visual_quality(features: Dict[str, Any]) -> float:
     """
-    Görsel kalite analizi - renk, kompozisyon, nesne, hareket, estetik
+    Grsel kalite analizi - renk, kompozisyon, nesne, hareket, estetik
     """
     try:
         frames = features.get("frames", [])
         if not frames:
-            print("[VISUAL] No frames available for visual analysis")
+            safe_print("[VISUAL] No frames available for visual analysis")
             return 0.5
         
-        # İlk 3 frame'i analiz et
+        # lk 3 frame'i analiz et
         visual_scores = []
         for i, frame_path in enumerate(frames[:3]):
             try:
                 visual_score = calculate_frame_visual_quality(frame_path)
                 visual_scores.append(visual_score)
-                print(f"[VISUAL] Frame {i+1} visual score: {visual_score:.2f}")
+                safe_print(f"[VISUAL] Frame {i+1} visual score: {visual_score:.2f}")
             except Exception as e:
-                print(f"[VISUAL] Frame {i+1} visual analysis failed: {e}")
+                safe_print(f"[VISUAL] Frame {i+1} visual analysis failed: {e}")
                 continue
         
         if not visual_scores:
-            print("[VISUAL] No valid visual scores calculated")
+            safe_print("[VISUAL] No valid visual scores calculated")
             return 0.5
         
-        # Ortalama görsel skoru
+        # Ortalama grsel skoru
         avg_visual_score = sum(visual_scores) / len(visual_scores)
         
-        print(f"[VISUAL] Average visual score: {avg_visual_score:.2f}")
+        safe_print(f"[VISUAL] Average visual score: {avg_visual_score:.2f}")
         
         return avg_visual_score
         
     except Exception as e:
-        print(f"[VISUAL] Visual analysis failed: {e}")
+        safe_print(f"[VISUAL] Visual analysis failed: {e}")
         return 0.5
 
 
 def calculate_frame_visual_quality(frame_path: str) -> float:
     """
-    Tek frame'den görsel kalite skoru hesapla
+    Tek frame'den grsel kalite skoru hesapla
     """
     import cv2
     import numpy as np
     
-    # Görüntüyü yükle
+    # Grnty ykle
     image = cv2.imread(frame_path)
     if image is None:
-        print(f"[VISUAL] Could not load frame: {frame_path}")
+        safe_print(f"[VISUAL] Could not load frame: {frame_path}")
         return 0.5
     
     visual_score = 0.0
@@ -2438,48 +2475,48 @@ def analyze_color_quality(image) -> float:
     import cv2
     import numpy as np
     
-    # HSV'ye çevir
+    # HSV'ye evir
     hsv = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
     
     color_score = 0.0
     
-    # 1. Renk çeşitliliği
+    # 1. Renk eitlilii
     h_channel = hsv[:, :, 0]
     unique_hues = len(np.unique(h_channel))
-    if unique_hues > 50:  # Çok çeşitli renkler
+    if unique_hues > 50:  # ok eitli renkler
         color_score += 0.3
-    elif unique_hues > 20:  # Orta çeşitlilik
+    elif unique_hues > 20:  # Orta eitlilik
         color_score += 0.2
-    else:  # Az çeşitlilik
+    else:  # Az eitlilik
         color_score += 0.1
     
-    # 2. Parlaklık analizi
+    # 2. Parlaklk analizi
     v_channel = hsv[:, :, 2]
     brightness_mean = np.mean(v_channel)
-    if 100 <= brightness_mean <= 200:  # Optimal parlaklık
+    if 100 <= brightness_mean <= 200:  # Optimal parlaklk
         color_score += 0.3
     elif 50 <= brightness_mean <= 250:  # Kabul edilebilir
         color_score += 0.2
-    else:  # Aşırı karanlık/parlak
+    else:  # Ar karanlk/parlak
         color_score += 0.1
     
     # 3. Kontrast analizi
     contrast = np.std(v_channel)
-    if contrast > 50:  # Yüksek kontrast
+    if contrast > 50:  # Yksek kontrast
         color_score += 0.2
     elif contrast > 30:  # Orta kontrast
         color_score += 0.15
-    else:  # Düşük kontrast
+    else:  # Dk kontrast
         color_score += 0.1
     
-    # 4. Renk doygunluğu
+    # 4. Renk doygunluu
     s_channel = hsv[:, :, 1]
     saturation_mean = np.mean(s_channel)
-    if saturation_mean > 100:  # Yüksek doygunluk
+    if saturation_mean > 100:  # Yksek doygunluk
         color_score += 0.2
     elif saturation_mean > 50:  # Orta doygunluk
         color_score += 0.15
-    else:  # Düşük doygunluk
+    else:  # Dk doygunluk
         color_score += 0.1
     
     return min(color_score, 1.0)
@@ -2496,34 +2533,34 @@ def analyze_composition(image) -> float:
     composition_score = 0.0
     
     # 1. Rule of thirds analizi
-    # Görüntüyü 9 eşit parçaya böl
+    # Grnty 9 eit paraya bl
     third_w = width // 3
     third_h = height // 3
     
-    # Kenar bölgelerinin parlaklık analizi
+    # Kenar blgelerinin parlaklk analizi
     edges = [
-        image[0:third_h, 0:third_w],  # Sol üst
-        image[0:third_h, third_w:2*third_w],  # Orta üst
-        image[0:third_h, 2*third_w:width],  # Sağ üst
+        image[0:third_h, 0:third_w],  # Sol st
+        image[0:third_h, third_w:2*third_w],  # Orta st
+        image[0:third_h, 2*third_w:width],  # Sa st
         image[third_h:2*third_h, 0:third_w],  # Sol orta
-        image[third_h:2*third_h, 2*third_w:width],  # Sağ orta
+        image[third_h:2*third_h, 2*third_w:width],  # Sa orta
         image[2*third_h:height, 0:third_w],  # Sol alt
         image[2*third_h:height, third_w:2*third_w],  # Orta alt
-        image[2*third_h:height, 2*third_w:width]  # Sağ alt
+        image[2*third_h:height, 2*third_w:width]  # Sa alt
     ]
     
-    # Merkez bölge
+    # Merkez blge
     center = image[third_h:2*third_h, third_w:2*third_w]
     
     # Merkez vs kenar analizi
     center_brightness = np.mean(cv2.cvtColor(center, cv2.COLOR_BGR2GRAY))
     edge_brightness = np.mean([np.mean(cv2.cvtColor(edge, cv2.COLOR_BGR2GRAY)) for edge in edges])
     
-    if abs(center_brightness - edge_brightness) > 30:  # İyi kompozisyon
+    if abs(center_brightness - edge_brightness) > 30:  # yi kompozisyon
         composition_score += 0.4
     elif abs(center_brightness - edge_brightness) > 15:  # Orta kompozisyon
         composition_score += 0.3
-    else:  # Zayıf kompozisyon
+    else:  # Zayf kompozisyon
         composition_score += 0.2
     
     # 2. Simetri analizi
@@ -2535,19 +2572,19 @@ def analyze_composition(image) -> float:
     left_half = image[:, 0:width//2]
     right_half = cv2.flip(image[:, width//2:width], 1)
     
-    # Simetri skorları
+    # Simetri skorlar
     h_symmetry = 1.0 - np.mean(np.abs(top_half.astype(float) - bottom_half.astype(float))) / 255.0
     v_symmetry = 1.0 - np.mean(np.abs(left_half.astype(float) - right_half.astype(float))) / 255.0
     
     max_symmetry = max(h_symmetry, v_symmetry)
-    if max_symmetry > 0.8:  # Yüksek simetri
+    if max_symmetry > 0.8:  # Yksek simetri
         composition_score += 0.3
     elif max_symmetry > 0.6:  # Orta simetri
         composition_score += 0.2
-    else:  # Düşük simetri
+    else:  # Dk simetri
         composition_score += 0.1
     
-    # 3. Odak noktası analizi
+    # 3. Odak noktas analizi
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
     laplacian = cv2.Laplacian(gray, cv2.CV_64F)
     focus_score = np.var(laplacian)
@@ -2556,7 +2593,7 @@ def analyze_composition(image) -> float:
         composition_score += 0.3
     elif focus_score > 500:  # Orta odak
         composition_score += 0.2
-    else:  # Bulanık
+    else:  # Bulank
         composition_score += 0.1
     
     return min(composition_score, 1.0)
@@ -2571,22 +2608,22 @@ def analyze_objects(image) -> float:
     
     object_score = 0.0
     
-    # 1. Yüz tespiti
+    # 1. Yz tespiti
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
     
-    # Haar cascade ile yüz tespiti
+    # Haar cascade ile yz tespiti
     face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
     faces = face_cascade.detectMultiScale(gray, 1.1, 4)
     
-    if len(faces) > 0:  # Yüz tespit edildi
+    if len(faces) > 0:  # Yz tespit edildi
         object_score += 0.4
-        print(f"[VISUAL] Faces detected: {len(faces)}")
+        safe_print(f"[VISUAL] Faces detected: {len(faces)}")
     
-    # 2. Kenar tespiti (nesne varlığı)
+    # 2. Kenar tespiti (nesne varl)
     edges = cv2.Canny(gray, 50, 150)
     edge_density = np.sum(edges > 0) / edges.size
     
-    if edge_density > 0.1:  # Çok nesne
+    if edge_density > 0.1:  # ok nesne
         object_score += 0.3
     elif edge_density > 0.05:  # Orta nesne
         object_score += 0.2
@@ -2600,7 +2637,7 @@ def analyze_objects(image) -> float:
     
     if text_density > 0.05:  # Metin var
         object_score += 0.3
-        print(f"[VISUAL] Text detected")
+        safe_print(f"[VISUAL] Text detected")
     
     return min(object_score, 1.0)
 
@@ -2621,11 +2658,11 @@ def analyze_quality_metrics(image) -> float:
     laplacian = cv2.Laplacian(gray, cv2.CV_64F)
     noise_level = np.std(laplacian)
     
-    if noise_level < 50:  # Düşük noise
+    if noise_level < 50:  # Dk noise
         quality_score += 0.3
     elif noise_level < 100:  # Orta noise
         quality_score += 0.2
-    else:  # Yüksek noise
+    else:  # Yksek noise
         quality_score += 0.1
     
     # 2. Exposure analizi
@@ -2635,17 +2672,17 @@ def analyze_quality_metrics(image) -> float:
         quality_score += 0.4
     elif 50 <= brightness <= 220:  # Kabul edilebilir
         quality_score += 0.3
-    else:  # Aşırı exposure
+    else:  # Ar exposure
         quality_score += 0.1
     
     # 3. Sharpness analizi
     sharpness = np.var(laplacian)
     
-    if sharpness > 1000:  # Çok keskin
+    if sharpness > 1000:  # ok keskin
         quality_score += 0.3
     elif sharpness > 500:  # Keskin
         quality_score += 0.2
-    else:  # Bulanık
+    else:  # Bulank
         quality_score += 0.1
     
     return min(quality_score, 1.0)
@@ -2653,7 +2690,7 @@ def analyze_quality_metrics(image) -> float:
 
 def analyze_transition_quality(features: Dict[str, Any], duration: float) -> Dict[str, Any]:
     """
-    Geçiş Kalitesi Analizi (8 puan)
+    Gei Kalitesi Analizi (8 puan)
     Edit ve efekt analizi
     """
     score = 0
@@ -2661,7 +2698,7 @@ def analyze_transition_quality(features: Dict[str, Any], duration: float) -> Dic
     recommendations = []
     raw_metrics = {}
     
-    print("[TRANSITION] Starting transition quality analysis...")
+    safe_print("[TRANSITION] Starting transition quality analysis...")
     
     # Video bilgileri
     video_info = features.get("video_info", {})
@@ -2677,13 +2714,13 @@ def analyze_transition_quality(features: Dict[str, Any], duration: float) -> Dic
         findings.append({
             "t": duration * 0.3,
             "type": "smooth_transitions",
-            "msg": "Yumuşak geçişler - profesyonel edit"
+            "msg": "Yumuak geiler - profesyonel edit"
         })
     elif scene_score > 0.4:
         score += 1
-        recommendations.append("Geçişleri yumuşat - ani kesimlerden kaçın")
+        recommendations.append("Geileri yumuat - ani kesimlerden kan")
     else:
-        recommendations.append("Geçiş efektleri ekle - fade, dissolve, wipe")
+        recommendations.append("Gei efektleri ekle - fade, dissolve, wipe")
     
     # 2. Cut Frequency Analizi (2 puan)
     cut_score = analyze_cut_frequency(features, duration_sec)
@@ -2694,13 +2731,13 @@ def analyze_transition_quality(features: Dict[str, Any], duration: float) -> Dic
         findings.append({
             "t": duration * 0.5,
             "type": "optimal_pacing",
-            "msg": "Optimal kesim hızı - dinamik ama okunabilir"
+            "msg": "Optimal kesim hz - dinamik ama okunabilir"
         })
     elif cut_score > 0.4:
         score += 1
-        recommendations.append("Kesim hızını ayarla - çok hızlı veya yavaş")
+        recommendations.append("Kesim hzn ayarla - ok hzl veya yava")
     else:
-        recommendations.append("Kesim hızını optimize et - 3-5 saniye aralıklar")
+        recommendations.append("Kesim hzn optimize et - 3-5 saniye aralklar")
     
     # 3. Visual Effects Analizi (2 puan)
     effects_score = analyze_visual_effects(features)
@@ -2711,13 +2748,13 @@ def analyze_transition_quality(features: Dict[str, Any], duration: float) -> Dic
         findings.append({
             "t": duration * 0.7,
             "type": "professional_effects",
-            "msg": "Profesyonel efektler - görsel çekicilik yüksek"
+            "msg": "Profesyonel efektler - grsel ekicilik yksek"
         })
     elif effects_score > 0.4:
         score += 1
-        recommendations.append("Efektleri iyileştir - zoom, pan, color grading")
+        recommendations.append("Efektleri iyiletir - zoom, pan, color grading")
     else:
-        recommendations.append("Görsel efektler ekle - zoom, pan, color correction")
+        recommendations.append("Grsel efektler ekle - zoom, pan, color correction")
     
     # 4. Audio Transition Analizi (1 puan)
     audio_transition_score = analyze_audio_transitions(features)
@@ -2728,10 +2765,10 @@ def analyze_transition_quality(features: Dict[str, Any], duration: float) -> Dic
         findings.append({
             "t": duration * 0.8,
             "type": "smooth_audio",
-            "msg": "Yumuşak ses geçişleri - profesyonel ses edit"
+            "msg": "Yumuak ses geileri - profesyonel ses edit"
         })
     else:
-        recommendations.append("Ses geçişlerini yumuşat - fade in/out ekle")
+        recommendations.append("Ses geilerini yumuat - fade in/out ekle")
     
     # 5. Pacing Consistency (1 puan)
     pacing_score = analyze_pacing_consistency(features, duration_sec)
@@ -2742,12 +2779,12 @@ def analyze_transition_quality(features: Dict[str, Any], duration: float) -> Dic
         findings.append({
             "t": duration * 0.6,
             "type": "consistent_pacing",
-            "msg": "Tutarlı ritim - video akışı düzenli"
+            "msg": "Tutarl ritim - video ak dzenli"
         })
     else:
-        recommendations.append("Ritmi tutarlı yap - hız değişimlerini dengele")
+        recommendations.append("Ritmi tutarl yap - hz deiimlerini dengele")
     
-    print(f"[TRANSITION] Transition quality score: {score}/8")
+    safe_print(f"[TRANSITION] Transition quality score: {score}/8")
     
     return {
         "score": min(score, 8),
@@ -2762,26 +2799,26 @@ def analyze_scene_transitions(features: Dict[str, Any]) -> float:
     Scene transition analizi
     """
     try:
-        # Scene detection sonuçları
+        # Scene detection sonular
         scene_data = features.get("scene_data", {})
         scenes = scene_data.get("scenes", [])
         
         if not scenes or len(scenes) < 2:
-            print("[TRANSITION] No scene data available")
+            safe_print("[TRANSITION] No scene data available")
             return 0.5
         
         transition_score = 0.0
         
-        # 1. Scene sayısı analizi
+        # 1. Scene says analizi
         scene_count = len(scenes)
-        if 3 <= scene_count <= 8:  # Optimal scene sayısı
+        if 3 <= scene_count <= 8:  # Optimal scene says
             transition_score += 0.3
         elif 2 <= scene_count <= 12:  # Kabul edilebilir
             transition_score += 0.2
-        else:  # Çok az veya çok fazla
+        else:  # ok az veya ok fazla
             transition_score += 0.1
         
-        # 2. Scene uzunlukları analizi
+        # 2. Scene uzunluklar analizi
         scene_lengths = []
         for scene in scenes:
             if isinstance(scene, dict) and 'duration' in scene:
@@ -2793,7 +2830,7 @@ def analyze_scene_transitions(features: Dict[str, Any]) -> float:
             avg_scene_length = sum(scene_lengths) / len(scene_lengths)
             scene_length_variance = np.var(scene_lengths) if len(scene_lengths) > 1 else 0
             
-            # Optimal scene uzunluğu (3-8 saniye)
+            # Optimal scene uzunluu (3-8 saniye)
             if 3 <= avg_scene_length <= 8:
                 transition_score += 0.4
             elif 2 <= avg_scene_length <= 12:
@@ -2801,22 +2838,22 @@ def analyze_scene_transitions(features: Dict[str, Any]) -> float:
             else:
                 transition_score += 0.1
             
-            # Scene uzunluk tutarlılığı
-            if scene_length_variance < 5:  # Tutarlı uzunluklar
+            # Scene uzunluk tutarll
+            if scene_length_variance < 5:  # Tutarl uzunluklar
                 transition_score += 0.3
-            elif scene_length_variance < 15:  # Orta tutarlılık
+            elif scene_length_variance < 15:  # Orta tutarllk
                 transition_score += 0.2
-            else:  # Tutarsız uzunluklar
+            else:  # Tutarsz uzunluklar
                 transition_score += 0.1
         
         transition_score = min(transition_score, 1.0)
         
-        print(f"[TRANSITION] Scene transition score: {transition_score:.2f} (scenes: {scene_count})")
+        safe_print(f"[TRANSITION] Scene transition score: {transition_score:.2f} (scenes: {scene_count})")
         
         return transition_score
         
     except Exception as e:
-        print(f"[TRANSITION] Scene transition analysis failed: {e}")
+        safe_print(f"[TRANSITION] Scene transition analysis failed: {e}")
         return 0.5
 
 
@@ -2827,15 +2864,15 @@ def analyze_cut_frequency(features: Dict[str, Any], duration: float) -> float:
     try:
         import numpy as np
         
-        # Scene data'dan cut sayısını hesapla
+        # Scene data'dan cut saysn hesapla
         scene_data = features.get("scene_data", {})
         scenes = scene_data.get("scenes", [])
         
         if not scenes:
-            print("[TRANSITION] No scene data for cut analysis")
+            safe_print("[TRANSITION] No scene data for cut analysis")
             return 0.5
         
-        # Cut sayısı = scene sayısı - 1
+        # Cut says = scene says - 1
         cut_count = len(scenes) - 1
         cuts_per_minute = cut_count / (duration / 60) if duration > 0 else 0
         
@@ -2851,12 +2888,12 @@ def analyze_cut_frequency(features: Dict[str, Any], duration: float) -> float:
         else:
             cut_score = 0.3
         
-        print(f"[TRANSITION] Cut frequency score: {cut_score:.2f} (cuts: {cut_count}, per minute: {cuts_per_minute:.1f})")
+        safe_print(f"[TRANSITION] Cut frequency score: {cut_score:.2f} (cuts: {cut_count}, per minute: {cuts_per_minute:.1f})")
         
         return cut_score
         
     except Exception as e:
-        print(f"[TRANSITION] Cut frequency analysis failed: {e}")
+        safe_print(f"[TRANSITION] Cut frequency analysis failed: {e}")
         return 0.5
 
 
@@ -2867,7 +2904,7 @@ def analyze_visual_effects(features: Dict[str, Any]) -> float:
     try:
         effects_score = 0.0
         
-        # 1. Frame değişim analizi (zoom, pan tespiti)
+        # 1. Frame deiim analizi (zoom, pan tespiti)
         frames = features.get("frames", [])
         if len(frames) >= 2:
             frame_variation = analyze_frame_variations(frames)
@@ -2883,12 +2920,12 @@ def analyze_visual_effects(features: Dict[str, Any]) -> float:
         
         effects_score = min(effects_score, 1.0)
         
-        print(f"[TRANSITION] Visual effects score: {effects_score:.2f}")
+        safe_print(f"[TRANSITION] Visual effects score: {effects_score:.2f}")
         
         return effects_score
         
     except Exception as e:
-        print(f"[TRANSITION] Visual effects analysis failed: {e}")
+        safe_print(f"[TRANSITION] Visual effects analysis failed: {e}")
         return 0.5
 
 
@@ -2903,28 +2940,28 @@ def analyze_frame_variations(frames: List[str]) -> float:
         if len(frames) < 2:
             return 0.5
         
-        # İlk ve son frame'i karşılaştır
+        # lk ve son frame'i karlatr
         frame1 = cv2.imread(frames[0])
         frame2 = cv2.imread(frames[-1])
         
         if frame1 is None or frame2 is None:
             return 0.5
         
-        # Gri tonlamaya çevir
+        # Gri tonlamaya evir
         gray1 = cv2.cvtColor(frame1, cv2.COLOR_BGR2GRAY)
         gray2 = cv2.cvtColor(frame2, cv2.COLOR_BGR2GRAY)
         
-        # Histogram karşılaştırması
+        # Histogram karlatrmas
         hist1 = cv2.calcHist([gray1], [0], None, [256], [0, 256])
         hist2 = cv2.calcHist([gray2], [0], None, [256], [0, 256])
         
         # Histogram korelasyonu
         correlation = cv2.compareHist(hist1, hist2, cv2.HISTCMP_CORREL)
         
-        # Farklılık skoru (1 - correlation)
+        # Farkllk skoru (1 - correlation)
         variation_score = 1.0 - correlation
         
-        # Optimal varyasyon (0.2-0.6 arası)
+        # Optimal varyasyon (0.2-0.6 aras)
         if 0.2 <= variation_score <= 0.6:
             return 1.0
         elif 0.1 <= variation_score <= 0.8:
@@ -2933,7 +2970,7 @@ def analyze_frame_variations(frames: List[str]) -> float:
             return 0.4
         
     except Exception as e:
-        print(f"[TRANSITION] Frame variation analysis failed: {e}")
+        safe_print(f"[TRANSITION] Frame variation analysis failed: {e}")
         return 0.5
 
 
@@ -2949,37 +2986,37 @@ def analyze_color_grading(features: Dict[str, Any]) -> float:
         import cv2
         import numpy as np
         
-        # İlk frame'i analiz et
+        # lk frame'i analiz et
         image = cv2.imread(frames[0])
         if image is None:
             return 0.5
         
-        # HSV'ye çevir
+        # HSV'ye evir
         hsv = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
         
-        # Color grading göstergeleri
+        # Color grading gstergeleri
         color_score = 0.0
         
         # 1. Saturation analizi
         s_channel = hsv[:, :, 1]
         avg_saturation = np.mean(s_channel)
         
-        if avg_saturation > 120:  # Yüksek doygunluk (color grading)
+        if avg_saturation > 120:  # Yksek doygunluk (color grading)
             color_score += 0.4
         elif avg_saturation > 80:  # Orta doygunluk
             color_score += 0.3
-        else:  # Düşük doygunluk
+        else:  # Dk doygunluk
             color_score += 0.2
         
         # 2. Contrast analizi
         v_channel = hsv[:, :, 2]
         contrast = np.std(v_channel)
         
-        if contrast > 60:  # Yüksek kontrast
+        if contrast > 60:  # Yksek kontrast
             color_score += 0.3
         elif contrast > 40:  # Orta kontrast
             color_score += 0.2
-        else:  # Düşük kontrast
+        else:  # Dk kontrast
             color_score += 0.1
         
         # 3. Color temperature analizi (basit)
@@ -2999,7 +3036,7 @@ def analyze_color_grading(features: Dict[str, Any]) -> float:
         return min(color_score, 1.0)
         
     except Exception as e:
-        print(f"[TRANSITION] Color grading analysis failed: {e}")
+        safe_print(f"[TRANSITION] Color grading analysis failed: {e}")
         return 0.5
 
 
@@ -3014,42 +3051,42 @@ def analyze_motion_effects(features: Dict[str, Any]) -> float:
         
         motion_score = 0.0
         
-        # FPS tabanlı motion analizi
-        if fps >= 60:  # Yüksek FPS (smooth motion)
+        # FPS tabanl motion analizi
+        if fps >= 60:  # Yksek FPS (smooth motion)
             motion_score += 0.4
         elif fps >= 30:  # Orta FPS
             motion_score += 0.3
-        else:  # Düşük FPS
+        else:  # Dk FPS
             motion_score += 0.2
         
-        # Scene count tabanlı motion analizi
+        # Scene count tabanl motion analizi
         scene_data = features.get("scene_data", {})
         scenes = scene_data.get("scenes", [])
         
         if scenes:
             scene_count = len(scenes)
-            if scene_count > 5:  # Çok scene (dynamic)
+            if scene_count > 5:  # ok scene (dynamic)
                 motion_score += 0.3
             elif scene_count > 3:  # Orta scene
                 motion_score += 0.2
             else:  # Az scene (static)
                 motion_score += 0.1
         
-        # Audio tempo tabanlı motion analizi
+        # Audio tempo tabanl motion analizi
         audio_features = features.get("audio", {})
         tempo = audio_features.get("tempo", 0)
         
-        if tempo > 120:  # Hızlı tempo
+        if tempo > 120:  # Hzl tempo
             motion_score += 0.3
         elif tempo > 80:  # Orta tempo
             motion_score += 0.2
-        else:  # Yavaş tempo
+        else:  # Yava tempo
             motion_score += 0.1
         
         return min(motion_score, 1.0)
         
     except Exception as e:
-        print(f"[TRANSITION] Motion effects analysis failed: {e}")
+        safe_print(f"[TRANSITION] Motion effects analysis failed: {e}")
         return 0.5
 
 
@@ -3068,7 +3105,7 @@ def analyze_audio_transitions(features: Dict[str, Any]) -> float:
             audio_score += 0.4
         elif -30 <= loudness <= -3:  # Kabul edilebilir
             audio_score += 0.3
-        else:  # Aşırı yüksek/düşük
+        else:  # Ar yksek/dk
             audio_score += 0.1
         
         # 2. Tempo consistency
@@ -3082,17 +3119,17 @@ def analyze_audio_transitions(features: Dict[str, Any]) -> float:
         audio_info = features.get("audio_info", {})
         sample_rate = audio_info.get("sample_rate", 0)
         
-        if sample_rate >= 44100:  # Yüksek kalite
+        if sample_rate >= 44100:  # Yksek kalite
             audio_score += 0.3
         elif sample_rate >= 22050:  # Orta kalite
             audio_score += 0.2
-        else:  # Düşük kalite
+        else:  # Dk kalite
             audio_score += 0.1
         
         return min(audio_score, 1.0)
         
     except Exception as e:
-        print(f"[TRANSITION] Audio transition analysis failed: {e}")
+        safe_print(f"[TRANSITION] Audio transition analysis failed: {e}")
         return 0.5
 
 
@@ -3127,11 +3164,11 @@ def analyze_pacing_consistency(features: Dict[str, Any], duration: float) -> flo
             # Coefficient of variation
             cv = np.sqrt(scene_variance) / avg_scene_length if avg_scene_length > 0 else 1
             
-            if cv < 0.3:  # Çok tutarlı
+            if cv < 0.3:  # ok tutarl
                 pacing_score += 0.5
-            elif cv < 0.5:  # Orta tutarlılık
+            elif cv < 0.5:  # Orta tutarllk
                 pacing_score += 0.3
-            else:  # Tutarsız
+            else:  # Tutarsz
                 pacing_score += 0.1
         
         # 2. Overall pacing
@@ -3142,29 +3179,29 @@ def analyze_pacing_consistency(features: Dict[str, Any], duration: float) -> flo
             pacing_score += 0.5
         elif abs(scene_count - expected_scenes) <= 4:  # Kabul edilebilir
             pacing_score += 0.3
-        else:  # Aşırı hızlı/yavaş
+        else:  # Ar hzl/yava
             pacing_score += 0.1
         
         return min(pacing_score, 1.0)
         
     except Exception as e:
-        print(f"[TRANSITION] Pacing consistency analysis failed: {e}")
+        safe_print(f"[TRANSITION] Pacing consistency analysis failed: {e}")
         return 0.5
 
 
 def analyze_loop_final(features: Dict[str, Any], duration: float) -> Dict[str, Any]:
     """
     Loop & Final Analizi (7 puan)
-    Döngü ve bitiş analizi
+    Dng ve biti analizi
     """
     score = 0
     findings = []
     recommendations = []
     raw_metrics = {}
     
-    print("[LOOP] Starting loop & final analysis...")
+    safe_print("[LOOP] Starting loop & final analysis...")
     
-    # 1. Video Döngü Analizi (2 puan)
+    # 1. Video Dng Analizi (2 puan)
     loop_score = analyze_video_loops(features, duration)
     raw_metrics["video_loops"] = loop_score
     
@@ -3173,15 +3210,15 @@ def analyze_loop_final(features: Dict[str, Any], duration: float) -> Dict[str, A
         findings.append({
             "t": duration * 0.8,
             "type": "perfect_loop",
-            "msg": "Mükemmel döngü - video tekrar izlenebilir"
+            "msg": "Mkemmel dng - video tekrar izlenebilir"
         })
     elif loop_score > 0.4:
         score += 1
-        recommendations.append("Döngüyü iyileştir - başlangıç ve bitiş uyumunu artır")
+        recommendations.append("Dngy iyiletir - balang ve biti uyumunu artr")
     else:
-        recommendations.append("Döngü ekle - video tekrar izlenebilir hale getir")
+        recommendations.append("Dng ekle - video tekrar izlenebilir hale getir")
     
-    # 2. Bitiş Analizi (2 puan)
+    # 2. Biti Analizi (2 puan)
     ending_score = analyze_video_ending(features, duration)
     raw_metrics["video_ending"] = ending_score
     
@@ -3190,15 +3227,15 @@ def analyze_loop_final(features: Dict[str, Any], duration: float) -> Dict[str, A
         findings.append({
             "t": duration * 0.95,
             "type": "strong_ending",
-            "msg": "Güçlü bitiş - izleyiciyi tatmin ediyor"
+            "msg": "Gl biti - izleyiciyi tatmin ediyor"
         })
     elif ending_score > 0.4:
         score += 1
-        recommendations.append("Bitişi güçlendir - daha etkileyici son ekle")
+        recommendations.append("Bitii glendir - daha etkileyici son ekle")
     else:
-        recommendations.append("Güçlü bitiş ekle - video sonunda özet veya çağrı")
+        recommendations.append("Gl biti ekle - video sonunda zet veya ar")
     
-    # 3. Tekrar İzlenebilirlik (1 puan)
+    # 3. Tekrar zlenebilirlik (1 puan)
     rewatch_score = analyze_rewatchability(features, duration)
     raw_metrics["rewatchability"] = rewatch_score
     
@@ -3207,12 +3244,12 @@ def analyze_loop_final(features: Dict[str, Any], duration: float) -> Dict[str, A
         findings.append({
             "t": duration * 0.5,
             "type": "high_rewatch",
-            "msg": "Yüksek tekrar izlenebilirlik - viral potansiyeli"
+            "msg": "Yksek tekrar izlenebilirlik - viral potansiyeli"
         })
     else:
-        recommendations.append("Tekrar izlenebilirliği artır - daha çekici içerik ekle")
+        recommendations.append("Tekrar izlenebilirlii artr - daha ekici ierik ekle")
     
-    # 4. Kapanış Tutarlılığı (1 puan)
+    # 4. Kapan Tutarll (1 puan)
     closure_score = analyze_closure_consistency(features, duration)
     raw_metrics["closure_consistency"] = closure_score
     
@@ -3221,12 +3258,12 @@ def analyze_loop_final(features: Dict[str, Any], duration: float) -> Dict[str, A
         findings.append({
             "t": duration * 0.9,
             "type": "consistent_closure",
-            "msg": "Tutarlı kapanış - mesaj net tamamlanmış"
+            "msg": "Tutarl kapan - mesaj net tamamlanm"
         })
     else:
-        recommendations.append("Kapanış tutarlılığını artır - mesajı net tamamla")
+        recommendations.append("Kapan tutarlln artr - mesaj net tamamla")
     
-    # 5. Viral Döngü Potansiyeli (1 puan)
+    # 5. Viral Dng Potansiyeli (1 puan)
     viral_loop_score = analyze_viral_loop_potential(features, duration)
     raw_metrics["viral_loop_potential"] = viral_loop_score
     
@@ -3235,12 +3272,12 @@ def analyze_loop_final(features: Dict[str, Any], duration: float) -> Dict[str, A
         findings.append({
             "t": 0.0,
             "type": "viral_loop",
-            "msg": "Viral döngü potansiyeli - paylaşım değeri yüksek"
+            "msg": "Viral dng potansiyeli - paylam deeri yksek"
         })
     else:
-        recommendations.append("Viral potansiyeli artır - paylaşım değeri ekle")
+        recommendations.append("Viral potansiyeli artr - paylam deeri ekle")
     
-    print(f"[LOOP] Loop & final score: {score}/7")
+    safe_print(f"[LOOP] Loop & final score: {score}/7")
     
     return {
         "score": min(score, 7),
@@ -3252,33 +3289,33 @@ def analyze_loop_final(features: Dict[str, Any], duration: float) -> Dict[str, A
 
 def analyze_video_loops(features: Dict[str, Any], duration: float) -> float:
     """
-    Video döngü analizi
+    Video dng analizi
     """
     try:
         loop_score = 0.0
         
-        # 1. Başlangıç ve bitiş uyumu
+        # 1. Balang ve biti uyumu
         start_end_score = analyze_start_end_similarity(features, duration)
         loop_score += start_end_score * 0.4
         
-        # 2. Video uzunluğu analizi
+        # 2. Video uzunluu analizi
         length_score = analyze_loop_length(duration)
         loop_score += length_score * 0.3
         
-        # 3. Ses döngü analizi
+        # 3. Ses dng analizi
         audio_loop_score = analyze_audio_loops(features)
         loop_score += audio_loop_score * 0.3
         
         return min(loop_score, 1.0)
         
     except Exception as e:
-        print(f"[LOOP] Video loop analysis failed: {e}")
+        safe_print(f"[LOOP] Video loop analysis failed: {e}")
         return 0.5
 
 
 def analyze_start_end_similarity(features: Dict[str, Any], duration: float) -> float:
     """
-    Başlangıç ve bitiş benzerlik analizi
+    Balang ve biti benzerlik analizi
     """
     try:
         frames = features.get("frames", [])
@@ -3288,18 +3325,18 @@ def analyze_start_end_similarity(features: Dict[str, Any], duration: float) -> f
         import cv2
         import numpy as np
         
-        # İlk ve son frame'i karşılaştır
+        # lk ve son frame'i karlatr
         first_frame = cv2.imread(frames[0])
         last_frame = cv2.imread(frames[-1])
         
         if first_frame is None or last_frame is None:
             return 0.5
         
-        # Gri tonlamaya çevir
+        # Gri tonlamaya evir
         gray_first = cv2.cvtColor(first_frame, cv2.COLOR_BGR2GRAY)
         gray_last = cv2.cvtColor(last_frame, cv2.COLOR_BGR2GRAY)
         
-        # Histogram karşılaştırması
+        # Histogram karlatrmas
         hist_first = cv2.calcHist([gray_first], [0], None, [256], [0, 256])
         hist_last = cv2.calcHist([gray_last], [0], None, [256], [0, 256])
         
@@ -3309,33 +3346,33 @@ def analyze_start_end_similarity(features: Dict[str, Any], duration: float) -> f
         # Benzerlik skoru
         similarity_score = correlation
         
-        print(f"[LOOP] Start-end similarity: {similarity_score:.2f}")
+        safe_print(f"[LOOP] Start-end similarity: {similarity_score:.2f}")
         
         return similarity_score
         
     except Exception as e:
-        print(f"[LOOP] Start-end similarity analysis failed: {e}")
+        safe_print(f"[LOOP] Start-end similarity analysis failed: {e}")
         return 0.5
 
 
 def analyze_loop_length(duration: float) -> float:
     """
-    Döngü için optimal uzunluk analizi
+    Dng iin optimal uzunluk analizi
     """
-    # Viral videolar için optimal uzunluk
+    # Viral videolar iin optimal uzunluk
     if 15 <= duration <= 60:  # 15-60 saniye (TikTok, Instagram)
         return 1.0
     elif 10 <= duration <= 90:  # 10-90 saniye (kabul edilebilir)
         return 0.7
     elif 5 <= duration <= 120:  # 5-120 saniye (uzun)
         return 0.5
-    else:  # Çok kısa veya uzun
+    else:  # ok ksa veya uzun
         return 0.3
 
 
 def analyze_audio_loops(features: Dict[str, Any]) -> float:
     """
-    Ses döngü analizi
+    Ses dng analizi
     """
     try:
         audio_features = features.get("audio", {})
@@ -3369,13 +3406,13 @@ def analyze_audio_loops(features: Dict[str, Any]) -> float:
         return min(loop_score, 1.0)
         
     except Exception as e:
-        print(f"[LOOP] Audio loop analysis failed: {e}")
+        safe_print(f"[LOOP] Audio loop analysis failed: {e}")
         return 0.5
 
 
 def analyze_video_ending(features: Dict[str, Any], duration: float) -> float:
     """
-    Video bitiş analizi
+    Video biti analizi
     """
     try:
         ending_score = 0.0
@@ -3395,16 +3432,16 @@ def analyze_video_ending(features: Dict[str, Any], duration: float) -> float:
         return min(ending_score, 1.0)
         
     except Exception as e:
-        print(f"[LOOP] Video ending analysis failed: {e}")
+        safe_print(f"[LOOP] Video ending analysis failed: {e}")
         return 0.5
 
 
 def analyze_ending_cta(features: Dict[str, Any], duration: float) -> float:
     """
-    Bitiş CTA analizi
+    Biti CTA analizi
     """
     try:
-        # Son %10'luk kısımda CTA var mı?
+        # Son %10'luk ksmda CTA var m?
         textual = features.get("textual", {})
         asr_text = textual.get("asr_text", "").lower()
         ocr_text = textual.get("ocr_text", "").lower()
@@ -3413,12 +3450,12 @@ def analyze_ending_cta(features: Dict[str, Any], duration: float) -> float:
         
         # CTA keywords
         cta_keywords = [
-            "beğen", "like", "takip", "follow", "abone", "subscribe",
-            "paylaş", "share", "yorum", "comment", "kaydet", "save",
+            "been", "like", "takip", "follow", "abone", "subscribe",
+            "payla", "share", "yorum", "comment", "kaydet", "save",
             "link", "linki", "bio", "profil", "profile"
         ]
         
-        # Son kısımda CTA var mı kontrol et
+        # Son ksmda CTA var m kontrol et
         cta_found = any(keyword in combined_text for keyword in cta_keywords)
         
         if cta_found:
@@ -3427,13 +3464,13 @@ def analyze_ending_cta(features: Dict[str, Any], duration: float) -> float:
             return 0.3
         
     except Exception as e:
-        print(f"[LOOP] Ending CTA analysis failed: {e}")
+        safe_print(f"[LOOP] Ending CTA analysis failed: {e}")
         return 0.5
 
 
 def analyze_visual_ending(features: Dict[str, Any], duration: float) -> float:
     """
-    Görsel bitiş analizi
+    Grsel biti analizi
     """
     try:
         frames = features.get("frames", [])
@@ -3481,13 +3518,13 @@ def analyze_visual_ending(features: Dict[str, Any], duration: float) -> float:
         return min(ending_score, 1.0)
         
     except Exception as e:
-        print(f"[LOOP] Visual ending analysis failed: {e}")
+        safe_print(f"[LOOP] Visual ending analysis failed: {e}")
         return 0.5
 
 
 def analyze_audio_ending(features: Dict[str, Any], duration: float) -> float:
     """
-    Ses bitiş analizi
+    Ses biti analizi
     """
     try:
         audio_features = features.get("audio", {})
@@ -3513,7 +3550,7 @@ def analyze_audio_ending(features: Dict[str, Any], duration: float) -> float:
         return min(ending_score, 1.0)
         
     except Exception as e:
-        print(f"[LOOP] Audio ending analysis failed: {e}")
+        safe_print(f"[LOOP] Audio ending analysis failed: {e}")
         return 0.5
 
 
@@ -3554,13 +3591,13 @@ def analyze_rewatchability(features: Dict[str, Any], duration: float) -> float:
         return min(rewatch_score, 1.0)
         
     except Exception as e:
-        print(f"[LOOP] Rewatchability analysis failed: {e}")
+        safe_print(f"[LOOP] Rewatchability analysis failed: {e}")
         return 0.5
 
 
 def analyze_closure_consistency(features: Dict[str, Any], duration: float) -> float:
     """
-    Kapanış tutarlılığı analizi
+    Kapan tutarll analizi
     """
     try:
         consistency_score = 0.0
@@ -3575,7 +3612,7 @@ def analyze_closure_consistency(features: Dict[str, Any], duration: float) -> fl
             title_words = set(title.split())
             content_words = set(asr_text.split())
             
-            # Ortak kelime oranı
+            # Ortak kelime oran
             common_words = title_words.intersection(content_words)
             if len(title_words) > 0:
                 consistency_ratio = len(common_words) / len(title_words)
@@ -3609,13 +3646,13 @@ def analyze_closure_consistency(features: Dict[str, Any], duration: float) -> fl
         return min(consistency_score, 1.0)
         
     except Exception as e:
-        print(f"[LOOP] Closure consistency analysis failed: {e}")
+        safe_print(f"[LOOP] Closure consistency analysis failed: {e}")
         return 0.5
 
 
 def analyze_viral_loop_potential(features: Dict[str, Any], duration: float) -> float:
     """
-    Viral döngü potansiyeli analizi
+    Viral dng potansiyeli analizi
     """
     try:
         viral_score = 0.0
@@ -3639,7 +3676,7 @@ def analyze_viral_loop_potential(features: Dict[str, Any], duration: float) -> f
         # Engagement keywords
         engagement_words = [
             "wow", "amazing", "incredible", "unbelievable", "shocking",
-            "harika", "inanılmaz", "şaşırtıcı", "muhteşem", "wow"
+            "harika", "inanlmaz", "artc", "muhteem", "wow"
         ]
         
         engagement_count = sum(1 for word in engagement_words if word in asr_text)
@@ -3653,14 +3690,14 @@ def analyze_viral_loop_potential(features: Dict[str, Any], duration: float) -> f
         return min(viral_score, 1.0)
         
     except Exception as e:
-        print(f"[LOOP] Viral loop potential analysis failed: {e}")
+        safe_print(f"[LOOP] Viral loop potential analysis failed: {e}")
         return 0.5
 
 
 def analyze_text_readability(features: Dict[str, Any], duration: float) -> Dict[str, Any]:
     """
     Metin Okunabilirlik Analizi (6 puan)
-    Font, kontrast, timing + zaman bazlı viral etki analizi
+    Font, kontrast, timing + zaman bazl viral etki analizi
     """
     score = 0
     findings = []
@@ -3668,9 +3705,9 @@ def analyze_text_readability(features: Dict[str, Any], duration: float) -> Dict[
     raw_metrics = {}
     viral_impact_timeline = []
     
-    print("[TEXT] Starting text readability analysis...")
+    safe_print("[TEXT] Starting text readability analysis...")
     
-    # Senkronize viral timeline başlat
+    # Senkronize viral timeline balat
     initialize_sync_viral_timeline(features, duration, viral_impact_timeline)
     
     # 1. Font Analizi (1 puan)
@@ -3682,13 +3719,13 @@ def analyze_text_readability(features: Dict[str, Any], duration: float) -> Dict[
         findings.append({
             "t": duration * 0.3,
             "type": "good_font",
-            "msg": "Kaliteli font kullanımı - okunabilirlik yüksek"
+            "msg": "Kaliteli font kullanm - okunabilirlik yksek"
         })
     elif font_score > 0.4:
         score += 0.5
-        recommendations.append("Font kalitesini artır - daha okunabilir font seç")
+        recommendations.append("Font kalitesini artr - daha okunabilir font se")
     else:
-        recommendations.append("Font değiştir - kalın ve net font kullan")
+        recommendations.append("Font deitir - kaln ve net font kullan")
     
     # 2. Kontrast Analizi (2 puan)
     contrast_score = analyze_text_contrast(features, duration, viral_impact_timeline)
@@ -3699,13 +3736,13 @@ def analyze_text_readability(features: Dict[str, Any], duration: float) -> Dict[
         findings.append({
             "t": duration * 0.5,
             "type": "high_contrast",
-            "msg": "Yüksek kontrast - metin net görünüyor"
+            "msg": "Yksek kontrast - metin net grnyor"
         })
     elif contrast_score > 0.4:
         score += 1
-        recommendations.append("Kontrastı artır - beyaz metin siyah arka plan")
+        recommendations.append("Kontrast artr - beyaz metin siyah arka plan")
     else:
-        recommendations.append("Kontrast sorunu var - metin görünmüyor")
+        recommendations.append("Kontrast sorunu var - metin grnmyor")
     
     # 3. Timing Analizi (2 puan)
     timing_score = analyze_text_timing(features, duration, viral_impact_timeline)
@@ -3716,13 +3753,13 @@ def analyze_text_readability(features: Dict[str, Any], duration: float) -> Dict[
         findings.append({
             "t": duration * 0.7,
             "type": "perfect_timing",
-            "msg": "Mükemmel timing - metin okunabilir sürede kalıyor"
+            "msg": "Mkemmel timing - metin okunabilir srede kalyor"
         })
     elif timing_score > 0.4:
         score += 1
-        recommendations.append("Timing'i iyileştir - metin daha uzun süre kalsın")
+        recommendations.append("Timing'i iyiletir - metin daha uzun sre kalsn")
     else:
-        recommendations.append("Metin çok hızlı - okunabilir sürede kalması için yavaşlat")
+        recommendations.append("Metin ok hzl - okunabilir srede kalmas iin yavalat")
     
     # 4. Viral Etki Analizi (1 puan)
     viral_impact_score = analyze_text_viral_impact(features, duration, viral_impact_timeline)
@@ -3733,14 +3770,14 @@ def analyze_text_readability(features: Dict[str, Any], duration: float) -> Dict[
         findings.append({
             "t": duration * 0.8,
             "type": "viral_text",
-            "msg": "Viral potansiyeli yüksek metin - etkileyici kelimeler"
+            "msg": "Viral potansiyeli yksek metin - etkileyici kelimeler"
         })
     else:
         recommendations.append("Viral kelimeler ekle - 'wow', 'amazing', 'incredible' gibi")
     
-    print(f"[TEXT] Text readability score: {score}/6")
+    safe_print(f"[TEXT] Text readability score: {score}/6")
     
-    # Senkronize viral timeline'ı tamamla
+    # Senkronize viral timeline' tamamla
     complete_sync_viral_timeline(features, duration, viral_impact_timeline)
     
     return {
@@ -3749,7 +3786,7 @@ def analyze_text_readability(features: Dict[str, Any], duration: float) -> Dict[
         "recommendations": recommendations,
         "raw": raw_metrics,
         "viral_impact_timeline": viral_impact_timeline,  # Senkronize viral etki timeline
-        "sync_viral_timeline": viral_impact_timeline  # Görüntü, ses, metin senkronize
+        "sync_viral_timeline": viral_impact_timeline  # Grnt, ses, metin senkronize
     }
 
 
@@ -3769,7 +3806,7 @@ def analyze_font_quality(features: Dict[str, Any], duration: float, viral_timeli
         import numpy as np
         
         # Her frame'de font analizi
-        for i, frame_path in enumerate(frames[:5]):  # İlk 5 frame
+        for i, frame_path in enumerate(frames[:5]):  # lk 5 frame
             try:
                 image = cv2.imread(frame_path)
                 if image is None:
@@ -3788,12 +3825,12 @@ def analyze_font_quality(features: Dict[str, Any], duration: float, viral_timeli
                     if text_regions:
                         avg_font_size = np.mean([region['area'] for region in text_regions])
                         
-                        if avg_font_size > 1000:  # Büyük font
+                        if avg_font_size > 1000:  # Byk font
                             font_score += 0.3
                             viral_timeline.append({
                                 "t": current_time,
                                 "impact": "positive",
-                                "reason": "Büyük font - dikkat çekici",
+                                "reason": "Byk font - dikkat ekici",
                                 "score_change": 0.1
                             })
                         elif avg_font_size > 500:  # Orta font
@@ -3804,19 +3841,19 @@ def analyze_font_quality(features: Dict[str, Any], duration: float, viral_timeli
                                 "reason": "Orta font - okunabilir",
                                 "score_change": 0.05
                             })
-                        else:  # Küçük font
+                        else:  # Kk font
                             font_score += 0.1
                             viral_timeline.append({
                                 "t": current_time,
                                 "impact": "negative",
-                                "reason": "Küçük font - zor okunuyor",
+                                "reason": "Kk font - zor okunuyor",
                                 "score_change": -0.1
                             })
                         
                         font_sizes.append(avg_font_size)
                 
             except Exception as e:
-                print(f"[TEXT] Font analysis failed for frame {i}: {e}")
+                safe_print(f"[TEXT] Font analysis failed for frame {i}: {e}")
                 continue
         
         # Ortalama font kalitesi
@@ -3832,13 +3869,13 @@ def analyze_font_quality(features: Dict[str, Any], duration: float, viral_timeli
         return min(font_score, 1.0)
         
     except Exception as e:
-        print(f"[TEXT] Font quality analysis failed: {e}")
+        safe_print(f"[TEXT] Font quality analysis failed: {e}")
         return 0.5
 
 
 def detect_text_regions(image) -> List[Dict]:
     """
-    Görüntüde text region'ları tespit et
+    Grntde text region'lar tespit et
     """
     try:
         import cv2
@@ -3846,7 +3883,7 @@ def detect_text_regions(image) -> List[Dict]:
         
         gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
         
-        # Text detection için edge detection
+        # Text detection iin edge detection
         edges = cv2.Canny(gray, 50, 150)
         
         # Contour bulma
@@ -3870,7 +3907,7 @@ def detect_text_regions(image) -> List[Dict]:
         return text_regions
         
     except Exception as e:
-        print(f"[TEXT] Text region detection failed: {e}")
+        safe_print(f"[TEXT] Text region detection failed: {e}")
         return []
 
 
@@ -3912,12 +3949,12 @@ def analyze_text_contrast(features: Dict[str, Any], duration: float, viral_timel
                         contrast = np.std(gray_roi)
                         contrast_values.append(contrast)
                         
-                        if contrast > 50:  # Yüksek kontrast
+                        if contrast > 50:  # Yksek kontrast
                             contrast_score += 0.3
                             viral_timeline.append({
                                 "t": current_time,
                                 "impact": "positive",
-                                "reason": "Yüksek kontrast - metin net",
+                                "reason": "Yksek kontrast - metin net",
                                 "score_change": 0.15
                             })
                         elif contrast > 25:  # Orta kontrast
@@ -3928,17 +3965,17 @@ def analyze_text_contrast(features: Dict[str, Any], duration: float, viral_timel
                                 "reason": "Orta kontrast - okunabilir",
                                 "score_change": 0.05
                             })
-                        else:  # Düşük kontrast
+                        else:  # Dk kontrast
                             contrast_score += 0.1
                             viral_timeline.append({
                                 "t": current_time,
                                 "impact": "negative",
-                                "reason": "Düşük kontrast - zor okunuyor",
+                                "reason": "Dk kontrast - zor okunuyor",
                                 "score_change": -0.15
                             })
                 
             except Exception as e:
-                print(f"[TEXT] Contrast analysis failed for frame {i}: {e}")
+                safe_print(f"[TEXT] Contrast analysis failed for frame {i}: {e}")
                 continue
         
         # Genel kontrast skoru
@@ -3954,13 +3991,13 @@ def analyze_text_contrast(features: Dict[str, Any], duration: float, viral_timel
         return min(contrast_score, 1.0)
         
     except Exception as e:
-        print(f"[TEXT] Text contrast analysis failed: {e}")
+        safe_print(f"[TEXT] Text contrast analysis failed: {e}")
         return 0.5
 
 
 def analyze_text_timing(features: Dict[str, Any], duration: float, viral_timeline: List[Dict]) -> float:
     """
-    Text timing analizi - metin ne kadar süre ekranda kalıyor
+    Text timing analizi - metin ne kadar sre ekranda kalyor
     """
     try:
         frames = features.get("frames", [])
@@ -3979,20 +4016,20 @@ def analyze_text_timing(features: Dict[str, Any], duration: float, viral_timelin
         for i, persistence in enumerate(text_persistence):
             current_time = i * frame_interval
             
-            if persistence > 0.8:  # Text çoğu frame'de var
+            if persistence > 0.8:  # Text ou frame'de var
                 timing_score += 0.3
                 viral_timeline.append({
                     "t": current_time,
                     "impact": "positive",
-                    "reason": "Metin sürekli görünüyor - okunabilir",
+                    "reason": "Metin srekli grnyor - okunabilir",
                     "score_change": 0.1
                 })
-            elif persistence > 0.5:  # Text yarı yarıya var
+            elif persistence > 0.5:  # Text yar yarya var
                 timing_score += 0.2
                 viral_timeline.append({
                     "t": current_time,
                     "impact": "neutral",
-                    "reason": "Metin ara sıra görünüyor",
+                    "reason": "Metin ara sra grnyor",
                     "score_change": 0.0
                 })
             else:  # Text nadiren var
@@ -4000,57 +4037,57 @@ def analyze_text_timing(features: Dict[str, Any], duration: float, viral_timelin
                 viral_timeline.append({
                     "t": current_time,
                     "impact": "negative",
-                    "reason": "Metin çok kısa görünüyor",
+                    "reason": "Metin ok ksa grnyor",
                     "score_change": -0.1
                 })
         
-        # Optimal timing kontrolü
+        # Optimal timing kontrol
         optimal_timing = check_optimal_text_timing(frames, ocr_texts, duration)
         timing_score += optimal_timing * 0.4
         
         return min(timing_score, 1.0)
         
     except Exception as e:
-        print(f"[TEXT] Text timing analysis failed: {e}")
+        safe_print(f"[TEXT] Text timing analysis failed: {e}")
         return 0.5
 
 
 def analyze_text_persistence(frames: List[str], ocr_texts: List[str]) -> List[float]:
     """
-    Text'in frame'lerde ne kadar süre kaldığını analiz et
+    Text'in frame'lerde ne kadar sre kaldn analiz et
     """
     try:
         persistence_scores = []
         
-        # Her frame için text varlığı kontrol et
+        # Her frame iin text varl kontrol et
         for frame_path in frames:
-            # Basit text detection (OCR sonuçlarına dayalı)
+            # Basit text detection (OCR sonularna dayal)
             text_found = len(ocr_texts) > 0
             persistence_scores.append(1.0 if text_found else 0.0)
         
         return persistence_scores
         
     except Exception as e:
-        print(f"[TEXT] Text persistence analysis failed: {e}")
+        safe_print(f"[TEXT] Text persistence analysis failed: {e}")
         return [0.5] * len(frames)
 
 
 def check_optimal_text_timing(frames: List[str], ocr_texts: List[str], duration: float) -> float:
     """
-    Optimal text timing kontrolü
+    Optimal text timing kontrol
     """
     try:
         if not frames or not ocr_texts:
             return 0.5
         
-        # Text timing kuralları
+        # Text timing kurallar
         frame_interval = duration / len(frames)
         
-        # 1. Text çok hızlı değişmemeli (minimum 2 saniye)
+        # 1. Text ok hzl deimemeli (minimum 2 saniye)
         min_text_duration = 2.0
         frames_per_min_duration = int(min_text_duration / frame_interval)
         
-        # 2. Text çok uzun süre kalmamalı (maksimum 10 saniye)
+        # 2. Text ok uzun sre kalmamal (maksimum 10 saniye)
         max_text_duration = 10.0
         frames_per_max_duration = int(max_text_duration / frame_interval)
         
@@ -4080,9 +4117,9 @@ def check_optimal_text_timing(frames: List[str], ocr_texts: List[str], duration:
             if frames_per_min_duration <= block_duration_frames <= frames_per_max_duration:
                 timing_score += 1.0  # Optimal timing
             elif block_duration_frames < frames_per_min_duration:
-                timing_score += 0.3  # Çok kısa
+                timing_score += 0.3  # ok ksa
             else:
-                timing_score += 0.5  # Çok uzun
+                timing_score += 0.5  # ok uzun
         
         # Normalize
         if text_blocks:
@@ -4091,7 +4128,7 @@ def check_optimal_text_timing(frames: List[str], ocr_texts: List[str], duration:
             return 0.5
         
     except Exception as e:
-        print(f"[TEXT] Optimal timing check failed: {e}")
+        safe_print(f"[TEXT] Optimal timing check failed: {e}")
         return 0.5
 
 
@@ -4104,7 +4141,7 @@ def analyze_text_viral_impact(features: Dict[str, Any], duration: float, viral_t
         asr_text = textual.get("asr_text", "").lower()
         ocr_texts = textual.get("ocr_text", [])
         
-        # Tüm text'i birleştir
+        # Tm text'i birletir
         all_text = asr_text
         for ocr_text in ocr_texts:
             all_text += " " + ocr_text.lower()
@@ -4116,26 +4153,26 @@ def analyze_text_viral_impact(features: Dict[str, Any], duration: float, viral_t
             # Pozitif viral kelimeler
             "wow": 0.2, "amazing": 0.2, "incredible": 0.2, "unbelievable": 0.2,
             "shocking": 0.2, "mind-blowing": 0.2, "epic": 0.15, "legendary": 0.15,
-            "harika": 0.2, "inanılmaz": 0.2, "muhteşem": 0.2, "şaşırtıcı": 0.2,
-            "müthiş": 0.15, "efsane": 0.15, "vay be": 0.1, "wow": 0.2,
+            "harika": 0.2, "inanlmaz": 0.2, "muhteem": 0.2, "artc": 0.2,
+            "mthi": 0.15, "efsane": 0.15, "vay be": 0.1, "wow": 0.2,
             
-            # Etkileşim kelimeleri
+            # Etkileim kelimeleri
             "like": 0.1, "share": 0.1, "comment": 0.1, "subscribe": 0.1,
-            "beğen": 0.1, "paylaş": 0.1, "yorum": 0.1, "abone": 0.1,
+            "been": 0.1, "payla": 0.1, "yorum": 0.1, "abone": 0.1,
             
             # Soru kelimeleri
             "how": 0.1, "why": 0.1, "what": 0.1, "when": 0.1,
-            "nasıl": 0.1, "neden": 0.1, "ne": 0.1, "ne zaman": 0.1,
+            "nasl": 0.1, "neden": 0.1, "ne": 0.1, "ne zaman": 0.1,
             
-            # Sayılar (viral için önemli)
+            # Saylar (viral iin nemli)
             "first": 0.1, "last": 0.1, "only": 0.1, "never": 0.1,
-            "ilk": 0.1, "son": 0.1, "sadece": 0.1, "hiç": 0.1,
+            "ilk": 0.1, "son": 0.1, "sadece": 0.1, "hi": 0.1,
             
             # Emoji benzeri kelimeler
             "fire": 0.1, "lit": 0.1, "goals": 0.1, "vibes": 0.1
         }
         
-        # Text'i kelimelere böl
+        # Text'i kelimelere bl
         words = all_text.split()
         total_words = len(words)
         
@@ -4148,7 +4185,7 @@ def analyze_text_viral_impact(features: Dict[str, Any], duration: float, viral_t
                 viral_score += viral_keywords[word]
                 viral_word_count += 1
         
-        # Viral kelime yoğunluğu
+        # Viral kelime younluu
         viral_density = viral_word_count / total_words if total_words > 0 else 0
         
         # Viral density skoru
@@ -4157,7 +4194,7 @@ def analyze_text_viral_impact(features: Dict[str, Any], duration: float, viral_t
             viral_timeline.append({
                 "t": duration * 0.5,
                 "impact": "positive",
-                "reason": f"Yüksek viral kelime yoğunluğu (%{viral_density*100:.1f})",
+                "reason": f"Yksek viral kelime younluu (%{viral_density*100:.1f})",
                 "score_change": 0.2
             })
         elif viral_density > 0.05:  # %5'ten fazla viral kelime
@@ -4165,19 +4202,19 @@ def analyze_text_viral_impact(features: Dict[str, Any], duration: float, viral_t
             viral_timeline.append({
                 "t": duration * 0.5,
                 "impact": "positive",
-                "reason": f"Orta viral kelime yoğunluğu (%{viral_density*100:.1f})",
+                "reason": f"Orta viral kelime younluu (%{viral_density*100:.1f})",
                 "score_change": 0.1
             })
         else:
             viral_timeline.append({
                 "t": duration * 0.5,
                 "impact": "negative",
-                "reason": f"Düşük viral kelime yoğunluğu (%{viral_density*100:.1f})",
+                "reason": f"Dk viral kelime younluu (%{viral_density*100:.1f})",
                 "score_change": -0.1
             })
         
-        # Text uzunluğu analizi
-        if 10 <= total_words <= 50:  # Optimal text uzunluğu
+        # Text uzunluu analizi
+        if 10 <= total_words <= 50:  # Optimal text uzunluu
             viral_score += 0.2
         elif 5 <= total_words <= 100:  # Kabul edilebilir uzunluk
             viral_score += 0.1
@@ -4185,13 +4222,13 @@ def analyze_text_viral_impact(features: Dict[str, Any], duration: float, viral_t
         return min(viral_score, 1.0)
         
     except Exception as e:
-        print(f"[TEXT] Text viral impact analysis failed: {e}")
+        safe_print(f"[TEXT] Text viral impact analysis failed: {e}")
         return 0.5
 
 
 def initialize_sync_viral_timeline(features: Dict[str, Any], duration: float, viral_timeline: List[Dict]) -> None:
     """
-    Senkronize viral timeline'ı başlat - görüntü, ses, metin için
+    Senkronize viral timeline' balat - grnt, ses, metin iin
     """
     try:
         frames = features.get("frames", [])
@@ -4203,17 +4240,17 @@ def initialize_sync_viral_timeline(features: Dict[str, Any], duration: float, vi
         
         frame_interval = duration / len(frames)
         
-        print("[SYNC] Initializing synchronized viral timeline...")
+        safe_print("[SYNC] Initializing synchronized viral timeline...")
         
-        # Her frame için viral analizi
+        # Her frame iin viral analizi
         for i, frame_path in enumerate(frames):
             current_time = i * frame_interval
             
-            # Görüntü viral etkisi
+            # Grnt viral etkisi
             visual_impact = analyze_visual_viral_impact(frame_path, current_time)
             viral_timeline.append(visual_impact)
             
-            # Ses viral etkisi (ses segment'i için)
+            # Ses viral etkisi (ses segment'i iin)
             audio_impact = analyze_audio_viral_impact(audio_features, current_time, frame_interval)
             viral_timeline.append(audio_impact)
             
@@ -4221,15 +4258,15 @@ def initialize_sync_viral_timeline(features: Dict[str, Any], duration: float, vi
             text_impact = analyze_text_viral_impact_at_time(textual, current_time)
             viral_timeline.append(text_impact)
         
-        print(f"[SYNC] Synchronized timeline created with {len(viral_timeline)} events")
+        safe_print(f"[SYNC] Synchronized timeline created with {len(viral_timeline)} events")
         
     except Exception as e:
-        print(f"[SYNC] Failed to initialize sync timeline: {e}")
+        safe_print(f"[SYNC] Failed to initialize sync timeline: {e}")
 
 
 def analyze_visual_viral_impact(frame_path: str, current_time: float) -> Dict[str, Any]:
     """
-    Gelişmiş görüntü viral etkisi analizi - nesne tespiti, hareket analizi
+    Gelimi grnt viral etkisi analizi - nesne tespiti, hareket analizi
     """
     try:
         import cv2
@@ -4241,7 +4278,7 @@ def analyze_visual_viral_impact(frame_path: str, current_time: float) -> Dict[st
                 "t": current_time,
                 "type": "visual",
                 "impact": "neutral",
-                "reason": "Görüntü yüklenemedi",
+                "reason": "Grnt yklenemedi",
                 "score_change": 0.0
             }
         
@@ -4250,21 +4287,21 @@ def analyze_visual_viral_impact(frame_path: str, current_time: float) -> Dict[st
         detected_objects = []
         movement_analysis = ""
         
-        # 1. Nesne tespiti (İnsan, çocuk, hayvan)
+        # 1. Nesne tespiti (nsan, ocuk, hayvan)
         objects = detect_objects_in_frame(image)
         detected_objects.extend(objects)
         
         for obj in objects:
             if obj["type"] == "person":
                 viral_score += 0.3
-                impact_reasons.append("İnsan tespit edildi - viral potansiyeli yüksek")
+                impact_reasons.append("nsan tespit edildi - viral potansiyeli yksek")
                 
-                # Çocuk tespiti (boyut ve oran analizi)
-                if obj["height_ratio"] > 0.6:  # Büyük insan = yetişkin
-                    impact_reasons.append("Yetişkin - güvenilir görünüm")
-                else:  # Küçük insan = çocuk
+                # ocuk tespiti (boyut ve oran analizi)
+                if obj["height_ratio"] > 0.6:  # Byk insan = yetikin
+                    impact_reasons.append("Yetikin - gvenilir grnm")
+                else:  # Kk insan = ocuk
                     viral_score += 0.2
-                    impact_reasons.append("Çocuk tespit edildi - dikkat çekici!")
+                    impact_reasons.append("ocuk tespit edildi - dikkat ekici!")
             
             elif obj["type"] == "animal":
                 viral_score += 0.2
@@ -4277,10 +4314,10 @@ def analyze_visual_viral_impact(frame_path: str, current_time: float) -> Dict[st
             impact_reasons.append(f"Hareket: {movement['description']}")
             movement_analysis = movement["description"]
             
-            # Yaklaşma analizi
-            if "yaklaşma" in movement["description"].lower() or "approaching" in movement["description"].lower():
+            # Yaklama analizi
+            if "yaklama" in movement["description"].lower() or "approaching" in movement["description"].lower():
                 viral_score += 0.3
-                impact_reasons.append("Yaklaşma hareketi - dikkat çekici!")
+                impact_reasons.append("Yaklama hareketi - dikkat ekici!")
         
         # 3. Renk analizi
         hsv = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
@@ -4289,10 +4326,10 @@ def analyze_visual_viral_impact(frame_path: str, current_time: float) -> Dict[st
         
         if bright_ratio > 0.3:
             viral_score += 0.2
-            impact_reasons.append("Parlak renkler - dikkat çekici")
+            impact_reasons.append("Parlak renkler - dikkat ekici")
         elif bright_ratio > 0.1:
             viral_score += 0.1
-            impact_reasons.append("Orta parlaklık")
+            impact_reasons.append("Orta parlaklk")
         
         # 4. Kompozisyon analizi
         gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
@@ -4301,13 +4338,13 @@ def analyze_visual_viral_impact(frame_path: str, current_time: float) -> Dict[st
         
         if edge_density > 0.15:
             viral_score += 0.1
-            impact_reasons.append("Yüksek detay - dinamik görüntü")
+            impact_reasons.append("Yksek detay - dinamik grnt")
         
         # 5. Kontrast analizi
         contrast = np.std(gray)
         if contrast > 50:
             viral_score += 0.2
-            impact_reasons.append("Yüksek kontrast - net görüntü")
+            impact_reasons.append("Yksek kontrast - net grnt")
         
         # Impact belirleme
         if viral_score > 0.8:
@@ -4324,7 +4361,7 @@ def analyze_visual_viral_impact(frame_path: str, current_time: float) -> Dict[st
             "t": current_time,
             "type": "visual",
             "impact": impact,
-            "reason": " | ".join(impact_reasons) if impact_reasons else "Standart görüntü",
+            "reason": " | ".join(impact_reasons) if impact_reasons else "Standart grnt",
             "score_change": score_change,
             "visual_score": viral_score,
             "detected_objects": detected_objects,
@@ -4332,19 +4369,19 @@ def analyze_visual_viral_impact(frame_path: str, current_time: float) -> Dict[st
         }
         
     except Exception as e:
-        print(f"[SYNC] Visual viral impact analysis failed: {e}")
+        safe_print(f"[SYNC] Visual viral impact analysis failed: {e}")
         return {
             "t": current_time,
             "type": "visual",
             "impact": "neutral",
-            "reason": "Görüntü analizi başarısız",
+            "reason": "Grnt analizi baarsz",
             "score_change": 0.0
         }
 
 
 def analyze_audio_viral_impact(audio_features: Dict[str, Any], current_time: float, frame_interval: float) -> Dict[str, Any]:
     """
-    Gelişmiş ses viral etkisi analizi - içerik analizi, konu tespiti
+    Gelimi ses viral etkisi analizi - ierik analizi, konu tespiti
     """
     try:
         viral_score = 0.0
@@ -4352,7 +4389,7 @@ def analyze_audio_viral_impact(audio_features: Dict[str, Any], current_time: flo
         content_analysis = ""
         topic_detection = ""
         
-        # 1. İçerik analizi (ASR text'ten)
+        # 1. erik analizi (ASR text'ten)
         textual = audio_features.get("textual", {})
         asr_text = textual.get("asr_text", "").lower()
         
@@ -4360,16 +4397,16 @@ def analyze_audio_viral_impact(audio_features: Dict[str, Any], current_time: flo
             content_analysis = analyze_speech_content(asr_text)
             if content_analysis["viral_potential"] > 0.7:
                 viral_score += 0.4
-                impact_reasons.append(f"Viral içerik: {content_analysis['description']}")
+                impact_reasons.append(f"Viral ierik: {content_analysis['description']}")
             elif content_analysis["viral_potential"] > 0.4:
                 viral_score += 0.2
-                impact_reasons.append(f"İyi içerik: {content_analysis['description']}")
+                impact_reasons.append(f"yi ierik: {content_analysis['description']}")
             
             # Konu tespiti
             topic_detection = detect_topic_from_speech(asr_text)
             if topic_detection["confidence"] > 0.7:
                 viral_score += 0.3
-                impact_reasons.append(f"Konu: {topic_detection['topic']} - viral potansiyeli yüksek")
+                impact_reasons.append(f"Konu: {topic_detection['topic']} - viral potansiyeli yksek")
         
         # 2. Loudness analizi
         loudness = audio_features.get("loudness", -20)
@@ -4379,7 +4416,7 @@ def analyze_audio_viral_impact(audio_features: Dict[str, Any], current_time: flo
             impact_reasons.append("Optimal ses seviyesi")
         elif -20 <= loudness <= -3:  # Kabul edilebilir
             viral_score += 0.1
-            impact_reasons.append("İyi ses seviyesi")
+            impact_reasons.append("yi ses seviyesi")
         
         # 3. Tempo analizi
         tempo = audio_features.get("tempo", 0)
@@ -4387,15 +4424,15 @@ def analyze_audio_viral_impact(audio_features: Dict[str, Any], current_time: flo
         if 120 <= tempo <= 140:  # Viral tempo
             viral_score += 0.2
             impact_reasons.append("Viral tempo - enerjik")
-        elif 100 <= tempo <= 160:  # İyi tempo
+        elif 100 <= tempo <= 160:  # yi tempo
             viral_score += 0.1
-            impact_reasons.append("İyi tempo")
+            impact_reasons.append("yi tempo")
         
         # 4. Ses kalitesi
-        sample_rate = 44100  # Default değer
+        sample_rate = 44100  # Default deer
         if sample_rate >= 44100:
             viral_score += 0.1
-            impact_reasons.append("Yüksek kalite ses")
+            impact_reasons.append("Yksek kalite ses")
         
         # Impact belirleme
         if viral_score > 0.8:
@@ -4420,25 +4457,25 @@ def analyze_audio_viral_impact(audio_features: Dict[str, Any], current_time: flo
         }
         
     except Exception as e:
-        print(f"[SYNC] Audio viral impact analysis failed: {e}")
+        safe_print(f"[SYNC] Audio viral impact analysis failed: {e}")
         return {
             "t": current_time,
             "type": "audio",
             "impact": "neutral",
-            "reason": "Ses analizi başarısız",
+            "reason": "Ses analizi baarsz",
             "score_change": 0.0
         }
 
 
 def analyze_text_viral_impact_at_time(textual: Dict[str, Any], current_time: float) -> Dict[str, Any]:
     """
-    Gelişmiş metin viral etkisi - OCR text analizi, konu tespiti
+    Gelimi metin viral etkisi - OCR text analizi, konu tespiti
     """
     try:
         asr_text = textual.get("asr_text", "").lower()
         ocr_texts = textual.get("ocr_text", [])
         
-        # Tüm text'i birleştir
+        # Tm text'i birletir
         all_text = asr_text
         for ocr_text in ocr_texts:
             all_text += " " + ocr_text.lower()
@@ -4448,7 +4485,7 @@ def analyze_text_viral_impact_at_time(textual: Dict[str, Any], current_time: flo
         ocr_analysis = ""
         topic_from_text = ""
         
-        # 1. OCR text analizi (görsel metin)
+        # 1. OCR text analizi (grsel metin)
         if ocr_texts:
             ocr_analysis = analyze_ocr_text_content(ocr_texts)
             if ocr_analysis["viral_potential"] > 0.7:
@@ -4456,29 +4493,29 @@ def analyze_text_viral_impact_at_time(textual: Dict[str, Any], current_time: flo
                 impact_reasons.append(f"Viral OCR text: {ocr_analysis['description']}")
             elif ocr_analysis["viral_potential"] > 0.4:
                 viral_score += 0.2
-                impact_reasons.append(f"İyi OCR text: {ocr_analysis['description']}")
+                impact_reasons.append(f"yi OCR text: {ocr_analysis['description']}")
             
             # OCR'dan konu tespiti
             topic_from_text = detect_topic_from_ocr(ocr_texts)
             if topic_from_text["confidence"] > 0.7:
                 viral_score += 0.3
-                impact_reasons.append(f"Konu: {topic_from_text['topic']} - viral potansiyeli yüksek")
+                impact_reasons.append(f"Konu: {topic_from_text['topic']} - viral potansiyeli yksek")
         
-        # 2. ASR text analizi (konuşma)
+        # 2. ASR text analizi (konuma)
         if asr_text:
             asr_analysis = analyze_speech_content(asr_text)
             if asr_analysis["viral_potential"] > 0.7:
                 viral_score += 0.3
-                impact_reasons.append(f"Viral konuşma: {asr_analysis['description']}")
+                impact_reasons.append(f"Viral konuma: {asr_analysis['description']}")
         
         # 3. Viral kelimeler
         viral_keywords = {
             "wow": 0.2, "amazing": 0.2, "incredible": 0.2, "unbelievable": 0.2,
             "shocking": 0.2, "mind-blowing": 0.2, "epic": 0.15, "legendary": 0.15,
-            "harika": 0.2, "inanılmaz": 0.2, "muhteşem": 0.2, "şaşırtıcı": 0.2,
-            "müthiş": 0.15, "efsane": 0.15, "vay be": 0.1, "fire": 0.1,
+            "harika": 0.2, "inanlmaz": 0.2, "muhteem": 0.2, "artc": 0.2,
+            "mthi": 0.15, "efsane": 0.15, "vay be": 0.1, "fire": 0.1,
             "like": 0.05, "share": 0.05, "comment": 0.05, "subscribe": 0.05,
-            "beğen": 0.05, "paylaş": 0.05, "yorum": 0.05, "abone": 0.05
+            "been": 0.05, "payla": 0.05, "yorum": 0.05, "abone": 0.05
         }
         
         words = all_text.split()
@@ -4492,10 +4529,10 @@ def analyze_text_viral_impact_at_time(textual: Dict[str, Any], current_time: flo
         if viral_words_found:
             impact_reasons.append(f"Viral kelimeler: {', '.join(viral_words_found[:3])}")
         
-        # 4. Text uzunluğu
+        # 4. Text uzunluu
         if 5 <= len(words) <= 20:
             viral_score += 0.1
-            impact_reasons.append("Optimal text uzunluğu")
+            impact_reasons.append("Optimal text uzunluu")
         
         # Impact belirleme
         if viral_score > 0.8:
@@ -4520,71 +4557,71 @@ def analyze_text_viral_impact_at_time(textual: Dict[str, Any], current_time: flo
         }
         
     except Exception as e:
-        print(f"[SYNC] Text viral impact analysis failed: {e}")
+        safe_print(f"[SYNC] Text viral impact analysis failed: {e}")
         return {
             "t": current_time,
             "type": "text",
             "impact": "neutral",
-            "reason": "Metin analizi başarısız",
+            "reason": "Metin analizi baarsz",
             "score_change": 0.0
         }
 
 
 def complete_sync_viral_timeline(features: Dict[str, Any], duration: float, viral_timeline: List[Dict]) -> None:
     """
-    Senkronize viral timeline'ı tamamla ve optimize et
+    Senkronize viral timeline' tamamla ve optimize et
     """
     try:
         if not viral_timeline:
             return
         
-        # Timeline'ı zamana göre sırala
+        # Timeline' zamana gre srala
         viral_timeline.sort(key=lambda x: x["t"])
         
-        # Benzer zamanlardaki event'leri birleştir
+        # Benzer zamanlardaki event'leri birletir
         merged_timeline = []
         current_time = None
         current_events = []
         
         for event in viral_timeline:
-            if current_time is None or abs(event["t"] - current_time) < 0.5:  # 0.5 saniye içindeki event'ler
+            if current_time is None or abs(event["t"] - current_time) < 0.5:  # 0.5 saniye iindeki event'ler
                 current_events.append(event)
                 current_time = event["t"]
             else:
-                # Önceki event'leri birleştir
+                # nceki event'leri birletir
                 if current_events:
                     merged_event = merge_sync_events(current_events, current_time)
                     merged_timeline.append(merged_event)
                 
-                # Yeni event grubu başlat
+                # Yeni event grubu balat
                 current_events = [event]
                 current_time = event["t"]
         
-        # Son event grubunu birleştir
+        # Son event grubunu birletir
         if current_events:
             merged_event = merge_sync_events(current_events, current_time)
             merged_timeline.append(merged_event)
         
-        # Timeline'ı güncelle
+        # Timeline' gncelle
         viral_timeline.clear()
         viral_timeline.extend(merged_timeline)
         
-        print(f"[SYNC] Timeline completed with {len(merged_timeline)} synchronized events")
+        safe_print(f"[SYNC] Timeline completed with {len(merged_timeline)} synchronized events")
         
     except Exception as e:
-        print(f"[SYNC] Failed to complete sync timeline: {e}")
+        safe_print(f"[SYNC] Failed to complete sync timeline: {e}")
 
 
 def merge_sync_events(events: List[Dict], current_time: float) -> Dict[str, Any]:
     """
-    Aynı zamandaki event'leri birleştir
+    Ayn zamandaki event'leri birletir
     """
     try:
         visual_events = [e for e in events if e["type"] == "visual"]
         audio_events = [e for e in events if e["type"] == "audio"]
         text_events = [e for e in events if e["type"] == "text"]
         
-        # Skorları topla
+        # Skorlar topla
         total_score_change = sum(e["score_change"] for e in events)
         
         # Impact belirle
@@ -4595,13 +4632,13 @@ def merge_sync_events(events: List[Dict], current_time: float) -> Dict[str, Any]
         else:
             impact = "negative"
         
-        # Gelişmiş analiz birleştirme
+        # Gelimi analiz birletirme
         reasons = []
         combined_analysis = {}
         
         if visual_events:
             visual_event = visual_events[0]
-            reasons.append(f"Görüntü: {visual_event['reason']}")
+            reasons.append(f"Grnt: {visual_event['reason']}")
             combined_analysis["detected_objects"] = visual_event.get("detected_objects", [])
             combined_analysis["movement"] = visual_event.get("movement", "")
             
@@ -4609,10 +4646,10 @@ def merge_sync_events(events: List[Dict], current_time: float) -> Dict[str, Any]
             if combined_analysis["detected_objects"]:
                 for obj in combined_analysis["detected_objects"]:
                     if obj.get("age_estimate") == "child":
-                        reasons.append("Çocuk tespit edildi!")
+                        reasons.append("ocuk tespit edildi!")
                         total_score_change += 0.1
                     elif obj.get("type") == "person":
-                        reasons.append("İnsan tespit edildi!")
+                        reasons.append("nsan tespit edildi!")
                         total_score_change += 0.05
         
         if audio_events:
@@ -4621,14 +4658,14 @@ def merge_sync_events(events: List[Dict], current_time: float) -> Dict[str, Any]
             combined_analysis["content_analysis"] = audio_event.get("content_analysis", {})
             combined_analysis["topic_detection"] = audio_event.get("topic_detection", {})
             
-            # İçerik analizi
+            # erik analizi
             if combined_analysis["content_analysis"].get("detected_types"):
                 content_types = combined_analysis["content_analysis"]["detected_types"]
                 if "question" in content_types:
-                    reasons.append("Soru sorma tespit edildi - etkileşim artırıcı!")
+                    reasons.append("Soru sorma tespit edildi - etkileim artrc!")
                     total_score_change += 0.1
                 if "shock" in content_types:
-                    reasons.append("Şok edici içerik - viral potansiyeli yüksek!")
+                    reasons.append("ok edici ierik - viral potansiyeli yksek!")
                     total_score_change += 0.15
         
         if text_events:
@@ -4641,19 +4678,19 @@ def merge_sync_events(events: List[Dict], current_time: float) -> Dict[str, Any]
             if combined_analysis["ocr_analysis"].get("detected_types"):
                 ocr_types = combined_analysis["ocr_analysis"]["detected_types"]
                 if "title" in ocr_types:
-                    reasons.append("Başlık metni - dikkat çekici!")
+                    reasons.append("Balk metni - dikkat ekici!")
                     total_score_change += 0.1
                 if "fact" in ocr_types:
-                    reasons.append("Bilgi metni - eğitici!")
+                    reasons.append("Bilgi metni - eitici!")
                     total_score_change += 0.05
         
         # Konu uyumu analizi
         topic_consistency = analyze_topic_consistency(combined_analysis)
         if topic_consistency["consistent"]:
-            reasons.append(f"Konu uyumu: {topic_consistency['description']} - mükemmel kombinasyon!")
+            reasons.append(f"Konu uyumu: {topic_consistency['description']} - mkemmel kombinasyon!")
             total_score_change += 0.2
         elif topic_consistency["partial"]:
-            reasons.append(f"Kısmi konu uyumu: {topic_consistency['description']}")
+            reasons.append(f"Ksmi konu uyumu: {topic_consistency['description']}")
             total_score_change += 0.1
         
         # Impact yeniden belirle
@@ -4681,19 +4718,19 @@ def merge_sync_events(events: List[Dict], current_time: float) -> Dict[str, Any]
         }
         
     except Exception as e:
-        print(f"[SYNC] Failed to merge events: {e}")
+        safe_print(f"[SYNC] Failed to merge events: {e}")
         return {
             "t": current_time,
             "type": "sync",
             "impact": "neutral",
-            "reason": "Event birleştirme başarısız",
+            "reason": "Event birletirme baarsz",
             "score_change": 0.0
         }
 
 
 def detect_objects_in_frame(image) -> List[Dict]:
     """
-    Frame'de nesne tespiti (insan, çocuk, hayvan)
+    Frame'de nesne tespiti (insan, ocuk, hayvan)
     """
     try:
         import cv2
@@ -4701,7 +4738,7 @@ def detect_objects_in_frame(image) -> List[Dict]:
         
         objects = []
         
-        # Haar Cascade ile yüz tespiti (basit insan tespiti)
+        # Haar Cascade ile yz tespiti (basit insan tespiti)
         face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
         gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
         faces = face_cascade.detectMultiScale(gray, 1.1, 4)
@@ -4709,13 +4746,13 @@ def detect_objects_in_frame(image) -> List[Dict]:
         height, width = image.shape[:2]
         
         for (x, y, w, h) in faces:
-            # Yüz oranlarına göre çocuk/yetişkin tespiti
+            # Yz oranlarna gre ocuk/yetikin tespiti
             face_ratio = h / height
             
-            if face_ratio > 0.15:  # Büyük yüz = yetişkin
+            if face_ratio > 0.15:  # Byk yz = yetikin
                 obj_type = "person"
                 age_estimate = "adult"
-            else:  # Küçük yüz = çocuk
+            else:  # Kk yz = ocuk
                 obj_type = "person"
                 age_estimate = "child"
             
@@ -4728,11 +4765,11 @@ def detect_objects_in_frame(image) -> List[Dict]:
             })
         
         # Basit hareket tespiti (optical flow)
-        # Bu basit bir implementasyon, gerçekte daha gelişmiş olmalı
+        # Bu basit bir implementasyon, gerekte daha gelimi olmal
         edges = cv2.Canny(gray, 50, 150)
         edge_density = np.sum(edges > 0) / (height * width)
         
-        if edge_density > 0.1:  # Yüksek hareket varsa
+        if edge_density > 0.1:  # Yksek hareket varsa
             objects.append({
                 "type": "movement",
                 "bbox": (0, 0, width, height),
@@ -4743,7 +4780,7 @@ def detect_objects_in_frame(image) -> List[Dict]:
         return objects
         
     except Exception as e:
-        print(f"[SYNC] Object detection failed: {e}")
+        safe_print(f"[SYNC] Object detection failed: {e}")
         return []
 
 
@@ -4760,20 +4797,20 @@ def analyze_movement_pattern(image, current_time: float) -> Dict[str, Any]:
         edges = cv2.Canny(gray, 50, 150)
         edge_density = np.sum(edges > 0) / (image.shape[0] * image.shape[1])
         
-        # Hareket türü belirleme (basit)
+        # Hareket tr belirleme (basit)
         if edge_density > 0.15:
             movement_type = "high_movement"
-            description = "Yüksek hareket - dinamik görüntü"
+            description = "Yksek hareket - dinamik grnt"
             
-            # Yaklaşma analizi (basit)
+            # Yaklama analizi (basit)
             if current_time > 0:
-                description += " - yaklaşma hareketi tespit edildi"
+                description += " - yaklama hareketi tespit edildi"
         elif edge_density > 0.05:
             movement_type = "medium_movement"
-            description = "Orta hareket - normal görüntü"
+            description = "Orta hareket - normal grnt"
         else:
             movement_type = "static"
-            description = "Statik görüntü - hareket yok"
+            description = "Statik grnt - hareket yok"
         
         return {
             "type": movement_type,
@@ -4783,10 +4820,10 @@ def analyze_movement_pattern(image, current_time: float) -> Dict[str, Any]:
         }
         
     except Exception as e:
-        print(f"[SYNC] Movement analysis failed: {e}")
+        safe_print(f"[SYNC] Movement analysis failed: {e}")
         return {
             "type": "static",
-            "description": "Hareket analizi başarısız",
+            "description": "Hareket analizi baarsz",
             "edge_density": 0.0,
             "confidence": 0.0
         }
@@ -4794,30 +4831,30 @@ def analyze_movement_pattern(image, current_time: float) -> Dict[str, Any]:
 
 def analyze_speech_content(asr_text: str) -> Dict[str, Any]:
     """
-    Konuşma içeriği analizi
+    Konuma ierii analizi
     """
     try:
         viral_score = 0.0
         description = ""
         
-        # İçerik türleri
+        # erik trleri
         content_types = {
-            "question": ["biliyor muydunuz", "bilir misiniz", "neden", "nasıl", "ne", "kim", "ne zaman"],
-            "story": ["hikaye", "olay", "anlatayım", "bir gün", "geçen gün"],
-            "fact": ["gerçek", "doğru", "aslında", "bilimsel", "araştırma"],
-            "shock": ["inanılmaz", "şaşırtıcı", "imkansız", "mucize"],
-            "call_to_action": ["beğen", "paylaş", "yorum", "abone", "takip"],
-            "lifestyle_tip": ["ipucu", "tavsiye", "öneri", "deneyin", "mutlaka", "kesinlikle", "harika", "mükemmel"],
-            "routine": ["rutin", "günlük", "her gün", "sabah", "akşam", "alışkanlık"],
-            "transformation": ["önce", "sonra", "değişim", "dönüşüm", "fark", "farklı"],
-            "tutorial": ["nasıl yapılır", "adım adım", "tutorial", "rehber", "öğren", "yap"],
-            "review": ["inceleme", "review", "deneyim", "denedim", "kullandım", "aldım"],
-            "exclusive_event": ["davet", "etkinlik", "özel", "exclusive", "netflix", "amazon", "google", "apple", "microsoft", "meta", "facebook", "instagram", "youtube", "tiktok", "twitter", "x", "spotify", "uber", "airbnb", "tesla", "nike", "adidas", "coca cola", "pepsi", "mcdonald's", "starbucks", "disney", "marvel", "dc", "warner", "sony", "samsung", "lg", "huawei", "xiaomi", "oneplus", "intel", "amd", "nvidia", "oracle", "salesforce", "adobe", "autodesk", "vmware", "cisco", "ibm", "dell", "hp", "lenovo", "asus", "acer", "msi", "gigabyte", "corsair", "razer", "logitech", "steelcase", "herman miller", "ikea", "zara", "h&m", "uniqlo", "gucci", "lv", "chanel", "dior", "prada", "versace", "armani", "tom ford", "burberry", "hermes", "cartier", "tiffany", "rolex", "omega", "tag heuer", "breitling", "panerai", "iwc", "jaeger", "vacheron", "patek", "audemars", "richard mille", "lansman", "premiere", "galası", "etkinlik", "özel", "exclusive"],
-            "collaboration": ["işbirliği", "collaboration", "ortaklık", "partnership", "sponsor", "destek", "birlikte", "beraber"],
-            "behind_scenes": ["arkada", "perde", "behind", "scenes", "sahne", "kamera", "çekim", "set"]
+            "question": ["biliyor muydunuz", "bilir misiniz", "neden", "nasl", "ne", "kim", "ne zaman"],
+            "story": ["hikaye", "olay", "anlataym", "bir gn", "geen gn"],
+            "fact": ["gerek", "doru", "aslnda", "bilimsel", "aratrma"],
+            "shock": ["inanlmaz", "artc", "imkansz", "mucize"],
+            "call_to_action": ["been", "payla", "yorum", "abone", "takip"],
+            "lifestyle_tip": ["ipucu", "tavsiye", "neri", "deneyin", "mutlaka", "kesinlikle", "harika", "mkemmel"],
+            "routine": ["rutin", "gnlk", "her gn", "sabah", "akam", "alkanlk"],
+            "transformation": ["nce", "sonra", "deiim", "dnm", "fark", "farkl"],
+            "tutorial": ["nasl yaplr", "adm adm", "tutorial", "rehber", "ren", "yap"],
+            "review": ["inceleme", "review", "deneyim", "denedim", "kullandm", "aldm"],
+            "exclusive_event": ["davet", "etkinlik", "zel", "exclusive", "netflix", "amazon", "google", "apple", "microsoft", "meta", "facebook", "instagram", "youtube", "tiktok", "twitter", "x", "spotify", "uber", "airbnb", "tesla", "nike", "adidas", "coca cola", "pepsi", "mcdonald's", "starbucks", "disney", "marvel", "dc", "warner", "sony", "samsung", "lg", "huawei", "xiaomi", "oneplus", "intel", "amd", "nvidia", "oracle", "salesforce", "adobe", "autodesk", "vmware", "cisco", "ibm", "dell", "hp", "lenovo", "asus", "acer", "msi", "gigabyte", "corsair", "razer", "logitech", "steelcase", "herman miller", "ikea", "zara", "h&m", "uniqlo", "gucci", "lv", "chanel", "dior", "prada", "versace", "armani", "tom ford", "burberry", "hermes", "cartier", "tiffany", "rolex", "omega", "tag heuer", "breitling", "panerai", "iwc", "jaeger", "vacheron", "patek", "audemars", "richard mille", "lansman", "premiere", "galas", "etkinlik", "zel", "exclusive"],
+            "collaboration": ["ibirlii", "collaboration", "ortaklk", "partnership", "sponsor", "destek", "birlikte", "beraber"],
+            "behind_scenes": ["arkada", "perde", "behind", "scenes", "sahne", "kamera", "ekim", "set"]
         }
         
-        # İçerik türü tespiti
+        # erik tr tespiti
         detected_types = []
         for content_type, keywords in content_types.items():
             for keyword in keywords:
@@ -4826,47 +4863,47 @@ def analyze_speech_content(asr_text: str) -> Dict[str, Any]:
                     
                     if content_type == "question":
                         viral_score += 0.3
-                        description = "Soru sorma - etkileşim artırıcı"
+                        description = "Soru sorma - etkileim artrc"
                     elif content_type == "story":
                         viral_score += 0.2
-                        description = "Hikaye anlatımı - ilgi çekici"
+                        description = "Hikaye anlatm - ilgi ekici"
                     elif content_type == "fact":
                         viral_score += 0.25
-                        description = "Bilgi paylaşımı - eğitici"
+                        description = "Bilgi paylam - eitici"
                     elif content_type == "shock":
                         viral_score += 0.4
-                        description = "Şok edici içerik - viral potansiyeli yüksek"
+                        description = "ok edici ierik - viral potansiyeli yksek"
                     elif content_type == "call_to_action":
                         viral_score += 0.2
-                        description = "Çağrı eylemi - etkileşim artırıcı"
+                        description = "ar eylemi - etkileim artrc"
                     elif content_type == "exclusive_event":
                         viral_score += 0.5
-                        description = "Özel etkinlik - çok viral potansiyeli!"
+                        description = "zel etkinlik - ok viral potansiyeli!"
                     elif content_type == "collaboration":
                         viral_score += 0.4
-                        description = "İşbirliği - güvenilirlik artırıcı"
+                        description = "birlii - gvenilirlik artrc"
                     elif content_type == "behind_scenes":
                         viral_score += 0.3
-                        description = "Perde arkası - merak uyandırıcı"
+                        description = "Perde arkas - merak uyandrc"
                     elif content_type == "lifestyle_tip":
                         viral_score += 0.25
-                        description = "Lifestyle ipucu - faydalı içerik"
+                        description = "Lifestyle ipucu - faydal ierik"
                     elif content_type == "routine":
                         viral_score += 0.2
-                        description = "Rutin paylaşımı - ilham verici"
+                        description = "Rutin paylam - ilham verici"
                     elif content_type == "transformation":
                         viral_score += 0.35
-                        description = "Dönüşüm - motivasyon artırıcı"
+                        description = "Dnm - motivasyon artrc"
                     elif content_type == "tutorial":
                         viral_score += 0.3
-                        description = "Tutorial - eğitici içerik"
+                        description = "Tutorial - eitici ierik"
                     elif content_type == "review":
                         viral_score += 0.25
-                        description = "İnceleme - güvenilir içerik"
+                        description = "nceleme - gvenilir ierik"
                     break
         
         if not detected_types:
-            description = "Standart konuşma"
+            description = "Standart konuma"
             viral_score = 0.1
         
         return {
@@ -4876,34 +4913,34 @@ def analyze_speech_content(asr_text: str) -> Dict[str, Any]:
         }
         
     except Exception as e:
-        print(f"[SYNC] Speech content analysis failed: {e}")
+        safe_print(f"[SYNC] Speech content analysis failed: {e}")
         return {
             "viral_potential": 0.1,
-            "description": "Konuşma analizi başarısız",
+            "description": "Konuma analizi baarsz",
             "detected_types": []
         }
 
 
 def detect_topic_from_speech(asr_text: str) -> Dict[str, Any]:
     """
-    Konuşmadan konu tespiti
+    Konumadan konu tespiti
     """
     try:
         # Konu anahtar kelimeleri
         topics = {
-            "tarih": ["tarih", "geçmiş", "osmanlı", "cumhuriyet", "savaş", "devrim"],
-            "bilim": ["bilim", "teknoloji", "araştırma", "deney", "buluş", "icat"],
-            "eğitim": ["okul", "öğrenci", "öğretmen", "ders", "eğitim", "üniversite"],
-            "sağlık": ["sağlık", "doktor", "hastane", "tedavi", "ilaç", "hastalık"],
-            "spor": ["futbol", "basketbol", "spor", "oyun", "takım", "maç"],
-            "müzik": ["müzik", "şarkı", "sanatçı", "konser", "enstrüman"],
-            "yemek": ["yemek", "tarif", "mutfak", "pişirme", "lezzet"],
-            "seyahat": ["seyahat", "gezi", "ülke", "şehir", "turizm", "tatil"],
-            "lifestyle": ["lifestyle", "yaşam", "günlük", "rutin", "alışkanlık", "hobi", "moda", "stil", "outfit", "makyaj", "güzellik", "fitness", "wellness", "meditation", "yoga", "morning routine", "evening routine", "self care", "wellness", "mindfulness"],
-            "moda": ["moda", "fashion", "outfit", "kıyafet", "stil", "trend", "giyim", "aksesuar", "ayakkabı", "çanta", "takı", "mücevher"],
-            "güzellik": ["güzellik", "beauty", "makyaj", "makeup", "cilt bakımı", "skincare", "saç", "nail art", "tırnak", "parfüm", "kozmetik"],
-            "ev": ["ev", "home", "dekorasyon", "interior", "mobilya", "ev dekoru", "bahçe", "bitki", "ev temizliği", "organizasyon", "minimalist"],
-            "kişisel": ["kişisel", "personal", "development", "gelişim", "motivasyon", "başarı", "hedef", "alışkanlık", "disiplin", "zaman yönetimi"]
+            "tarih": ["tarih", "gemi", "osmanl", "cumhuriyet", "sava", "devrim"],
+            "bilim": ["bilim", "teknoloji", "aratrma", "deney", "bulu", "icat"],
+            "eitim": ["okul", "renci", "retmen", "ders", "eitim", "niversite"],
+            "salk": ["salk", "doktor", "hastane", "tedavi", "ila", "hastalk"],
+            "spor": ["futbol", "basketbol", "spor", "oyun", "takm", "ma"],
+            "mzik": ["mzik", "ark", "sanat", "konser", "enstrman"],
+            "yemek": ["yemek", "tarif", "mutfak", "piirme", "lezzet"],
+            "seyahat": ["seyahat", "gezi", "lke", "ehir", "turizm", "tatil"],
+            "lifestyle": ["lifestyle", "yaam", "gnlk", "rutin", "alkanlk", "hobi", "moda", "stil", "outfit", "makyaj", "gzellik", "fitness", "wellness", "meditation", "yoga", "morning routine", "evening routine", "self care", "wellness", "mindfulness"],
+            "moda": ["moda", "fashion", "outfit", "kyafet", "stil", "trend", "giyim", "aksesuar", "ayakkab", "anta", "tak", "mcevher"],
+            "gzellik": ["gzellik", "beauty", "makyaj", "makeup", "cilt bakm", "skincare", "sa", "nail art", "trnak", "parfm", "kozmetik"],
+            "ev": ["ev", "home", "dekorasyon", "interior", "mobilya", "ev dekoru", "bahe", "bitki", "ev temizlii", "organizasyon", "minimalist"],
+            "kiisel": ["kiisel", "personal", "development", "geliim", "motivasyon", "baar", "hedef", "alkanlk", "disiplin", "zaman ynetimi"]
         }
         
         asr_lower = asr_text.lower()
@@ -4935,7 +4972,7 @@ def detect_topic_from_speech(asr_text: str) -> Dict[str, Any]:
             }
         
     except Exception as e:
-        print(f"[SYNC] Topic detection from speech failed: {e}")
+        safe_print(f"[SYNC] Topic detection from speech failed: {e}")
         return {
             "topic": "bilinmeyen",
             "confidence": 0.0,
@@ -4945,25 +4982,25 @@ def detect_topic_from_speech(asr_text: str) -> Dict[str, Any]:
 
 def analyze_ocr_text_content(ocr_texts: List[str]) -> Dict[str, Any]:
     """
-    OCR text içeriği analizi
+    OCR text ierii analizi
     """
     try:
         viral_score = 0.0
         description = ""
         
-        # Tüm OCR text'leri birleştir
+        # Tm OCR text'leri birletir
         all_ocr_text = " ".join(ocr_texts).lower()
         
-        # İçerik türleri
+        # erik trleri
         content_types = {
-            "title": ["başlık", "title", "konu", "konuşma"],
-            "fact": ["gerçek", "bilgi", "tarih", "istatistik", "rakam"],
-            "question": ["?", "soru", "neden", "nasıl"],
-            "shock": ["!", "inanılmaz", "şaşırtıcı", "wow"],
-            "call_to_action": ["beğen", "paylaş", "yorum", "abone", "takip"],
-            "exclusive_event": ["davet", "etkinlik", "özel", "exclusive", "netflix", "amazon", "google", "apple", "microsoft", "meta", "facebook", "instagram", "youtube", "tiktok", "twitter", "x", "spotify", "uber", "airbnb", "tesla", "nike", "adidas", "coca cola", "pepsi", "mcdonald's", "starbucks", "disney", "marvel", "dc", "warner", "sony", "samsung", "lg", "huawei", "xiaomi", "oneplus", "intel", "amd", "nvidia", "oracle", "salesforce", "adobe", "autodesk", "vmware", "cisco", "ibm", "dell", "hp", "lenovo", "asus", "acer", "msi", "gigabyte", "corsair", "razer", "logitech", "steelcase", "herman miller", "ikea", "zara", "h&m", "uniqlo", "gucci", "lv", "chanel", "dior", "prada", "versace", "armani", "tom ford", "burberry", "hermes", "cartier", "tiffany", "rolex", "omega", "tag heuer", "breitling", "panerai", "iwc", "jaeger", "vacheron", "patek", "audemars", "richard mille", "lansman", "premiere", "galası"],
-            "collaboration": ["işbirliği", "collaboration", "ortaklık", "partnership", "sponsor", "destek", "birlikte", "beraber"],
-            "behind_scenes": ["arkada", "perde", "behind", "scenes", "sahne", "kamera", "çekim", "set"]
+            "title": ["balk", "title", "konu", "konuma"],
+            "fact": ["gerek", "bilgi", "tarih", "istatistik", "rakam"],
+            "question": ["?", "soru", "neden", "nasl"],
+            "shock": ["!", "inanlmaz", "artc", "wow"],
+            "call_to_action": ["been", "payla", "yorum", "abone", "takip"],
+            "exclusive_event": ["davet", "etkinlik", "zel", "exclusive", "netflix", "amazon", "google", "apple", "microsoft", "meta", "facebook", "instagram", "youtube", "tiktok", "twitter", "x", "spotify", "uber", "airbnb", "tesla", "nike", "adidas", "coca cola", "pepsi", "mcdonald's", "starbucks", "disney", "marvel", "dc", "warner", "sony", "samsung", "lg", "huawei", "xiaomi", "oneplus", "intel", "amd", "nvidia", "oracle", "salesforce", "adobe", "autodesk", "vmware", "cisco", "ibm", "dell", "hp", "lenovo", "asus", "acer", "msi", "gigabyte", "corsair", "razer", "logitech", "steelcase", "herman miller", "ikea", "zara", "h&m", "uniqlo", "gucci", "lv", "chanel", "dior", "prada", "versace", "armani", "tom ford", "burberry", "hermes", "cartier", "tiffany", "rolex", "omega", "tag heuer", "breitling", "panerai", "iwc", "jaeger", "vacheron", "patek", "audemars", "richard mille", "lansman", "premiere", "galas"],
+            "collaboration": ["ibirlii", "collaboration", "ortaklk", "partnership", "sponsor", "destek", "birlikte", "beraber"],
+            "behind_scenes": ["arkada", "perde", "behind", "scenes", "sahne", "kamera", "ekim", "set"]
         }
         
         detected_types = []
@@ -4974,28 +5011,28 @@ def analyze_ocr_text_content(ocr_texts: List[str]) -> Dict[str, Any]:
                     
                     if content_type == "title":
                         viral_score += 0.3
-                        description = "Başlık metni - dikkat çekici"
+                        description = "Balk metni - dikkat ekici"
                     elif content_type == "fact":
                         viral_score += 0.25
-                        description = "Bilgi metni - eğitici"
+                        description = "Bilgi metni - eitici"
                     elif content_type == "question":
                         viral_score += 0.2
-                        description = "Soru metni - etkileşim artırıcı"
+                        description = "Soru metni - etkileim artrc"
                     elif content_type == "shock":
                         viral_score += 0.4
-                        description = "Şok edici metin - viral potansiyeli yüksek"
+                        description = "ok edici metin - viral potansiyeli yksek"
                     elif content_type == "call_to_action":
                         viral_score += 0.2
-                        description = "Çağrı metni - etkileşim artırıcı"
+                        description = "ar metni - etkileim artrc"
                     elif content_type == "exclusive_event":
                         viral_score += 0.5
-                        description = "Özel etkinlik metni - çok viral potansiyeli!"
+                        description = "zel etkinlik metni - ok viral potansiyeli!"
                     elif content_type == "collaboration":
                         viral_score += 0.4
-                        description = "İşbirliği metni - güvenilirlik artırıcı"
+                        description = "birlii metni - gvenilirlik artrc"
                     elif content_type == "behind_scenes":
                         viral_score += 0.3
-                        description = "Perde arkası metni - merak uyandırıcı"
+                        description = "Perde arkas metni - merak uyandrc"
                     break
         
         if not detected_types:
@@ -5010,10 +5047,10 @@ def analyze_ocr_text_content(ocr_texts: List[str]) -> Dict[str, Any]:
         }
         
     except Exception as e:
-        print(f"[SYNC] OCR content analysis failed: {e}")
+        safe_print(f"[SYNC] OCR content analysis failed: {e}")
         return {
             "viral_potential": 0.1,
-            "description": "OCR analizi başarısız",
+            "description": "OCR analizi baarsz",
             "detected_types": [],
             "text_length": 0
         }
@@ -5024,24 +5061,24 @@ def detect_topic_from_ocr(ocr_texts: List[str]) -> Dict[str, Any]:
     OCR'dan konu tespiti
     """
     try:
-        # OCR text'leri birleştir
+        # OCR text'leri birletir
         all_ocr_text = " ".join(ocr_texts).lower()
         
         # Konu anahtar kelimeleri
         topics = {
-            "tarih": ["türkiye", "tarih", "osmanlı", "cumhuriyet", "atatürk", "geçmiş"],
-            "bilim": ["bilim", "teknoloji", "araştırma", "deney", "buluş"],
-            "eğitim": ["okul", "öğrenci", "öğretmen", "ders", "eğitim"],
-            "sağlık": ["sağlık", "doktor", "hastane", "tedavi", "ilaç"],
-            "spor": ["futbol", "basketbol", "spor", "oyun", "takım"],
-            "müzik": ["müzik", "şarkı", "sanatçı", "konser"],
-            "yemek": ["yemek", "tarif", "mutfak", "pişirme"],
-            "seyahat": ["seyahat", "gezi", "ülke", "şehir", "turizm"],
-            "lifestyle": ["lifestyle", "yaşam", "günlük", "rutin", "alışkanlık", "hobi", "moda", "stil", "outfit", "makyaj", "güzellik", "fitness", "wellness", "meditation", "yoga", "morning routine", "evening routine", "self care", "wellness", "mindfulness"],
-            "moda": ["moda", "fashion", "outfit", "kıyafet", "stil", "trend", "giyim", "aksesuar", "ayakkabı", "çanta", "takı", "mücevher"],
-            "güzellik": ["güzellik", "beauty", "makyaj", "makeup", "cilt bakımı", "skincare", "saç", "nail art", "tırnak", "parfüm", "kozmetik"],
-            "ev": ["ev", "home", "dekorasyon", "interior", "mobilya", "ev dekoru", "bahçe", "bitki", "ev temizliği", "organizasyon", "minimalist"],
-            "kişisel": ["kişisel", "personal", "development", "gelişim", "motivasyon", "başarı", "hedef", "alışkanlık", "disiplin", "zaman yönetimi"]
+            "tarih": ["trkiye", "tarih", "osmanl", "cumhuriyet", "atatrk", "gemi"],
+            "bilim": ["bilim", "teknoloji", "aratrma", "deney", "bulu"],
+            "eitim": ["okul", "renci", "retmen", "ders", "eitim"],
+            "salk": ["salk", "doktor", "hastane", "tedavi", "ila"],
+            "spor": ["futbol", "basketbol", "spor", "oyun", "takm"],
+            "mzik": ["mzik", "ark", "sanat", "konser"],
+            "yemek": ["yemek", "tarif", "mutfak", "piirme"],
+            "seyahat": ["seyahat", "gezi", "lke", "ehir", "turizm"],
+            "lifestyle": ["lifestyle", "yaam", "gnlk", "rutin", "alkanlk", "hobi", "moda", "stil", "outfit", "makyaj", "gzellik", "fitness", "wellness", "meditation", "yoga", "morning routine", "evening routine", "self care", "wellness", "mindfulness"],
+            "moda": ["moda", "fashion", "outfit", "kyafet", "stil", "trend", "giyim", "aksesuar", "ayakkab", "anta", "tak", "mcevher"],
+            "gzellik": ["gzellik", "beauty", "makyaj", "makeup", "cilt bakm", "skincare", "sa", "nail art", "trnak", "parfm", "kozmetik"],
+            "ev": ["ev", "home", "dekorasyon", "interior", "mobilya", "ev dekoru", "bahe", "bitki", "ev temizlii", "organizasyon", "minimalist"],
+            "kiisel": ["kiisel", "personal", "development", "geliim", "motivasyon", "baar", "hedef", "alkanlk", "disiplin", "zaman ynetimi"]
         }
         
         topic_scores = {}
@@ -5072,7 +5109,7 @@ def detect_topic_from_ocr(ocr_texts: List[str]) -> Dict[str, Any]:
             }
         
     except Exception as e:
-        print(f"[SYNC] Topic detection from OCR failed: {e}")
+        safe_print(f"[SYNC] Topic detection from OCR failed: {e}")
         return {
             "topic": "bilinmeyen",
             "confidence": 0.0,
@@ -5082,7 +5119,7 @@ def detect_topic_from_ocr(ocr_texts: List[str]) -> Dict[str, Any]:
 
 def analyze_topic_consistency(combined_analysis: Dict[str, Any]) -> Dict[str, Any]:
     """
-    Konu tutarlılığı analizi - görüntü, ses, metin uyumu
+    Konu tutarll analizi - grnt, ses, metin uyumu
     """
     try:
         content_analysis = combined_analysis.get("content_analysis", {})
@@ -5091,101 +5128,101 @@ def analyze_topic_consistency(combined_analysis: Dict[str, Any]) -> Dict[str, An
         topic_from_text = combined_analysis.get("topic_from_text", {})
         detected_objects = combined_analysis.get("detected_objects", [])
         
-        # Konuları topla
+        # Konular topla
         topics = []
         if topic_detection.get("topic"):
             topics.append(topic_detection["topic"])
         if topic_from_text.get("topic"):
             topics.append(topic_from_text["topic"])
         
-        # İçerik türlerini topla
+        # erik trlerini topla
         content_types = []
         if content_analysis.get("detected_types"):
             content_types.extend(content_analysis["detected_types"])
         if ocr_analysis.get("detected_types"):
             content_types.extend(ocr_analysis["detected_types"])
         
-        # Nesne türlerini topla
+        # Nesne trlerini topla
         object_types = [obj.get("type") for obj in detected_objects]
         
         consistency_score = 0.0
         description = ""
         
-        # Konu tutarlılığı
+        # Konu tutarll
         if len(set(topics)) == 1 and topics[0] != "genel":
             consistency_score += 0.4
-            description = f"Konu tutarlılığı: {topics[0]}"
+            description = f"Konu tutarll: {topics[0]}"
         elif len(set(topics)) > 1:
             consistency_score += 0.2
-            description = f"Kısmi konu uyumu: {', '.join(set(topics))}"
+            description = f"Ksmi konu uyumu: {', '.join(set(topics))}"
         
-        # İçerik uyumu
+        # erik uyumu
         if "question" in content_types and "title" in content_types:
             consistency_score += 0.3
-            description += " - Soru + Başlık kombinasyonu"
+            description += " - Soru + Balk kombinasyonu"
         elif "fact" in content_types and "title" in content_types:
             consistency_score += 0.2
-            description += " - Bilgi + Başlık kombinasyonu"
+            description += " - Bilgi + Balk kombinasyonu"
         
-        # Nesne-içerik uyumu
+        # Nesne-ierik uyumu
         if "person" in object_types and "question" in content_types:
             consistency_score += 0.3
-            description += " - İnsan + Soru kombinasyonu (viral!)"
+            description += " - nsan + Soru kombinasyonu (viral!)"
         elif "child" in [obj.get("age_estimate") for obj in detected_objects] and "question" in content_types:
             consistency_score += 0.4
-            description += " - Çocuk + Soru kombinasyonu (çok viral!)"
+            description += " - ocuk + Soru kombinasyonu (ok viral!)"
         
-        # Özel kombinasyonlar
+        # zel kombinasyonlar
         if (topic_detection.get("topic") == "tarih" and 
             "tarih" in str(combined_analysis.get("topic_from_text", {}).get("all_scores", {})) and
             "question" in content_types):
             consistency_score += 0.5
-            description += " - Tarih konusu + Soru (mükemmel kombinasyon!)"
+            description += " - Tarih konusu + Soru (mkemmel kombinasyon!)"
         
-        # Lifestyle kombinasyonları
-        elif (topic_detection.get("topic") in ["lifestyle", "moda", "güzellik"] and
+        # Lifestyle kombinasyonlar
+        elif (topic_detection.get("topic") in ["lifestyle", "moda", "gzellik"] and
               "title" in content_types and
               "person" in object_types):
             consistency_score += 0.4
-            description += " - Lifestyle + Başlık + İnsan (viral kombinasyon!)"
+            description += " - Lifestyle + Balk + nsan (viral kombinasyon!)"
         
-        # Moda + Güzellik kombinasyonu
-        elif (topic_detection.get("topic") in ["moda", "güzellik"] and
-              topic_from_text.get("topic") in ["moda", "güzellik"] and
+        # Moda + Gzellik kombinasyonu
+        elif (topic_detection.get("topic") in ["moda", "gzellik"] and
+              topic_from_text.get("topic") in ["moda", "gzellik"] and
               "person" in object_types):
             consistency_score += 0.45
-            description += " - Moda/Güzellik + İnsan (mükemmel lifestyle kombinasyonu!)"
+            description += " - Moda/Gzellik + nsan (mkemmel lifestyle kombinasyonu!)"
         
         # Fitness + Wellness kombinasyonu
         elif (topic_detection.get("topic") == "lifestyle" and
               "fitness" in str(combined_analysis.get("topic_detection", {}).get("all_scores", {})) and
               "person" in object_types):
             consistency_score += 0.4
-            description += " - Fitness + İnsan (motivasyon artırıcı!)"
+            description += " - Fitness + nsan (motivasyon artrc!)"
         
         # Ev dekorasyonu + Lifestyle
         elif (topic_detection.get("topic") == "ev" and
               "title" in content_types):
             consistency_score += 0.3
-            description += " - Ev dekorasyonu + Başlık (ilham verici!)"
+            description += " - Ev dekorasyonu + Balk (ilham verici!)"
         
-        # Netflix/Özel Etkinlik kombinasyonu
+        # Netflix/zel Etkinlik kombinasyonu
         elif ("exclusive_event" in content_types and
               "person" in object_types):
             consistency_score += 0.6
-            description += " - Özel etkinlik + İnsan (çok viral kombinasyon!)"
+            description += " - zel etkinlik + nsan (ok viral kombinasyon!)"
         
-        # İşbirliği + Özel Etkinlik
+        # birlii + zel Etkinlik
         elif ("collaboration" in content_types and
               "exclusive_event" in content_types):
             consistency_score += 0.7
-            description += " - İşbirliği + Özel Etkinlik (mükemmel kombinasyon!)"
+            description += " - birlii + zel Etkinlik (mkemmel kombinasyon!)"
         
-        # Perde Arkası + İşbirliği
+        # Perde Arkas + birlii
         elif ("behind_scenes" in content_types and
               "collaboration" in content_types):
             consistency_score += 0.5
-            description += " - Perde Arkası + İşbirliği (merak uyandırıcı!)"
+            description += " - Perde Arkas + birlii (merak uyandrc!)"
         
         return {
             "consistent": consistency_score > 0.6,
@@ -5198,11 +5235,11 @@ def analyze_topic_consistency(combined_analysis: Dict[str, Any]) -> Dict[str, An
         }
         
     except Exception as e:
-        print(f"[SYNC] Topic consistency analysis failed: {e}")
+        safe_print(f"[SYNC] Topic consistency analysis failed: {e}")
         return {
             "consistent": False,
             "partial": False,
-            "description": "Konu analizi başarısız",
+            "description": "Konu analizi baarsz",
             "consistency_score": 0.0,
             "topics": [],
             "content_types": [],
@@ -5212,46 +5249,46 @@ def analyze_topic_consistency(combined_analysis: Dict[str, Any]) -> Dict[str, An
 
 def analyze_content_type_suitability(features: Dict[str, Any], duration: float) -> Dict[str, Any]:
     """
-    İçerik Tipi Uygunluğu Analizi (6 puan)
-    İçerik tipi tespiti ve platform uygunluğu
+    erik Tipi Uygunluu Analizi (6 puan)
+    erik tipi tespiti ve platform uygunluu
     """
     score = 0
     findings = []
     recommendations = []
     raw_metrics = {}
     
-    print("[CONTENT] Starting content type suitability analysis...")
+    safe_print("[CONTENT] Starting content type suitability analysis...")
     
     try:
-        # 1. Görsel içerik tipi tespiti (2 puan)
+        # 1. Grsel ierik tipi tespiti (2 puan)
         visual_content_result = analyze_visual_content_type(features)
         score += visual_content_result["score"]
         findings.extend(visual_content_result["findings"])
         raw_metrics["visual_content"] = visual_content_result
         
-        # 2. Ses içerik tipi tespiti (2 puan)
+        # 2. Ses ierik tipi tespiti (2 puan)
         audio_content_result = analyze_audio_content_type(features)
         score += audio_content_result["score"]
         findings.extend(audio_content_result["findings"])
         raw_metrics["audio_content"] = audio_content_result
         
-        # 3. Platform uygunluğu analizi (2 puan)
+        # 3. Platform uygunluu analizi (2 puan)
         platform_suitability_result = analyze_platform_suitability(features, duration)
         score += platform_suitability_result["score"]
         findings.extend(platform_suitability_result["findings"])
         raw_metrics["platform_suitability"] = platform_suitability_result
         
-        # Genel değerlendirme
+        # Genel deerlendirme
         if score >= 5:
-            recommendations.append("Mükemmel içerik tipi uygunluğu!")
+            recommendations.append("Mkemmel ierik tipi uygunluu!")
         elif score >= 3:
-            recommendations.append("İyi içerik tipi, platform optimizasyonu yapılabilir")
+            recommendations.append("yi ierik tipi, platform optimizasyonu yaplabilir")
         elif score >= 1:
-            recommendations.append("İçerik tipi tespiti geliştirilebilir")
+            recommendations.append("erik tipi tespiti gelitirilebilir")
         else:
-            recommendations.append("İçerik tipi analizi ve optimizasyon gerekli")
+            recommendations.append("erik tipi analizi ve optimizasyon gerekli")
         
-        print(f"[CONTENT] Analysis completed: {score}/6")
+        safe_print(f"[CONTENT] Analysis completed: {score}/6")
         
         return {
             "score": min(score, 6),
@@ -5261,18 +5298,18 @@ def analyze_content_type_suitability(features: Dict[str, Any], duration: float) 
         }
         
     except Exception as e:
-        print(f"[CONTENT] Analysis failed: {e}")
+        safe_print(f"[CONTENT] Analysis failed: {e}")
         return {
             "score": 0,
-            "findings": [f"İçerik tipi analizi başarısız: {e}"],
-            "recommendations": ["İçerik tipi analizi geliştirilmeli"],
+            "findings": [f"erik tipi analizi baarsz: {e}"],
+            "recommendations": ["erik tipi analizi gelitirilmeli"],
             "raw": {}
         }
 
 
 def analyze_visual_content_type(features: Dict[str, Any]) -> Dict[str, Any]:
     """
-    Görsel içerik tipi tespiti
+    Grsel ierik tipi tespiti
     """
     try:
         score = 0
@@ -5281,45 +5318,45 @@ def analyze_visual_content_type(features: Dict[str, Any]) -> Dict[str, Any]:
         
         frames = features.get("frames", [])
         if not frames:
-            return {"score": 0, "findings": ["Görüntü bulunamadı"], "types": []}
+            return {"score": 0, "findings": ["Grnt bulunamad"], "types": []}
         
-        # İçerik kategorileri
+        # erik kategorileri
         content_categories = {
             "lifestyle": {
-                "keywords": ["moda", "güzellik", "ev", "alışveriş", "stil", "outfit"],
-                "visual_cues": ["insan", "kıyafet", "aksesuar", "ev dekoru"]
+                "keywords": ["moda", "gzellik", "ev", "alveri", "stil", "outfit"],
+                "visual_cues": ["insan", "kyafet", "aksesuar", "ev dekoru"]
             },
             "education": {
-                "keywords": ["tutorial", "bilgi", "öğren", "ders", "nasıl", "rehber"],
-                "visual_cues": ["kitap", "yazı", "diagram", "grafik"]
+                "keywords": ["tutorial", "bilgi", "ren", "ders", "nasl", "rehber"],
+                "visual_cues": ["kitap", "yaz", "diagram", "grafik"]
             },
             "entertainment": {
-                "keywords": ["komedi", "müzik", "dans", "eğlence", "gül", "şaka"],
-                "visual_cues": ["insan", "müzik", "dans", "oyun"]
+                "keywords": ["komedi", "mzik", "dans", "elence", "gl", "aka"],
+                "visual_cues": ["insan", "mzik", "dans", "oyun"]
             },
             "food": {
-                "keywords": ["yemek", "tarif", "mutfak", "lezzet", "pişirme", "tarif"],
-                "visual_cues": ["yemek", "mutfak", "pişirme", "tabak"]
+                "keywords": ["yemek", "tarif", "mutfak", "lezzet", "piirme", "tarif"],
+                "visual_cues": ["yemek", "mutfak", "piirme", "tabak"]
             },
             "travel": {
-                "keywords": ["seyahat", "gezi", "turizm", "ülke", "şehir", "tatil"],
-                "visual_cues": ["doğa", "şehir", "bina", "yol", "harita"]
+                "keywords": ["seyahat", "gezi", "turizm", "lke", "ehir", "tatil"],
+                "visual_cues": ["doa", "ehir", "bina", "yol", "harita"]
             },
             "fitness": {
-                "keywords": ["spor", "egzersiz", "fitness", "sağlık", "antrenman"],
-                "visual_cues": ["spor", "egzersiz", "fitness", "sağlık"]
+                "keywords": ["spor", "egzersiz", "fitness", "salk", "antrenman"],
+                "visual_cues": ["spor", "egzersiz", "fitness", "salk"]
             },
             "technology": {
                 "keywords": ["teknoloji", "gadget", "app", "software", "bilgisayar"],
                 "visual_cues": ["bilgisayar", "telefon", "teknoloji", "ekran"]
             },
             "business": {
-                "keywords": ["iş", "kariyer", "girişim", "finans", "başarı"],
-                "visual_cues": ["ofis", "toplantı", "doküman", "grafik"]
+                "keywords": ["i", "kariyer", "giriim", "finans", "baar"],
+                "visual_cues": ["ofis", "toplant", "dokman", "grafik"]
             }
         }
         
-        # Her frame için içerik analizi
+        # Her frame iin ierik analizi
         for i, frame_path in enumerate(frames[:3]):
             try:
                 import cv2
@@ -5332,7 +5369,7 @@ def analyze_visual_content_type(features: Dict[str, Any]) -> Dict[str, Any]:
                 # Basit nesne tespiti (Haar Cascade)
                 gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
                 
-                # Yüz tespiti (insan)
+                # Yz tespiti (insan)
                 face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
                 faces = face_cascade.detectMultiScale(gray, 1.1, 4)
                 
@@ -5343,36 +5380,36 @@ def analyze_visual_content_type(features: Dict[str, Any]) -> Dict[str, Any]:
                 # Renk analizi
                 hsv = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
                 
-                # Yeşil renk (doğa)
+                # Yeil renk (doa)
                 green_mask = cv2.inRange(hsv, np.array([40, 40, 40]), np.array([80, 255, 255]))
                 green_ratio = np.sum(green_mask > 0) / (image.shape[0] * image.shape[1])
                 
                 if green_ratio > 0.3:
-                    detected_types.append("doğa")
+                    detected_types.append("doa")
                     score += 0.1
                 
-                # Mavi renk (gökyüzü, su)
+                # Mavi renk (gkyz, su)
                 blue_mask = cv2.inRange(hsv, np.array([100, 40, 40]), np.array([130, 255, 255]))
                 blue_ratio = np.sum(blue_mask > 0) / (image.shape[0] * image.shape[1])
                 
                 if blue_ratio > 0.3:
-                    detected_types.append("gökyüzü_su")
+                    detected_types.append("gkyz_su")
                     score += 0.1
                 
-                # Parlaklık analizi (iç mekan vs dış mekan)
+                # Parlaklk analizi (i mekan vs d mekan)
                 brightness = np.mean(hsv[:,:,2])
                 if brightness > 150:
-                    detected_types.append("iç_mekan")
+                    detected_types.append("i_mekan")
                     score += 0.1
                 elif brightness < 100:
-                    detected_types.append("dış_mekan")
+                    detected_types.append("d_mekan")
                     score += 0.1
                 
             except Exception as e:
-                print(f"[CONTENT] Visual analysis failed for frame {i}: {e}")
+                safe_print(f"[CONTENT] Visual analysis failed for frame {i}: {e}")
                 continue
         
-        # Metin analizi ile görsel tespiti birleştir
+        # Metin analizi ile grsel tespiti birletir
         textual = features.get("textual", {})
         asr_text = textual.get("asr_text", "").lower()
         ocr_texts = textual.get("ocr_text", [])
@@ -5384,12 +5421,12 @@ def analyze_visual_content_type(features: Dict[str, Any]) -> Dict[str, Any]:
         for category, data in content_categories.items():
             category_score = 0
             
-            # Anahtar kelime kontrolü
+            # Anahtar kelime kontrol
             for keyword in data["keywords"]:
                 if keyword in all_text:
                     category_score += 1
             
-            # Görsel ipucu kontrolü
+            # Grsel ipucu kontrol
             for visual_cue in data["visual_cues"]:
                 if visual_cue in detected_types:
                     category_score += 1
@@ -5399,10 +5436,10 @@ def analyze_visual_content_type(features: Dict[str, Any]) -> Dict[str, Any]:
                 score += 0.2
         
         if detected_categories:
-            findings.append(f"İçerik kategorileri tespit edildi: {', '.join(detected_categories[:3])}")
+            findings.append(f"erik kategorileri tespit edildi: {', '.join(detected_categories[:3])}")
         
         if detected_types:
-            findings.append(f"Görsel öğeler: {', '.join(detected_types[:3])}")
+            findings.append(f"Grsel eler: {', '.join(detected_types[:3])}")
         
         return {
             "score": min(score, 2),
@@ -5412,10 +5449,10 @@ def analyze_visual_content_type(features: Dict[str, Any]) -> Dict[str, Any]:
         }
         
     except Exception as e:
-        print(f"[CONTENT] Visual content type analysis failed: {e}")
+        safe_print(f"[CONTENT] Visual content type analysis failed: {e}")
         return {
             "score": 0,
-            "findings": [f"Görsel içerik analizi başarısız: {e}"],
+            "findings": [f"Grsel ierik analizi baarsz: {e}"],
             "types": [],
             "categories": []
         }
@@ -5423,7 +5460,7 @@ def analyze_visual_content_type(features: Dict[str, Any]) -> Dict[str, Any]:
 
 def analyze_audio_content_type(features: Dict[str, Any]) -> Dict[str, Any]:
     """
-    Ses içerik tipi tespiti
+    Ses ierik tipi tespiti
     """
     try:
         score = 0
@@ -5432,54 +5469,54 @@ def analyze_audio_content_type(features: Dict[str, Any]) -> Dict[str, Any]:
         
         audio_info = features.get("audio_info", {})
         if not audio_info:
-            return {"score": 0, "findings": ["Ses bilgisi bulunamadı"], "types": []}
+            return {"score": 0, "findings": ["Ses bilgisi bulunamad"], "types": []}
         
-        # Ses özellikleri
+        # Ses zellikleri
         loudness = audio_info.get("loudness", 0)
         tempo = audio_info.get("tempo", 0)
         spectral_centroid = audio_info.get("spectral_centroid", 0)
         
-        # Ses türü kategorileri
+        # Ses tr kategorileri
         audio_categories = {
             "music": {
                 "tempo_range": (60, 180),
                 "loudness_range": (-20, 0),
                 "spectral_centroid_range": (1000, 5000),
-                "keywords": ["müzik", "şarkı", "melodi", "ritim"]
+                "keywords": ["mzik", "ark", "melodi", "ritim"]
             },
             "speech": {
                 "tempo_range": (80, 160),
                 "loudness_range": (-30, -10),
                 "spectral_centroid_range": (500, 2000),
-                "keywords": ["konuşma", "ses", "anlat", "söyle"]
+                "keywords": ["konuma", "ses", "anlat", "syle"]
             },
             "nature": {
                 "tempo_range": (20, 80),
                 "loudness_range": (-40, -20),
                 "spectral_centroid_range": (200, 1000),
-                "keywords": ["doğa", "kuş", "rüzgar", "yağmur"]
+                "keywords": ["doa", "ku", "rzgar", "yamur"]
             },
             "urban": {
                 "tempo_range": (60, 120),
                 "loudness_range": (-25, -5),
                 "spectral_centroid_range": (800, 3000),
-                "keywords": ["şehir", "trafik", "kalabalık", "gürültü"]
+                "keywords": ["ehir", "trafik", "kalabalk", "grlt"]
             }
         }
         
-        # Ses özelliklerine göre tür tespiti
+        # Ses zelliklerine gre tr tespiti
         for category, criteria in audio_categories.items():
             category_score = 0
             
-            # Tempo kontrolü
+            # Tempo kontrol
             if criteria["tempo_range"][0] <= tempo <= criteria["tempo_range"][1]:
                 category_score += 0.3
             
-            # Loudness kontrolü
+            # Loudness kontrol
             if criteria["loudness_range"][0] <= loudness <= criteria["loudness_range"][1]:
                 category_score += 0.3
             
-            # Spectral centroid kontrolü
+            # Spectral centroid kontrol
             if criteria["spectral_centroid_range"][0] <= spectral_centroid <= criteria["spectral_centroid_range"][1]:
                 category_score += 0.3
             
@@ -5487,7 +5524,7 @@ def analyze_audio_content_type(features: Dict[str, Any]) -> Dict[str, Any]:
                 detected_types.append(category)
                 score += 0.3
         
-        # Metin analizi ile ses tespiti birleştir
+        # Metin analizi ile ses tespiti birletir
         textual = features.get("textual", {})
         asr_text = textual.get("asr_text", "").lower()
         
@@ -5499,20 +5536,20 @@ def analyze_audio_content_type(features: Dict[str, Any]) -> Dict[str, Any]:
                     score += 0.2
                     break
         
-        # Özel ses türleri
+        # zel ses trleri
         if loudness > -10:
-            detected_types.append("yüksek_ses")
+            detected_types.append("yksek_ses")
             score += 0.1
         
         if tempo > 120:
-            detected_types.append("hızlı_tempo")
+            detected_types.append("hzl_tempo")
             score += 0.1
         elif tempo < 60:
-            detected_types.append("yavaş_tempo")
+            detected_types.append("yava_tempo")
             score += 0.1
         
         if detected_types:
-            findings.append(f"Ses türleri: {', '.join(detected_types[:3])}")
+            findings.append(f"Ses trleri: {', '.join(detected_types[:3])}")
         
         return {
             "score": min(score, 2),
@@ -5521,23 +5558,23 @@ def analyze_audio_content_type(features: Dict[str, Any]) -> Dict[str, Any]:
         }
         
     except Exception as e:
-        print(f"[CONTENT] Audio content type analysis failed: {e}")
+        safe_print(f"[CONTENT] Audio content type analysis failed: {e}")
         return {
             "score": 0,
-            "findings": [f"Ses içerik analizi başarısız: {e}"],
+            "findings": [f"Ses ierik analizi baarsz: {e}"],
             "types": []
         }
 
 
 def analyze_platform_suitability(features: Dict[str, Any], duration: float) -> Dict[str, Any]:
     """
-    Platform uygunluğu analizi
+    Platform uygunluu analizi
     """
     try:
         score = 0
         findings = []
         
-        # Platform özellikleri
+        # Platform zellikleri
         platform_requirements = {
             "instagram": {
                 "optimal_duration": (15, 60),  # 15-60 saniye
@@ -5553,17 +5590,17 @@ def analyze_platform_suitability(features: Dict[str, Any], duration: float) -> D
             }
         }
         
-        # Süre analizi
+        # Sre analizi
         if 15 <= duration <= 60:
             score += 0.5
-            findings.append("Instagram için optimal süre")
+            findings.append("Instagram iin optimal sre")
         elif 15 <= duration <= 180:
             score += 0.3
-            findings.append("TikTok için optimal süre")
+            findings.append("TikTok iin optimal sre")
         else:
-            findings.append("Süre optimizasyonu gerekli")
+            findings.append("Sre optimizasyonu gerekli")
         
-        # Görsel format analizi (basit)
+        # Grsel format analizi (basit)
         frames = features.get("frames", [])
         if frames:
             try:
@@ -5575,37 +5612,37 @@ def analyze_platform_suitability(features: Dict[str, Any], duration: float) -> D
                     
                     if aspect_ratio > 1.5:  # Dikey format
                         score += 0.5
-                        findings.append("Dikey format - mobil platformlar için uygun")
+                        findings.append("Dikey format - mobil platformlar iin uygun")
                     elif aspect_ratio < 0.8:  # Yatay format
                         score += 0.2
-                        findings.append("Yatay format - YouTube için uygun")
+                        findings.append("Yatay format - YouTube iin uygun")
                     else:  # Kare format
                         score += 0.3
-                        findings.append("Kare format - Instagram feed için uygun")
+                        findings.append("Kare format - Instagram feed iin uygun")
             except Exception as e:
-                print(f"[CONTENT] Format analysis failed: {e}")
+                safe_print(f"[CONTENT] Format analysis failed: {e}")
         
-        # İçerik türü uygunluğu
+        # erik tr uygunluu
         textual = features.get("textual", {})
         asr_text = textual.get("asr_text", "").lower()
         
-        # Instagram uygun içerik türleri
-        instagram_keywords = ["moda", "güzellik", "ev", "alışveriş", "stil", "lifestyle"]
+        # Instagram uygun ierik trleri
+        instagram_keywords = ["moda", "gzellik", "ev", "alveri", "stil", "lifestyle"]
         instagram_score = sum(1 for keyword in instagram_keywords if keyword in asr_text)
         
-        # TikTok uygun içerik türleri
-        tiktok_keywords = ["komedi", "dans", "trend", "eğlence", "şaka", "müzik"]
+        # TikTok uygun ierik trleri
+        tiktok_keywords = ["komedi", "dans", "trend", "elence", "aka", "mzik"]
         tiktok_score = sum(1 for keyword in tiktok_keywords if keyword in asr_text)
         
         if instagram_score > 0:
             score += 0.3
-            findings.append(f"Instagram içerik türü uygunluğu: {instagram_score} eşleşme")
+            findings.append(f"Instagram ierik tr uygunluu: {instagram_score} eleme")
         
         if tiktok_score > 0:
             score += 0.3
-            findings.append(f"TikTok içerik türü uygunluğu: {tiktok_score} eşleşme")
+            findings.append(f"TikTok ierik tr uygunluu: {tiktok_score} eleme")
         
-        # Ses uygunluğu
+        # Ses uygunluu
         audio_info = features.get("audio_info", {})
         if audio_info:
             loudness = audio_info.get("loudness", 0)
@@ -5619,33 +5656,33 @@ def analyze_platform_suitability(features: Dict[str, Any], duration: float) -> D
         }
         
     except Exception as e:
-        print(f"[CONTENT] Platform suitability analysis failed: {e}")
+        safe_print(f"[CONTENT] Platform suitability analysis failed: {e}")
         return {
             "score": 0,
-            "findings": [f"Platform uygunluğu analizi başarısız: {e}"]
+            "findings": [f"Platform uygunluu analizi baarsz: {e}"]
         }
 
 
 def analyze_trend_originality(features: Dict[str, Any], duration: float) -> Dict[str, Any]:
     """
     Trend & Orijinallik Analizi (8 puan)
-    TikTok API'den güncel trend verileri ile analiz
+    TikTok API'den gncel trend verileri ile analiz
     """
     score = 0
     findings = []
     recommendations = []
     raw_metrics = {}
     
-    print("[TREND] Starting trend & originality analysis...")
+    safe_print("[TREND] Starting trend & originality analysis...")
     
     try:
-        # 1. TikTok'tan güncel trend verileri çek (2 puan)
+        # 1. TikTok'tan gncel trend verileri ek (2 puan)
         tiktok_trends_result = fetch_tiktok_trends()
         score += tiktok_trends_result["score"]
         findings.extend(tiktok_trends_result["findings"])
         raw_metrics["tiktok_trends"] = tiktok_trends_result
         
-        # 2. Görsel trend analizi (2 puan)
+        # 2. Grsel trend analizi (2 puan)
         visual_trend_result = analyze_visual_trends(features, tiktok_trends_result.get("data", {}))
         score += visual_trend_result["score"]
         findings.extend(visual_trend_result["findings"])
@@ -5663,17 +5700,17 @@ def analyze_trend_originality(features: Dict[str, Any], duration: float) -> Dict
         findings.extend(originality_result["findings"])
         raw_metrics["originality"] = originality_result
         
-        # Genel değerlendirme
+        # Genel deerlendirme
         if score >= 6:
-            recommendations.append("Mükemmel trend kullanımı ve orijinallik!")
+            recommendations.append("Mkemmel trend kullanm ve orijinallik!")
         elif score >= 4:
-            recommendations.append("İyi trend kullanımı, orijinallik artırılabilir")
+            recommendations.append("yi trend kullanm, orijinallik artrlabilir")
         elif score >= 2:
-            recommendations.append("Trend takibi geliştirilebilir")
+            recommendations.append("Trend takibi gelitirilebilir")
         else:
-            recommendations.append("Trend analizi ve orijinallik çalışması gerekli")
+            recommendations.append("Trend analizi ve orijinallik almas gerekli")
         
-        print(f"[TREND] Analysis completed: {score}/8")
+        safe_print(f"[TREND] Analysis completed: {score}/8")
         
         return {
             "score": min(score, 8),
@@ -5683,35 +5720,39 @@ def analyze_trend_originality(features: Dict[str, Any], duration: float) -> Dict
         }
         
     except Exception as e:
-        print(f"[TREND] Analysis failed: {e}")
+        safe_print(f"[TREND] Analysis failed: {e}")
         return {
             "score": 0,
-            "findings": [f"Trend analizi başarısız: {e}"],
-            "recommendations": ["Trend analizi geliştirilmeli"],
+            "findings": [f"Trend analizi baarsz: {e}"],
+            "recommendations": ["Trend analizi gelitirilmeli"],
             "raw": {}
         }
 
 
 def fetch_tiktok_trends() -> Dict[str, Any]:
     """
-    Chartmetric API'den TikTok trend verileri çek
+    Chartmetric API'den TikTok trend verileri ek
     """
     try:
         import requests
         import os
         from datetime import datetime, timedelta
         
-        # Chartmetric API anahtarı (environment variable'dan)
+        # Chartmetric API anahtar (environment variable'dan)
         chartmetric_api_key = os.getenv("CHARTMETRIC_API_KEY")
         
         if not chartmetric_api_key:
-            print("[TREND] Chartmetric API key not found, using fallback trends")
-            return get_fallback_trends()
+            safe_print("[TREND] Chartmetric API key not found, skipping trend analysis")
+            return {
+                "score": 0.2,
+                "findings": ["Trend analizi için API key gerekli"],
+                "data": {}
+            }
         
         # Chartmetric TikTok Trends API endpoint
         url = "https://api.chartmetric.com/api/tiktok/trending"
         
-        # Güncel trend parametreleri
+        # Gncel trend parametreleri
         params = {
             "platform": "tiktok",
             "country": "US",
@@ -5723,13 +5764,13 @@ def fetch_tiktok_trends() -> Dict[str, Any]:
             "Content-Type": "application/json"
         }
         
-        print("[TREND] Fetching Chartmetric TikTok trends...")
+        safe_print("[TREND] Fetching Chartmetric TikTok trends...")
         response = requests.get(url, headers=headers, params=params, timeout=10)
         
         if response.status_code == 200:
             data = response.json()
             
-            # Chartmetric verilerini işle
+            # Chartmetric verilerini ile
             trending_hashtags = extract_chartmetric_hashtags(data)
             trending_sounds = extract_chartmetric_sounds(data)
             trending_formats = extract_chartmetric_formats(data)
@@ -5753,7 +5794,7 @@ def fetch_tiktok_trends() -> Dict[str, Any]:
             timing_score = analyze_chartmetric_timing(data)
             score += timing_score
             
-            print(f"[TREND] Chartmetric trends fetched: {len(trending_hashtags)} hashtags, {len(trending_sounds)} sounds")
+            safe_print(f"[TREND] Chartmetric trends fetched: {len(trending_hashtags)} hashtags, {len(trending_sounds)} sounds")
             
             return {
                 "score": min(score, 2),
@@ -5768,22 +5809,30 @@ def fetch_tiktok_trends() -> Dict[str, Any]:
             }
             
         else:
-            print(f"[TREND] Chartmetric API error: {response.status_code}")
-            return get_fallback_trends()
+            safe_print(f"[TREND] Chartmetric API error: {response.status_code}")
+            return {
+                "score": 0.2,
+                "findings": ["Trend API hatası - gerçek veri alınamadı"],
+                "data": {}
+            }
             
     except Exception as e:
-        print(f"[TREND] Chartmetric API fetch failed: {e}")
-        return get_fallback_trends()
+        safe_print(f"[TREND] Chartmetric API fetch failed: {e}")
+        return {
+            "score": 0.2,
+            "findings": ["Trend analizi başarısız - ağ hatası"],
+            "data": {}
+        }
 
 
 def get_fallback_trends() -> Dict[str, Any]:
     """
-    Fallback trend verileri (API çalışmazsa)
+    Fallback trend verileri (API almazsa)
     """
     try:
         from datetime import datetime
         
-        # Güncel trend verileri (manuel güncellenebilir)
+        # Gncel trend verileri (manuel gncellenebilir)
         current_trends = {
             "hashtags": [
                 "#viral", "#fyp", "#trending", "#foryou", "#explore",
@@ -5806,67 +5855,67 @@ def get_fallback_trends() -> Dict[str, Any]:
         }
         
         return {
-            "score": 1.0,  # Fallback için orta skor
-            "findings": ["Fallback trend verileri kullanıldı"],
-            "data": current_trends
+            "score": 0.3,  # Dşk skor - gerçek trend analizi yaplmad
+            "findings": ["Trend analizi gerçek veri gerektirir - API entegrasyonu gerekli"],
+            "data": {}
         }
         
     except Exception as e:
-        print(f"[TREND] Fallback trends failed: {e}")
+        safe_print(f"[TREND] Fallback trends failed: {e}")
         return {
             "score": 0,
-            "findings": ["Trend verileri alınamadı"],
+            "findings": ["Trend verileri alnamad"],
             "data": {}
         }
 
 
 def extract_chartmetric_hashtags(api_data: Dict[str, Any]) -> List[str]:
     """
-    Chartmetric API verisinden trending hashtag'leri çıkar
+    Chartmetric API verisinden trending hashtag'leri kar
     """
     try:
         hashtags = []
         
-        # Chartmetric API verisinden hashtag'leri çıkar
+        # Chartmetric API verisinden hashtag'leri kar
         trends = api_data.get("data", {}).get("trends", [])
         
         for trend in trends:
-            # Hashtag bilgilerini çıkar
+            # Hashtag bilgilerini kar
             hashtag_info = trend.get("hashtags", [])
             for hashtag in hashtag_info:
                 tag = hashtag.get("tag", "")
                 if tag:
                     hashtags.append(f"#{tag}")
             
-            # Video açıklamalarından hashtag'leri çıkar
+            # Video aklamalarndan hashtag'leri kar
             description = trend.get("description", "")
             if description:
                 import re
                 found_hashtags = re.findall(r'#\w+', description)
                 hashtags.extend(found_hashtags)
         
-        # En popüler hashtag'leri döndür
+        # En popler hashtag'leri dndr
         from collections import Counter
         hashtag_counts = Counter(hashtags)
         return [tag for tag, count in hashtag_counts.most_common(20)]
         
     except Exception as e:
-        print(f"[TREND] Chartmetric hashtag extraction failed: {e}")
+        safe_print(f"[TREND] Chartmetric hashtag extraction failed: {e}")
         return []
 
 
 def extract_chartmetric_sounds(api_data: Dict[str, Any]) -> List[str]:
     """
-    Chartmetric API verisinden trending sesleri çıkar
+    Chartmetric API verisinden trending sesleri kar
     """
     try:
         sounds = []
         
-        # Chartmetric API verisinden ses bilgilerini çıkar
+        # Chartmetric API verisinden ses bilgilerini kar
         trends = api_data.get("data", {}).get("trends", [])
         
         for trend in trends:
-            # Ses bilgilerini çıkar
+            # Ses bilgilerini kar
             audio_info = trend.get("audio", {})
             if audio_info:
                 title = audio_info.get("title", "")
@@ -5877,35 +5926,35 @@ def extract_chartmetric_sounds(api_data: Dict[str, Any]) -> List[str]:
                     else:
                         sounds.append(title)
             
-            # Müzik bilgilerini çıkar
+            # Mzik bilgilerini kar
             music_info = trend.get("music", {})
             if music_info:
                 track_name = music_info.get("track_name", "")
                 if track_name:
                     sounds.append(track_name)
         
-        # En popüler sesleri döndür
+        # En popler sesleri dndr
         from collections import Counter
         sound_counts = Counter(sounds)
         return [sound for sound, count in sound_counts.most_common(10)]
         
     except Exception as e:
-        print(f"[TREND] Chartmetric sound extraction failed: {e}")
+        safe_print(f"[TREND] Chartmetric sound extraction failed: {e}")
         return []
 
 
 def extract_chartmetric_formats(api_data: Dict[str, Any]) -> List[str]:
     """
-    Chartmetric API verisinden trending formatları çıkar
+    Chartmetric API verisinden trending formatlar kar
     """
     try:
         formats = []
         
-        # Chartmetric API verisinden format bilgilerini çıkar
+        # Chartmetric API verisinden format bilgilerini kar
         trends = api_data.get("data", {}).get("trends", [])
         
         for trend in trends:
-            # Video özelliklerini analiz et
+            # Video zelliklerini analiz et
             duration = trend.get("duration", 0)
             if duration < 15:
                 formats.append("short form")
@@ -5914,7 +5963,7 @@ def extract_chartmetric_formats(api_data: Dict[str, Any]) -> List[str]:
             else:
                 formats.append("long form")
             
-            # Video türünü belirle
+            # Video trn belirle
             description = trend.get("description", "").lower()
             if "tutorial" in description or "how to" in description:
                 formats.append("tutorial")
@@ -5927,31 +5976,31 @@ def extract_chartmetric_formats(api_data: Dict[str, Any]) -> List[str]:
             elif "comedy" in description or "funny" in description:
                 formats.append("comedy")
             
-            # Trend türünü belirle
+            # Trend trn belirle
             trend_type = trend.get("type", "")
             if trend_type:
                 formats.append(trend_type.lower())
         
-        # En popüler formatları döndür
+        # En popler formatlar dndr
         from collections import Counter
         format_counts = Counter(formats)
         return [fmt for fmt, count in format_counts.most_common(10)]
         
     except Exception as e:
-        print(f"[TREND] Chartmetric format extraction failed: {e}")
+        safe_print(f"[TREND] Chartmetric format extraction failed: {e}")
         return []
 
 
 def analyze_chartmetric_timing(api_data: Dict[str, Any]) -> float:
     """
-    Chartmetric trend timing analizi - erken/peak/geç
+    Chartmetric trend timing analizi - erken/peak/ge
     """
     try:
         trends = api_data.get("data", {}).get("trends", [])
         if not trends:
             return 0.0
         
-        # Trend performansına göre timing belirle
+        # Trend performansna gre timing belirle
         total_score = 0
         for trend in trends:
             # Trend skorunu al
@@ -5960,7 +6009,7 @@ def analyze_chartmetric_timing(api_data: Dict[str, Any]) -> float:
         
         avg_score = total_score / len(trends) if trends else 0
         
-        # Skora göre trend durumu
+        # Skora gre trend durumu
         if avg_score > 80:
             return 0.3  # Peak trend
         elif avg_score > 50:
@@ -5971,13 +6020,13 @@ def analyze_chartmetric_timing(api_data: Dict[str, Any]) -> float:
             return 0.0  # Unknown
         
     except Exception as e:
-        print(f"[TREND] Chartmetric timing analysis failed: {e}")
+        safe_print(f"[TREND] Chartmetric timing analysis failed: {e}")
         return 0.0
 
 
 def analyze_visual_trends(features: Dict[str, Any], tiktok_data: Dict[str, Any] = None) -> Dict[str, Any]:
     """
-    Görsel trend analizi
+    Grsel trend analizi
     """
     try:
         score = 0
@@ -5986,37 +6035,37 @@ def analyze_visual_trends(features: Dict[str, Any], tiktok_data: Dict[str, Any] 
         
         frames = features.get("frames", [])
         if not frames:
-            return {"score": 0, "findings": ["Görüntü bulunamadı"], "trends": []}
+            return {"score": 0, "findings": ["Grnt bulunamad"], "trends": []}
         
         # Trend renk paletleri
         color_trends = {
-            "vibrant": ["parlak", "canlı", "neon", "fluorescent"],
-            "pastel": ["açık", "yumuşak", "pastel", "muted"],
+            "vibrant": ["parlak", "canl", "neon", "fluorescent"],
+            "pastel": ["ak", "yumuak", "pastel", "muted"],
             "monochrome": ["siyah-beyaz", "monochrome", "grayscale"],
-            "warm": ["sıcak", "warm", "orange", "red", "yellow"],
-            "cool": ["soğuk", "cool", "blue", "green", "purple"]
+            "warm": ["scak", "warm", "orange", "red", "yellow"],
+            "cool": ["souk", "cool", "blue", "green", "purple"]
         }
         
         # Trend kompozisyonlar
         composition_trends = {
-            "minimalist": ["minimal", "basit", "clean", "boş alan"],
-            "maximalist": ["dolu", "detalı", "complex", "busy"],
+            "minimalist": ["minimal", "basit", "clean", "bo alan"],
+            "maximalist": ["dolu", "detal", "complex", "busy"],
             "centered": ["merkez", "center", "symmetrical"],
-            "rule_of_thirds": ["üçte bir", "thirds", "asymmetric"],
-            "diagonal": ["çapraz", "diagonal", "dynamic"]
+            "rule_of_thirds": ["te bir", "thirds", "asymmetric"],
+            "diagonal": ["apraz", "diagonal", "dynamic"]
         }
         
         # Trend filtreler/efektler
         filter_trends = {
             "vintage": ["vintage", "retro", "sepia", "aged"],
             "high_contrast": ["kontrast", "contrast", "dramatic"],
-            "soft_focus": ["yumuşak", "soft", "blur", "dreamy"],
+            "soft_focus": ["yumuak", "soft", "blur", "dreamy"],
             "saturated": ["doygun", "saturated", "vivid"],
             "desaturated": ["soluk", "desaturated", "muted"]
         }
         
-        # Her frame için trend analizi
-        for i, frame_path in enumerate(frames[:3]):  # İlk 3 frame
+        # Her frame iin trend analizi
+        for i, frame_path in enumerate(frames[:3]):  # lk 3 frame
             try:
                 import cv2
                 import numpy as np
@@ -6028,7 +6077,7 @@ def analyze_visual_trends(features: Dict[str, Any], tiktok_data: Dict[str, Any] 
                 # Renk analizi
                 hsv = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
                 
-                # Parlaklık analizi
+                # Parlaklk analizi
                 brightness = np.mean(hsv[:,:,2])
                 if brightness > 200:
                     detected_trends.append("vibrant")
@@ -6063,20 +6112,20 @@ def analyze_visual_trends(features: Dict[str, Any], tiktok_data: Dict[str, Any] 
                     score += 0.1
                 
             except Exception as e:
-                print(f"[TREND] Visual analysis failed for frame {i}: {e}")
+                safe_print(f"[TREND] Visual analysis failed for frame {i}: {e}")
                 continue
         
         # Trend tespiti
         if detected_trends:
             unique_trends = list(set(detected_trends))
-            findings.append(f"Görsel trendler tespit edildi: {', '.join(unique_trends[:3])}")
+            findings.append(f"Grsel trendler tespit edildi: {', '.join(unique_trends[:3])}")
             
             # Viral trendler
             viral_trends = ["vibrant", "high_contrast", "centered"]
             viral_count = sum(1 for trend in unique_trends if trend in viral_trends)
             if viral_count > 0:
                 score += 0.3
-                findings.append(f"Viral görsel trendler: {viral_count} adet")
+                findings.append(f"Viral grsel trendler: {viral_count} adet")
         
         return {
             "score": min(score, 2),
@@ -6085,10 +6134,10 @@ def analyze_visual_trends(features: Dict[str, Any], tiktok_data: Dict[str, Any] 
         }
         
     except Exception as e:
-        print(f"[TREND] Visual trend analysis failed: {e}")
+        safe_print(f"[TREND] Visual trend analysis failed: {e}")
         return {
             "score": 0,
-            "findings": [f"Görsel trend analizi başarısız: {e}"],
+            "findings": [f"Grsel trend analizi baarsz: {e}"],
             "trends": []
         }
 
@@ -6104,9 +6153,9 @@ def analyze_audio_trends(features: Dict[str, Any]) -> Dict[str, Any]:
         
         audio_features = features.get("audio", {})
         if not audio_features:
-            return {"score": 0, "findings": ["Ses bulunamadı"], "trends": []}
+            return {"score": 0, "findings": ["Ses bulunamad"], "trends": []}
         
-        # Trend müzik türleri
+        # Trend mzik trleri
         music_trends = {
             "pop": ["pop", "mainstream", "catchy"],
             "hip_hop": ["hip hop", "rap", "urban"],
@@ -6130,7 +6179,7 @@ def analyze_audio_trends(features: Dict[str, Any]) -> Dict[str, Any]:
         if 120 <= tempo <= 140:
             detected_trends.append("viral_tempo")
             score += 0.3
-            findings.append("Viral tempo aralığında")
+            findings.append("Viral tempo aralnda")
         elif 80 <= tempo <= 100:
             detected_trends.append("chill_tempo")
             score += 0.2
@@ -6138,7 +6187,7 @@ def analyze_audio_trends(features: Dict[str, Any]) -> Dict[str, Any]:
         elif tempo > 140:
             detected_trends.append("high_energy")
             score += 0.2
-            findings.append("Yüksek enerji trendi")
+            findings.append("Yksek enerji trendi")
         
         # Loudness analizi
         loudness = audio_features.get("loudness", -20)
@@ -6149,16 +6198,16 @@ def analyze_audio_trends(features: Dict[str, Any]) -> Dict[str, Any]:
         elif loudness > -6:
             detected_trends.append("loud_trend")
             score += 0.1
-            findings.append("Yüksek ses trendi")
+            findings.append("Yksek ses trendi")
         
         # Ses kalitesi analizi
-        # Bu basit bir implementasyon, gerçekte daha gelişmiş olmalı
+        # Bu basit bir implementasyon, gerekte daha gelimi olmal
         if tempo > 0 and loudness > -20:
             detected_trends.append("high_quality_audio")
             score += 0.2
-            findings.append("Yüksek kalite ses trendi")
+            findings.append("Yksek kalite ses trendi")
         
-        # Metin analizi ile ses trendi eşleştirme
+        # Metin analizi ile ses trendi eletirme
         textual = features.get("textual", {})
         asr_text = textual.get("asr_text", "").lower()
         
@@ -6182,10 +6231,10 @@ def analyze_audio_trends(features: Dict[str, Any]) -> Dict[str, Any]:
         }
         
     except Exception as e:
-        print(f"[TREND] Audio trend analysis failed: {e}")
+        safe_print(f"[TREND] Audio trend analysis failed: {e}")
         return {
             "score": 0,
-            "findings": [f"Ses trend analizi başarısız: {e}"],
+            "findings": [f"Ses trend analizi baarsz: {e}"],
             "trends": []
         }
 
@@ -6203,7 +6252,7 @@ def analyze_text_trends(features: Dict[str, Any]) -> Dict[str, Any]:
         asr_text = textual.get("asr_text", "").lower()
         ocr_texts = textual.get("ocr_text", [])
         
-        # Tüm metinleri birleştir
+        # Tm metinleri birletir
         all_text = asr_text
         for ocr_text in ocr_texts:
             all_text += " " + ocr_text.lower()
@@ -6228,13 +6277,13 @@ def analyze_text_trends(features: Dict[str, Any]) -> Dict[str, Any]:
             "challenge_trend": ["challenge", "try this", "can you", "bet you can't"]
         }
         
-        # Trend emoji kullanımı
+        # Trend emoji kullanm
         emoji_trends = {
             "fire": ["", "fire", "lit"],
             "eyes": ["", "eyes", "watching"],
             "brain": ["", "brain", "mind"],
-            "heart": ["️", "", "", "love"],
-            "laugh": ["", "🤣", "lol", "haha"]
+            "heart": ["", "", "", "love"],
+            "laugh": ["", "", "lol", "haha"]
         }
         
         # Hashtag analizi
@@ -6246,7 +6295,7 @@ def analyze_text_trends(features: Dict[str, Any]) -> Dict[str, Any]:
                     findings.append(f"Trend hashtag: {hashtag}")
                     break
         
-        # İfade analizi
+        # fade analizi
         for category, expressions in expression_trends.items():
             for expression in expressions:
                 if expression in all_text:
@@ -6260,11 +6309,11 @@ def analyze_text_trends(features: Dict[str, Any]) -> Dict[str, Any]:
         if emoji_count > 3:
             detected_trends.append("emoji_heavy")
             score += 0.2
-            findings.append("Yoğun emoji kullanımı trendi")
+            findings.append("Youn emoji kullanm trendi")
         elif emoji_count > 0:
             detected_trends.append("emoji_light")
             score += 0.1
-            findings.append("Hafif emoji kullanımı")
+            findings.append("Hafif emoji kullanm")
         
         # Viral kelime analizi
         viral_words = [
@@ -6279,16 +6328,16 @@ def analyze_text_trends(features: Dict[str, Any]) -> Dict[str, Any]:
                 findings.append(f"Viral kelime: {word}")
                 break
         
-        # Metin uzunluğu trendi
+        # Metin uzunluu trendi
         word_count = len(all_text.split())
         if word_count < 10:
             detected_trends.append("short_form")
             score += 0.1
-            findings.append("Kısa form içerik trendi")
+            findings.append("Ksa form ierik trendi")
         elif word_count > 50:
             detected_trends.append("long_form")
             score += 0.1
-            findings.append("Uzun form içerik trendi")
+            findings.append("Uzun form ierik trendi")
         
         return {
             "score": min(score, 2),
@@ -6297,10 +6346,10 @@ def analyze_text_trends(features: Dict[str, Any]) -> Dict[str, Any]:
         }
         
     except Exception as e:
-        print(f"[TREND] Text trend analysis failed: {e}")
+        safe_print(f"[TREND] Text trend analysis failed: {e}")
         return {
             "score": 0,
-            "findings": [f"Metin trend analizi başarısız: {e}"],
+            "findings": [f"Metin trend analizi baarsz: {e}"],
             "trends": []
         }
 
@@ -6313,23 +6362,23 @@ def analyze_originality(features: Dict[str, Any]) -> Dict[str, Any]:
         score = 0
         findings = []
         
-        # Basit orijinallik skorlaması
+        # Basit orijinallik skorlamas
         textual = features.get("textual", {})
         asr_text = textual.get("asr_text", "").lower()
         
-        # Yaratıcı kelimeler
-        creative_words = ["harika", "muhteşem", "inanılmaz", "süper", "fantastik", "mükemmel"]
+        # Yaratc kelimeler
+        creative_words = ["harika", "muhteem", "inanlmaz", "sper", "fantastik", "mkemmel"]
         creative_count = sum(1 for word in creative_words if word in asr_text)
         score += min(creative_count * 0.3, 1.0)
         
         if creative_count > 0:
-            findings.append(f"Yaratıcı dil kullanımı: {creative_count} kelime")
+            findings.append(f"Yaratc dil kullanm: {creative_count} kelime")
         
-        # Uzunluk analizi (çok kısa veya çok uzun = orijinal)
+        # Uzunluk analizi (ok ksa veya ok uzun = orijinal)
         text_length = len(asr_text)
         if text_length < 50 or text_length > 500:
             score += 0.5
-            findings.append("Orijinal metin uzunluğu")
+            findings.append("Orijinal metin uzunluu")
         
         # Tekrarlanan kelimeler (az tekrar = orijinal)
         words = asr_text.split()
@@ -6337,7 +6386,7 @@ def analyze_originality(features: Dict[str, Any]) -> Dict[str, Any]:
             unique_ratio = len(set(words)) / len(words)
             if unique_ratio > 0.8:
                 score += 0.5
-                findings.append("Yüksek kelime çeşitliliği")
+                findings.append("Yksek kelime eitlilii")
         
         return {
             "score": min(score, 2),
@@ -6345,24 +6394,24 @@ def analyze_originality(features: Dict[str, Any]) -> Dict[str, Any]:
         }
         
     except Exception as e:
-        print(f"[TREND] Originality analysis failed: {e}")
+        safe_print(f"[TREND] Originality analysis failed: {e}")
         return {
             "score": 0,
-            "findings": [f"Orijinallik analizi başarısız: {e}"]
+            "findings": [f"Orijinallik analizi baarsz: {e}"]
         }
 
 
 def analyze_music_sync(features: Dict[str, Any], duration: float) -> Dict[str, Any]:
     """
-    Müzik & Senkron Analizi (5 puan)
-    BPM ve beat-cut uyumu, ses-görüntü senkronizasyonu
+    Mzik & Senkron Analizi (5 puan)
+    BPM ve beat-cut uyumu, ses-grnt senkronizasyonu
     """
     score = 0
     findings = []
     recommendations = []
     raw_metrics = {}
     
-    print("[MUSIC] Starting music & sync analysis...")
+    safe_print("[MUSIC] Starting music & sync analysis...")
     
     try:
         # 1. BPM analizi (2 puan)
@@ -6377,23 +6426,23 @@ def analyze_music_sync(features: Dict[str, Any], duration: float) -> Dict[str, A
         findings.extend(beat_cut_result["findings"])
         raw_metrics["beat_cut_analysis"] = beat_cut_result
         
-        # 3. Ses-görüntü senkronizasyonu (1 puan)
+        # 3. Ses-grnt senkronizasyonu (1 puan)
         sync_result = analyze_audio_visual_sync(features)
         score += sync_result["score"]
         findings.extend(sync_result["findings"])
         raw_metrics["sync_analysis"] = sync_result
         
-        # Genel değerlendirme
+        # Genel deerlendirme
         if score >= 4:
-            recommendations.append("Mükemmel müzik ve senkron uyumu!")
+            recommendations.append("Mkemmel mzik ve senkron uyumu!")
         elif score >= 3:
-            recommendations.append("İyi müzik uyumu, senkron iyileştirilebilir")
+            recommendations.append("yi mzik uyumu, senkron iyiletirilebilir")
         elif score >= 2:
-            recommendations.append("Orta düzey müzik uyumu")
+            recommendations.append("Orta dzey mzik uyumu")
         else:
-            recommendations.append("Müzik ve senkron optimizasyonu gerekli")
+            recommendations.append("Mzik ve senkron optimizasyonu gerekli")
         
-        print(f"[MUSIC] Analysis completed: {score}/5")
+        safe_print(f"[MUSIC] Analysis completed: {score}/5")
         
         return {
             "score": min(score, 5),
@@ -6403,11 +6452,11 @@ def analyze_music_sync(features: Dict[str, Any], duration: float) -> Dict[str, A
         }
         
     except Exception as e:
-        print(f"[MUSIC] Analysis failed: {e}")
+        safe_print(f"[MUSIC] Analysis failed: {e}")
         return {
             "score": 0,
-            "findings": [f"Müzik & senkron analizi başarısız: {e}"],
-            "recommendations": ["Müzik analizi geliştirilmeli"],
+            "findings": [f"Mzik & senkron analizi baarsz: {e}"],
+            "recommendations": ["Mzik analizi gelitirilmeli"],
             "raw": {}
         }
 
@@ -6422,25 +6471,25 @@ def analyze_bpm_sync(features: Dict[str, Any]) -> Dict[str, Any]:
         
         audio_info = features.get("audio_info", {})
         if not audio_info:
-            return {"score": 0, "findings": ["Ses bilgisi bulunamadı"]}
+            return {"score": 0, "findings": ["Ses bilgisi bulunamad"]}
         
         tempo = audio_info.get("tempo", 0)
         
         # BPM kategorileri
-        if 60 <= tempo <= 80:  # Yavaş
+        if 60 <= tempo <= 80:  # Yava
             score += 0.5
-            findings.append(f"Yavaş tempo: {tempo:.1f} BPM")
+            findings.append(f"Yava tempo: {tempo:.1f} BPM")
         elif 80 <= tempo <= 120:  # Orta
             score += 1.0
             findings.append(f"Optimal tempo: {tempo:.1f} BPM")
-        elif 120 <= tempo <= 160:  # Hızlı
+        elif 120 <= tempo <= 160:  # Hzl
             score += 0.8
-            findings.append(f"Hızlı tempo: {tempo:.1f} BPM")
-        elif tempo > 160:  # Çok hızlı
+            findings.append(f"Hzl tempo: {tempo:.1f} BPM")
+        elif tempo > 160:  # ok hzl
             score += 0.3
-            findings.append(f"Çok hızlı tempo: {tempo:.1f} BPM")
+            findings.append(f"ok hzl tempo: {tempo:.1f} BPM")
         
-        # Tempo tutarlılığı (basit analiz)
+        # Tempo tutarll (basit analiz)
         if tempo > 0:
             score += 0.5
             findings.append("Tempo tespit edildi")
@@ -6452,10 +6501,10 @@ def analyze_bpm_sync(features: Dict[str, Any]) -> Dict[str, Any]:
         }
         
     except Exception as e:
-        print(f"[MUSIC] BPM analysis failed: {e}")
+        safe_print(f"[MUSIC] BPM analysis failed: {e}")
         return {
             "score": 0,
-            "findings": [f"BPM analizi başarısız: {e}"]
+            "findings": [f"BPM analizi baarsz: {e}"]
         }
 
 
@@ -6468,12 +6517,12 @@ def analyze_beat_cut_sync(features: Dict[str, Any], duration: float) -> Dict[str
         findings = []
         
         # Basit beat-cut analizi
-        # Gerçek implementasyonda beat detection ve cut timing analizi yapılır
+        # Gerek implementasyonda beat detection ve cut timing analizi yaplr
         
         audio_info = features.get("audio_info", {})
         tempo = audio_info.get("tempo", 120)
         
-        # Optimum cut frequency (tempo'ya göre)
+        # Optimum cut frequency (tempo'ya gre)
         if 60 <= tempo <= 80:
             optimal_cuts = duration * 0.5  # Her 2 saniyede bir cut
         elif 80 <= tempo <= 120:
@@ -6481,17 +6530,17 @@ def analyze_beat_cut_sync(features: Dict[str, Any], duration: float) -> Dict[str
         else:
             optimal_cuts = duration * 1.0  # Her saniyede bir cut
         
-        # Basit cut analizi (duration'a göre)
-        estimated_cuts = duration * 0.8  # Tahmini cut sayısı
+        # Basit cut analizi (duration'a gre)
+        estimated_cuts = duration * 0.8  # Tahmini cut says
         
         cut_ratio = estimated_cuts / optimal_cuts if optimal_cuts > 0 else 1
         
-        if 0.8 <= cut_ratio <= 1.2:  # Optimal aralık
+        if 0.8 <= cut_ratio <= 1.2:  # Optimal aralk
             score += 1.0
             findings.append("Optimal cut frequency")
         elif 0.6 <= cut_ratio <= 1.4:  # Kabul edilebilir
             score += 0.5
-            findings.append("İyi cut frequency")
+            findings.append("yi cut frequency")
         else:
             findings.append("Cut frequency optimizasyonu gerekli")
         
@@ -6502,7 +6551,7 @@ def analyze_beat_cut_sync(features: Dict[str, Any], duration: float) -> Dict[str
         
         # Senkron analizi
         score += 0.5
-        findings.append("Beat-cut senkron analizi tamamlandı")
+        findings.append("Beat-cut senkron analizi tamamland")
         
         return {
             "score": min(score, 2),
@@ -6512,16 +6561,16 @@ def analyze_beat_cut_sync(features: Dict[str, Any], duration: float) -> Dict[str
         }
         
     except Exception as e:
-        print(f"[MUSIC] Beat-cut analysis failed: {e}")
+        safe_print(f"[MUSIC] Beat-cut analysis failed: {e}")
         return {
             "score": 0,
-            "findings": [f"Beat-cut analizi başarısız: {e}"]
+            "findings": [f"Beat-cut analizi baarsz: {e}"]
         }
 
 
 def analyze_audio_visual_sync(features: Dict[str, Any]) -> Dict[str, Any]:
     """
-    Ses-görüntü senkronizasyonu
+    Ses-grnt senkronizasyonu
     """
     try:
         score = 0
@@ -6531,12 +6580,12 @@ def analyze_audio_visual_sync(features: Dict[str, Any]) -> Dict[str, Any]:
         audio_info = features.get("audio_info", {})
         frames = features.get("frames", [])
         
-        # Ses ve görüntü varlığı kontrolü
+        # Ses ve grnt varl kontrol
         if audio_info and frames:
             score += 0.5
-            findings.append("Ses ve görüntü mevcut")
+            findings.append("Ses ve grnt mevcut")
         
-        # Loudness ve görsel yoğunluk analizi
+        # Loudness ve grsel younluk analizi
         loudness = audio_info.get("loudness", 0)
         if -20 <= loudness <= -5:  # Optimal ses seviyesi
             score += 0.3
@@ -6545,7 +6594,7 @@ def analyze_audio_visual_sync(features: Dict[str, Any]) -> Dict[str, Any]:
         # Basit senkron skoru
         if len(frames) > 0:
             score += 0.2
-            findings.append("Görsel içerik mevcut")
+            findings.append("Grsel ierik mevcut")
         
         return {
             "score": min(score, 1),
@@ -6554,24 +6603,24 @@ def analyze_audio_visual_sync(features: Dict[str, Any]) -> Dict[str, Any]:
         }
         
     except Exception as e:
-        print(f"[MUSIC] Audio-visual sync analysis failed: {e}")
+        safe_print(f"[MUSIC] Audio-visual sync analysis failed: {e}")
         return {
             "score": 0,
-            "findings": [f"Ses-görüntü senkron analizi başarısız: {e}"]
+            "findings": [f"Ses-grnt senkron analizi baarsz: {e}"]
         }
 
 
 def analyze_accessibility(features: Dict[str, Any], duration: float) -> Dict[str, Any]:
     """
-    Erişilebilirlik Analizi (4 puan)
-    Sessiz izlenebilirlik, alt yazı, görsel erişilebilirlik
+    Eriilebilirlik Analizi (4 puan)
+    Sessiz izlenebilirlik, alt yaz, grsel eriilebilirlik
     """
     score = 0
     findings = []
     recommendations = []
     raw_metrics = {}
     
-    print("[ACCESS] Starting accessibility analysis...")
+    safe_print("[ACCESS] Starting accessibility analysis...")
     
     try:
         # 1. Sessiz izlenebilirlik (2 puan)
@@ -6580,29 +6629,29 @@ def analyze_accessibility(features: Dict[str, Any], duration: float) -> Dict[str
         findings.extend(silent_result["findings"])
         raw_metrics["silent_analysis"] = silent_result
         
-        # 2. Görsel erişilebilirlik (1 puan)
+        # 2. Grsel eriilebilirlik (1 puan)
         visual_access_result = analyze_visual_accessibility(features)
         score += visual_access_result["score"]
         findings.extend(visual_access_result["findings"])
         raw_metrics["visual_access"] = visual_access_result
         
-        # 3. Alt yazı ve metin desteği (1 puan)
+        # 3. Alt yaz ve metin destei (1 puan)
         subtitle_result = analyze_subtitle_support(features)
         score += subtitle_result["score"]
         findings.extend(subtitle_result["findings"])
         raw_metrics["subtitle_analysis"] = subtitle_result
         
-        # Genel değerlendirme
+        # Genel deerlendirme
         if score >= 3:
-            recommendations.append("Mükemmel erişilebilirlik!")
+            recommendations.append("Mkemmel eriilebilirlik!")
         elif score >= 2:
-            recommendations.append("İyi erişilebilirlik, iyileştirme yapılabilir")
+            recommendations.append("yi eriilebilirlik, iyiletirme yaplabilir")
         elif score >= 1:
-            recommendations.append("Temel erişilebilirlik mevcut")
+            recommendations.append("Temel eriilebilirlik mevcut")
         else:
-            recommendations.append("Erişilebilirlik optimizasyonu gerekli")
+            recommendations.append("Eriilebilirlik optimizasyonu gerekli")
         
-        print(f"[ACCESS] Analysis completed: {score}/4")
+        safe_print(f"[ACCESS] Analysis completed: {score}/4")
         
         return {
             "score": min(score, 4),
@@ -6612,11 +6661,11 @@ def analyze_accessibility(features: Dict[str, Any], duration: float) -> Dict[str
         }
         
     except Exception as e:
-        print(f"[ACCESS] Analysis failed: {e}")
+        safe_print(f"[ACCESS] Analysis failed: {e}")
         return {
             "score": 0,
-            "findings": [f"Erişilebilirlik analizi başarısız: {e}"],
-            "recommendations": ["Erişilebilirlik geliştirilmeli"],
+            "findings": [f"Eriilebilirlik analizi baarsz: {e}"],
+            "recommendations": ["Eriilebilirlik gelitirilmeli"],
             "raw": {}
         }
 
@@ -6633,28 +6682,28 @@ def analyze_silent_watchability(features: Dict[str, Any]) -> Dict[str, Any]:
         asr_text = textual.get("asr_text", "")
         ocr_texts = textual.get("ocr_text", [])
         
-        # Metin varlığı kontrolü
+        # Metin varl kontrol
         total_text = len(asr_text) + sum(len(text) for text in ocr_texts)
         
         if total_text > 100:
             score += 1.0
-            findings.append("Yeterli metin içeriği (sessiz izlenebilir)")
+            findings.append("Yeterli metin ierii (sessiz izlenebilir)")
         elif total_text > 50:
             score += 0.5
-            findings.append("Orta düzey metin içeriği")
+            findings.append("Orta dzey metin ierii")
         else:
-            findings.append("Az metin içeriği (ses gerekli)")
+            findings.append("Az metin ierii (ses gerekli)")
         
-        # Görsel açıklayıcılık
+        # Grsel aklayclk
         frames = features.get("frames", [])
         if frames:
             score += 0.5
-            findings.append("Görsel içerik mevcut")
+            findings.append("Grsel ierik mevcut")
         
-        # OCR metin varlığı
+        # OCR metin varl
         if ocr_texts:
             score += 0.5
-            findings.append("Görsel metin (OCR) mevcut")
+            findings.append("Grsel metin (OCR) mevcut")
         
         return {
             "score": min(score, 2),
@@ -6663,16 +6712,16 @@ def analyze_silent_watchability(features: Dict[str, Any]) -> Dict[str, Any]:
         }
         
     except Exception as e:
-        print(f"[ACCESS] Silent watchability analysis failed: {e}")
+        safe_print(f"[ACCESS] Silent watchability analysis failed: {e}")
         return {
             "score": 0,
-            "findings": [f"Sessiz izlenebilirlik analizi başarısız: {e}"]
+            "findings": [f"Sessiz izlenebilirlik analizi baarsz: {e}"]
         }
 
 
 def analyze_visual_accessibility(features: Dict[str, Any]) -> Dict[str, Any]:
     """
-    Görsel erişilebilirlik analizi
+    Grsel eriilebilirlik analizi
     """
     try:
         score = 0
@@ -6680,32 +6729,32 @@ def analyze_visual_accessibility(features: Dict[str, Any]) -> Dict[str, Any]:
         
         frames = features.get("frames", [])
         if not frames:
-            return {"score": 0, "findings": ["Görüntü bulunamadı"]}
+            return {"score": 0, "findings": ["Grnt bulunamad"]}
         
-        # Basit görsel kalite analizi
+        # Basit grsel kalite analizi
         try:
             import cv2
             image = cv2.imread(frames[0])
             if image is not None:
-                # Parlaklık analizi
+                # Parlaklk analizi
                 gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
                 brightness = np.mean(gray)
                 
-                if 100 <= brightness <= 200:  # Optimal parlaklık
+                if 100 <= brightness <= 200:  # Optimal parlaklk
                     score += 0.5
-                    findings.append("Optimal görsel parlaklık")
+                    findings.append("Optimal grsel parlaklk")
                 else:
-                    findings.append("Görsel parlaklık optimizasyonu gerekli")
+                    findings.append("Grsel parlaklk optimizasyonu gerekli")
                 
                 # Kontrast analizi (basit)
                 contrast = np.std(gray)
                 if contrast > 30:  # Yeterli kontrast
                     score += 0.5
-                    findings.append("İyi görsel kontrast")
+                    findings.append("yi grsel kontrast")
                 else:
-                    findings.append("Görsel kontrast artırılabilir")
+                    findings.append("Grsel kontrast artrlabilir")
         except Exception as e:
-            print(f"[ACCESS] Visual analysis failed: {e}")
+            safe_print(f"[ACCESS] Visual analysis failed: {e}")
         
         return {
             "score": min(score, 1),
@@ -6713,16 +6762,16 @@ def analyze_visual_accessibility(features: Dict[str, Any]) -> Dict[str, Any]:
         }
         
     except Exception as e:
-        print(f"[ACCESS] Visual accessibility analysis failed: {e}")
+        safe_print(f"[ACCESS] Visual accessibility analysis failed: {e}")
         return {
             "score": 0,
-            "findings": [f"Görsel erişilebilirlik analizi başarısız: {e}"]
+            "findings": [f"Grsel eriilebilirlik analizi baarsz: {e}"]
         }
 
 
 def analyze_subtitle_support(features: Dict[str, Any]) -> Dict[str, Any]:
     """
-    Alt yazı ve metin desteği analizi
+    Alt yaz ve metin destei analizi
     """
     try:
         score = 0
@@ -6732,20 +6781,20 @@ def analyze_subtitle_support(features: Dict[str, Any]) -> Dict[str, Any]:
         asr_text = textual.get("asr_text", "")
         ocr_texts = textual.get("ocr_text", [])
         
-        # ASR (otomatik alt yazı) kontrolü
+        # ASR (otomatik alt yaz) kontrol
         if asr_text and len(asr_text) > 20:
             score += 0.5
-            findings.append("Otomatik konuşma tanıma (ASR) mevcut")
+            findings.append("Otomatik konuma tanma (ASR) mevcut")
         
-        # OCR (görsel metin) kontrolü
+        # OCR (grsel metin) kontrol
         if ocr_texts:
             score += 0.5
-            findings.append("Görsel metin tespiti (OCR) mevcut")
+            findings.append("Grsel metin tespiti (OCR) mevcut")
         
         # Metin kalitesi
         total_text = asr_text + " ".join(ocr_texts)
         if len(total_text) > 50:
-            findings.append("Yeterli metin içeriği")
+            findings.append("Yeterli metin ierii")
         
         return {
             "score": min(score, 1),
@@ -6755,8 +6804,8 @@ def analyze_subtitle_support(features: Dict[str, Any]) -> Dict[str, Any]:
         }
         
     except Exception as e:
-        print(f"[ACCESS] Subtitle support analysis failed: {e}")
+        safe_print(f"[ACCESS] Subtitle support analysis failed: {e}")
         return {
             "score": 0,
-            "findings": [f"Alt yazı desteği analizi başarısız: {e}"]
+            "findings": [f"Alt yaz destei analizi baarsz: {e}"]
         }

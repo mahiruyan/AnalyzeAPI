@@ -1,3 +1,20 @@
+
+def safe_print(*args, **kwargs):
+    """Safe print function that handles Unicode errors"""
+    try:
+        print(*args, **kwargs)
+    except UnicodeEncodeError:
+        # Replace problematic characters and try again
+        safe_args = []
+        for arg in args:
+            if isinstance(arg, str):
+                safe_arg = arg.encode('ascii', 'replace').decode('ascii')
+                safe_args.append(safe_arg)
+            else:
+                safe_args.append(arg)
+        print(*safe_args, **kwargs)
+
+
 import subprocess
 import shutil
 import os
@@ -12,7 +29,7 @@ import requests
 import time
 from typing import Callable
 
-# yt-dlp için opsiyonel import
+# yt-dlp iin opsiyonel import
 try:
     import yt_dlp
 except ImportError:
@@ -22,7 +39,7 @@ except ImportError:
 def _ensure_ffmpeg_exists() -> None:
     for bin_name in ["ffmpeg", "ffprobe"]:
         if shutil.which(bin_name) is None:
-            raise RuntimeError(f"{bin_name} bulunamadı. Lütfen FFmpeg kurun ve PATH'e ekleyin.")
+            raise RuntimeError(f"{bin_name} bulunamad. Ltfen FFmpeg kurun ve PATH'e ekleyin.")
 
 
 def _is_social_media_url(url: str) -> bool:
@@ -40,7 +57,7 @@ def _is_social_media_url(url: str) -> bool:
 
 
 def _normalize_instagram_url(url: str) -> str:
-    # instagram /reels/ → /reel/ formatlarını normalize et
+    # instagram /reels/  /reel/ formatlarn normalize et
     try:
         u = url.strip()
         u = u.replace("/reels/", "/reel/")
@@ -53,23 +70,23 @@ def _normalize_instagram_url(url: str) -> str:
 
 
 def download_video(url: str, dest_path: str, timeout: int = 60) -> None:
-    """Video indirme - sosyal medya için yt-dlp, optimize edildi"""
+    """Video indirme - sosyal medya iin yt-dlp, optimize edildi"""
     Path(dest_path).parent.mkdir(parents=True, exist_ok=True)
     
     if _is_social_media_url(url) and yt_dlp is not None:
         # Instagram URL normalize
         if "instagram.com" in url:
             url = _normalize_instagram_url(url)
-        # Sosyal medya için yt-dlp kullan (hız için optimize edildi)
+        # Sosyal medya iin yt-dlp kullan (hz iin optimize edildi)
         ydl_opts = {
             'format': 'best[height<=480]/best',
             'outtmpl': dest_path,
-            'quiet': False,  # Debug için açık
-            'no_warnings': False,  # Debug için açık
+            'quiet': False,  # Debug iin ak
+            'no_warnings': False,  # Debug iin ak
             'extract_flat': False,
             'socket_timeout': timeout,
             'retries': 3,
-            # Instagram için gerekli ayarlar
+            # Instagram iin gerekli ayarlar
             'cookiesfrombrowser': None,
             'extractor_args': {
                 'instagram': {
@@ -91,53 +108,58 @@ def download_video(url: str, dest_path: str, timeout: int = 60) -> None:
             }
         }
         try:
-            print(f"Downloading with yt-dlp: {url}")
+            safe_print(f"Downloading with yt-dlp: {url}")
             with yt_dlp.YoutubeDL(ydl_opts) as ydl:
                 ydl.download([url])
-            print(f"Download completed: {dest_path}")
+            safe_print(f"Download completed: {dest_path}")
             return
         except Exception as e:
-            print(f"yt-dlp failed: {e}")
-            print(f"Error details: {str(e)}")
-            # Instagram alternatif yöntemler
+            safe_print(f"yt-dlp failed: {e}")
+            safe_print(f"Error details: {str(e)}")
+            # Instagram alternatif yntemler
             if "instagram.com" in url:
                 # 1. instagram.com.tr deneyelim
                 alt1 = url.replace("instagram.com", "instagram.com.tr")
                 try:
-                    print(f"Retrying with instagram.com.tr: {alt1}")
+                    safe_print(f"Retrying with instagram.com.tr: {alt1}")
                     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
                         ydl.download([alt1])
-                    print(f"Download completed (instagram.com.tr): {dest_path}")
+                    safe_print(f"Download completed (instagram.com.tr): {dest_path}")
                     return
                 except Exception as e2:
-                    print(f"instagram.com.tr failed: {e2}")
+                    safe_print(f"instagram.com.tr failed: {e2}")
                 
                 # 2. embed format deneyelim
                 alt2 = url.replace("/reel/", "/embed/reel/")
                 try:
-                    print(f"Retrying with embed format: {alt2}")
+                    safe_print(f"Retrying with embed format: {alt2}")
                     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
                         ydl.download([alt2])
-                    print(f"Download completed (embed): {dest_path}")
+                    safe_print(f"Download completed (embed): {dest_path}")
                     return
                 except Exception as e3:
-                    print(f"embed format failed: {e3}")
+                    safe_print(f"embed format failed: {e3}")
             
-            raise Exception(f"Video indirme başarısız: {e}")
+            raise Exception(f"Video indirme baarsz: {e}")
     
-    # Fallback: normal HTTP indirme (sosyal medya değilse)
-    try:
-        print(f"Downloading with requests: {url}")
-        resp = requests.get(url, stream=True, timeout=timeout)
-        resp.raise_for_status()
-        with open(dest_path, "wb") as f:
-            for chunk in resp.iter_content(chunk_size=1024 * 1024):
-                if chunk:
-                    f.write(chunk)
-        print(f"Download completed: {dest_path}")
-    except Exception as e:
-        print(f"Download failed: {e}")
-        raise Exception(f"Video indirme başarısız: {e}")
+    # Fallback: normal HTTP indirme (sadece sosyal medya değilse)
+    if not _is_social_media_url(url):
+        try:
+            safe_print(f"Downloading with requests: {url}")
+            resp = requests.get(url, stream=True, timeout=timeout)
+            resp.raise_for_status()
+            with open(dest_path, "wb") as f:
+                for chunk in resp.iter_content(chunk_size=1024 * 1024):
+                    if chunk:
+                        f.write(chunk)
+            safe_print(f"Download completed: {dest_path}")
+            return
+        except Exception as e:
+            safe_print(f"Download failed: {e}")
+            raise Exception(f"Video indirme baarsz: {e}")
+    else:
+        # Sosyal medya URL'si için yt-dlp olmadan indirme yapamayız
+        raise Exception(f"Sosyal medya videosu yt-dlp ile indirilemedi: {url}")
 
 
 def extract_audio_via_ffmpeg(
@@ -149,40 +171,50 @@ def extract_audio_via_ffmpeg(
     _ensure_ffmpeg_exists()
     Path(output_wav).parent.mkdir(parents=True, exist_ok=True)
     
+    # Check if video file exists
+    if not Path(input_video).exists():
+        raise Exception(f"Video file not found: {input_video}")
+    
+    # Simple FFmpeg command that works
+    args = [
+        "ffmpeg", "-y",
+        "-i", input_video,
+        "-vn",
+        "-acodec", "pcm_s16le",
+        "-ar", str(sample_rate),
+        "-ac", "1" if mono else "2",
+        "-f", "wav",
+        "-loglevel", "error",
+        output_wav,
+    ]
+    
     try:
-        args = [
-            "ffmpeg",
-            "-y",
-            "-i",
-            input_video,
-            "-vn",
-            "-acodec",
-            "pcm_s16le",
-            "-ar",
-            str(sample_rate),
-            "-ac",
-            "1" if mono else "2",
-            output_wav,
-        ]
-        result = subprocess.run(args, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        print(f"Audio extracted: {output_wav}")
-    except subprocess.CalledProcessError as e:
-        print(f"FFmpeg audio extraction failed: {e}")
-        print(f"FFmpeg stderr: {e.stderr.decode()}")
+        result = subprocess.run(args, check=True, capture_output=True, text=True, encoding='utf-8', errors='ignore')
+        safe_print(f"Audio extracted: {output_wav}")
         
-        raise Exception(f"Ses çıkarma başarısız: {e}")
+        # Verify the output file exists and has content
+        if not Path(output_wav).exists() or Path(output_wav).stat().st_size == 0:
+            raise Exception("Audio extraction produced empty file")
+            
+    except subprocess.CalledProcessError as e:
+        safe_print(f"FFmpeg failed with exit code: {e.returncode}")
+        safe_print(f"FFmpeg stderr: {e.stderr}")
+        raise Exception(f"Ses karma baarsz: {e}")
+    except Exception as e:
+        safe_print(f"Audio extraction error: {e}")
+        raise Exception(f"Ses karma baarsz: {e}")
 
 
 def grab_frames(input_video: str, output_dir: str, max_frames: int = 10) -> List[str]:
     _ensure_ffmpeg_exists()
     Path(output_dir).mkdir(parents=True, exist_ok=True)
-    # Video süresini al ve optimal frame interval hesapla
+    # Video sresini al ve optimal frame interval hesapla
     try:
         duration = get_video_duration(input_video)
         if duration <= 0:
             return []
         
-        # Frame interval hesapla (maksimum frame sayısına göre)
+        # Frame interval hesapla (maksimum frame saysna gre)
         interval = max(1, duration / max_frames)
         
         pattern = str(Path(output_dir) / "frame_%03d.jpg")
@@ -191,8 +223,8 @@ def grab_frames(input_video: str, output_dir: str, max_frames: int = 10) -> List
             "-y",
             "-i", input_video,
             "-vf", f"fps=1/{interval}",  # Dinamik interval
-            "-q:v", "5",  # Daha hızlı JPEG (kalite vs hız)
-            "-threads", "2",  # Optimize thread sayısı
+            "-q:v", "5",  # Daha hzl JPEG (kalite vs hz)
+            "-threads", "2",  # Optimize thread says
             "-frames:v", str(max_frames),  # Maksimum frame limiti
             pattern,
         ]
@@ -200,17 +232,17 @@ def grab_frames(input_video: str, output_dir: str, max_frames: int = 10) -> List
         subprocess.run(args, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=30)
         
     except subprocess.TimeoutExpired:
-        print("️ Frame extraction timeout - using available frames")
+        safe_print(" Frame extraction timeout - using available frames")
     except subprocess.CalledProcessError as e:
-        print(f"️ Frame extraction error: {e}")
+        safe_print(f" Frame extraction error: {e}")
         return []
     except Exception as e:
-        print(f"️ Frame extraction failed: {e}")
+        safe_print(f" Frame extraction failed: {e}")
         return []
     
-    # Oluşturulan frame dosyalarını listele
+    # Oluturulan frame dosyalarn listele
     frames = sorted([str(p) for p in Path(output_dir).glob("frame_*.jpg")])
-    print(f"Extracted {len(frames)} frames from {duration:.1f}s video")
+    safe_print(f"Extracted {len(frames)} frames from {duration:.1f}s video")
     return frames
 
 
