@@ -213,12 +213,35 @@ def analyze_visual_jump(frames: List[str]) -> float:
         
         edge_diff = np.mean(np.abs(edges1.astype(float) - edges2.astype(float))) / 255.0
         
-        # 3. Optical Flow (hareket iddeti)
-        flow = cv2.calcOpticalFlowPyrLK(gray1, gray2, 
-                                       corners=cv2.goodFeaturesToTrack(gray1, maxCorners=50, qualityLevel=0.3, minDistance=7),
-                                       nextPts=None)[0]
+        # 3. Optical Flow (hareket iddeti) - Daha güvenli
+        try:
+            # Corner detection
+            corners = cv2.goodFeaturesToTrack(gray1, maxCorners=50, qualityLevel=0.3, minDistance=7)
+            if corners is not None and len(corners) > 0:
+                # Optical flow calculation with proper parameters
+                flow, status, error = cv2.calcOpticalFlowPyrLK(gray1, gray2, corners, None)
+                if flow is None:
+                    # Fallback: use simple frame difference
+                    diff = cv2.absdiff(gray1, gray2)
+                    flow_magnitude = np.mean(diff) / 255.0
+                else:
+                    flow_magnitude = 0.0
+            else:
+                # No corners found, use simple frame difference
+                diff = cv2.absdiff(gray1, gray2)
+                flow_magnitude = np.mean(diff) / 255.0
+                flow = None
+        except Exception as e:
+            safe_print(f"[HOOK] Optical flow error: {e}")
+            # Ultimate fallback: simple frame difference
+            try:
+                diff = cv2.absdiff(gray1, gray2)
+                flow_magnitude = np.mean(diff) / 255.0
+            except:
+                flow_magnitude = 0.1  # Default movement
+            flow = None
         
-        flow_magnitude = 0.0
+        # flow_magnitude already calculated above with fallbacks
         if flow is not None and len(flow) > 0:
             # Hareket bykl
             flow_magnitude = np.mean(np.sqrt(np.sum(flow**2, axis=1)))
@@ -707,19 +730,33 @@ def analyze_movement_rhythm(frames: List[str]) -> float:
             gray1 = cv2.resize(gray1, (64, 64))
             gray2 = cv2.resize(gray2, (64, 64))
             
-            # Optical flow
-            flow = cv2.calcOpticalFlowPyrLK(
-                gray1, gray2, 
-                corners=cv2.goodFeaturesToTrack(gray1, maxCorners=20, qualityLevel=0.3, minDistance=7),
-                nextPts=None
-            )[0]
-            
-            # Hareket bykl
-            if flow is not None and len(flow) > 0:
-                movement = np.mean(np.sqrt(np.sum(flow**2, axis=1)))
+            # Optical flow - Daha güvenli
+            try:
+                corners = cv2.goodFeaturesToTrack(gray1, maxCorners=20, qualityLevel=0.3, minDistance=7)
+                if corners is not None and len(corners) > 0:
+                    flow, status, error = cv2.calcOpticalFlowPyrLK(gray1, gray2, corners, None)
+                    if flow is not None and len(flow) > 0:
+                        movement = np.mean(np.sqrt(np.sum(flow**2, axis=1)))
+                        movement_values.append(movement)
+                    else:
+                        # Fallback: simple frame difference
+                        diff = cv2.absdiff(gray1, gray2)
+                        movement = np.mean(diff) / 255.0
+                        movement_values.append(movement)
+                else:
+                    # No corners, use frame difference
+                    diff = cv2.absdiff(gray1, gray2)
+                    movement = np.mean(diff) / 255.0
+                    movement_values.append(movement)
+            except Exception as e:
+                safe_print(f"[PACING] Optical flow error: {e}")
+                # Ultimate fallback
+                try:
+                    diff = cv2.absdiff(gray1, gray2)
+                    movement = np.mean(diff) / 255.0
+                except:
+                    movement = 0.1  # Default movement
                 movement_values.append(movement)
-            else:
-                movement_values.append(0.0)
         
         if not movement_values:
             return 0.0

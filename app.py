@@ -63,7 +63,7 @@ class TikTokIngest(BaseModel):
     metrics: TikTokMetrics
 
 class AnalyzeRequest(BaseModel):
-    platform: str = Field(..., pattern="^(instagram|tiktok)$")
+    platform: str = Field(..., pattern="^(instagram|tiktok|youtube)$")
     file_url: str = Field(..., description="Video URL to analyze")
     mode: Optional[str] = Field("FULL", description="Analysis mode: FULL (fast mode removed)")
     title: Optional[str] = ""
@@ -76,7 +76,7 @@ class AnalyzeRequest(BaseModel):
 
 class AnalyzeResponse(BaseModel):
     score: float = Field(..., ge=0, le=100)
-    verdict: str = Field(..., pattern="^(low|mid|high)$")
+    verdict: str = Field(..., pattern="^(low|mid|high|error)$")
     suggestions: List[str]
 
 # Hata yakalama middleware - detayl hata mesajlar
