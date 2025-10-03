@@ -756,8 +756,9 @@ def estimate_retention_curve(frames: List[str], features: Dict[str, Any]) -> flo
     visual = features.get("visual", {})
     flow = visual.get("optical_flow_mean", 0)
     
-    text_length = len(features.get("textual", {}).get("ocr_text", "") + 
-                     features.get("textual", {}).get("asr_text", ""))
+    ocr_texts = features.get("textual", {}).get("ocr_text", [])
+    asr_text = features.get("textual", {}).get("asr_text", "")
+    text_length = len(" ".join(ocr_texts) + asr_text)
     
     # Basit retention tahmini
     base_retention = 0.5
@@ -6229,11 +6230,11 @@ def analyze_text_trends(features: Dict[str, Any]) -> Dict[str, Any]:
         
         # Trend emoji kullanımı
         emoji_trends = {
-            "fire": ["🔥", "fire", "lit"],
-            "eyes": ["👀", "eyes", "watching"],
+            "fire": ["", "fire", "lit"],
+            "eyes": ["", "eyes", "watching"],
             "brain": ["", "brain", "mind"],
-            "heart": ["❤️", "💕", "💖", "love"],
-            "laugh": ["😂", "🤣", "lol", "haha"]
+            "heart": ["️", "", "", "love"],
+            "laugh": ["", "🤣", "lol", "haha"]
         }
         
         # Hashtag analizi

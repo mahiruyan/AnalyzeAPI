@@ -86,16 +86,16 @@ def _ocr_frames(frames: List[str], fast_mode: bool = False) -> List[str]:
     
     # FAST modda OCR atla
     if fast_mode:
-        print("⚠️ [OCR] Skipped (fast mode)")
+        print("[OCR] Skipped (fast mode)")
         return texts
     
     try:
         if pytesseract is None or Image is None:
-            print("❌ [OCR] Tesseract not available")
+            print("[OCR] Tesseract not available")
             return texts
             
-        print("🔍 [OCR] Using Tesseract OCR...")
-        print(f"✅ [OCR] Tesseract initialized, processing {len(frames)} frames")
+        print("[OCR] Using Tesseract OCR...")
+        print(f"[OCR] Tesseract initialized, processing {len(frames)} frames")
         
         # Hızlı analiz için sadece ilk 3 kare
         for i, f in enumerate(frames[:3]):
@@ -112,16 +112,16 @@ def _ocr_frames(frames: List[str], fast_mode: bool = False) -> List[str]:
                     if len(line) > 1:  # Boş satırları atla
                         texts.append(line)
                         
-                print(f"📝 [OCR] Frame {i+1}: {len([t for t in texts if t])} texts found")
+                print(f"[OCR] Frame {i+1}: {len([t for t in texts if t])} texts found")
             except Exception as e:
-                print(f"⚠️ [OCR] Failed for frame {i+1}: {e}")
+                print(f"[OCR] Failed for frame {i+1}: {e}")
                 continue
         
-        print(f"✅ [OCR] Completed: {len(texts)} total texts found")
+        print(f"[OCR] Completed: {len(texts)} total texts found")
         return texts[:10]  # Maksimum 10 text
         
     except Exception as e:
-        print(f"❌ [OCR] Tesseract failed: {e}")
+        print(f"[OCR] Tesseract failed: {e}")
         return []
 
 

@@ -223,7 +223,7 @@ def analyze_performance_api(data: AnalyzeRequest):
             print(f"[DEBUG] Temp directory created: {temp_dir}")
             
             # Video indir - timeout ile
-            print(f"🔽 [DEBUG] Downloading video from: {data.file_url}")
+            print(f"[DEBUG] Downloading video from: {data.file_url}")
             try:
                 download_video(data.file_url, video_path, timeout=30)  # 30 saniye timeout
                 print(f"[DEBUG] Video downloaded to: {video_path}")
@@ -231,7 +231,7 @@ def analyze_performance_api(data: AnalyzeRequest):
                 raise Exception(f"Video indirme başarısız (30s timeout): {e}")
             
             # Ses çıkar - hızlı
-            print("🎵 [DEBUG] Extracting audio...")
+            print(" [DEBUG] Extracting audio...")
             try:
                 extract_audio_via_ffmpeg(video_path, audio_path, sample_rate=16000, mono=True)
                 print(f"[DEBUG] Audio extracted to: {audio_path}")
@@ -239,7 +239,7 @@ def analyze_performance_api(data: AnalyzeRequest):
                 raise Exception(f"Ses çıkarma başarısız: {e}")
             
             # Frame'ler çıkar - çok hızlı
-            print("🖼️ [DEBUG] Extracting frames...")
+            print("️ [DEBUG] Extracting frames...")
             try:
                 frames = grab_frames(video_path, frames_dir, max_frames=3)  # 3 frame'e düşürdük (hız için)
                 print(f"[DEBUG] Frames extracted: {len(frames)} frames")
@@ -279,7 +279,7 @@ def analyze_performance_api(data: AnalyzeRequest):
                 raise Exception(f"Hook analizi başarısız: {e}")
             
             # YENİ: Pacing analizi (hızlı versiyon - 3 frame)
-            print("⚡ [DEBUG] Analyzing pacing & retention...")
+            print(" [DEBUG] Analyzing pacing & retention...")
             try:
                 pacing_result = analyze_pacing_retention(frames, features, duration)
                 print(f"[DEBUG] Pacing analysis completed: {pacing_result['score']}/12")
@@ -288,7 +288,7 @@ def analyze_performance_api(data: AnalyzeRequest):
                 raise Exception(f"Pacing analizi başarısız: {e}")
             
             # YENİ: CTA & Etkileşim analizi
-            print("📢 [DEBUG] Analyzing CTA & interaction...")
+            print(" [DEBUG] Analyzing CTA & interaction...")
             try:
                 cta_result = analyze_cta_interaction(features, duration)
                 print(f"[DEBUG] CTA analysis completed: {cta_result['score']}/8")

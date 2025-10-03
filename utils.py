@@ -91,52 +91,52 @@ def download_video(url: str, dest_path: str, timeout: int = 60) -> None:
             }
         }
         try:
-            print(f"📥 Downloading with yt-dlp: {url}")
+            print(f"Downloading with yt-dlp: {url}")
             with yt_dlp.YoutubeDL(ydl_opts) as ydl:
                 ydl.download([url])
-            print(f"✅ Download completed: {dest_path}")
+            print(f"Download completed: {dest_path}")
             return
         except Exception as e:
-            print(f"❌ yt-dlp failed: {e}")
-            print(f"❌ Error details: {str(e)}")
+            print(f"yt-dlp failed: {e}")
+            print(f"Error details: {str(e)}")
             # Instagram alternatif yöntemler
             if "instagram.com" in url:
                 # 1. instagram.com.tr deneyelim
                 alt1 = url.replace("instagram.com", "instagram.com.tr")
                 try:
-                    print(f"🔄 Retrying with instagram.com.tr: {alt1}")
+                    print(f"Retrying with instagram.com.tr: {alt1}")
                     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
                         ydl.download([alt1])
-                    print(f"✅ Download completed (instagram.com.tr): {dest_path}")
+                    print(f"Download completed (instagram.com.tr): {dest_path}")
                     return
                 except Exception as e2:
-                    print(f"❌ instagram.com.tr failed: {e2}")
+                    print(f"instagram.com.tr failed: {e2}")
                 
                 # 2. embed format deneyelim
                 alt2 = url.replace("/reel/", "/embed/reel/")
                 try:
-                    print(f"🔄 Retrying with embed format: {alt2}")
+                    print(f"Retrying with embed format: {alt2}")
                     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
                         ydl.download([alt2])
-                    print(f"✅ Download completed (embed): {dest_path}")
+                    print(f"Download completed (embed): {dest_path}")
                     return
                 except Exception as e3:
-                    print(f"❌ embed format failed: {e3}")
+                    print(f"embed format failed: {e3}")
             
             raise Exception(f"Video indirme başarısız: {e}")
     
     # Fallback: normal HTTP indirme (sosyal medya değilse)
     try:
-        print(f"📥 Downloading with requests: {url}")
+        print(f"Downloading with requests: {url}")
         resp = requests.get(url, stream=True, timeout=timeout)
         resp.raise_for_status()
         with open(dest_path, "wb") as f:
             for chunk in resp.iter_content(chunk_size=1024 * 1024):
                 if chunk:
                     f.write(chunk)
-        print(f"✅ Download completed: {dest_path}")
+        print(f"Download completed: {dest_path}")
     except Exception as e:
-        print(f"❌ Download failed: {e}")
+        print(f"Download failed: {e}")
         raise Exception(f"Video indirme başarısız: {e}")
 
 
@@ -165,10 +165,10 @@ def extract_audio_via_ffmpeg(
             output_wav,
         ]
         result = subprocess.run(args, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        print(f"✅ Audio extracted: {output_wav}")
+        print(f"Audio extracted: {output_wav}")
     except subprocess.CalledProcessError as e:
-        print(f"❌ FFmpeg audio extraction failed: {e}")
-        print(f"❌ FFmpeg stderr: {e.stderr.decode()}")
+        print(f"FFmpeg audio extraction failed: {e}")
+        print(f"FFmpeg stderr: {e.stderr.decode()}")
         
         raise Exception(f"Ses çıkarma başarısız: {e}")
 
@@ -200,17 +200,17 @@ def grab_frames(input_video: str, output_dir: str, max_frames: int = 10) -> List
         subprocess.run(args, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=30)
         
     except subprocess.TimeoutExpired:
-        print("⚠️ Frame extraction timeout - using available frames")
+        print("️ Frame extraction timeout - using available frames")
     except subprocess.CalledProcessError as e:
-        print(f"⚠️ Frame extraction error: {e}")
+        print(f"️ Frame extraction error: {e}")
         return []
     except Exception as e:
-        print(f"⚠️ Frame extraction failed: {e}")
+        print(f"️ Frame extraction failed: {e}")
         return []
     
     # Oluşturulan frame dosyalarını listele
     frames = sorted([str(p) for p in Path(output_dir).glob("frame_*.jpg")])
-    print(f"✅ Extracted {len(frames)} frames from {duration:.1f}s video")
+    print(f"Extracted {len(frames)} frames from {duration:.1f}s video")
     return frames
 
 

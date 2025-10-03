@@ -90,9 +90,9 @@ def main():
     success = test_instagram_reel()
     
     if success:
-        print("\n✅ Test completed successfully!")
+        print("\n Test completed successfully!")
     else:
-        print("\n❌ Test failed!")
+        print("\n Test failed!")
     
     return success
 
