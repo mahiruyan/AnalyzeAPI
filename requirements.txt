@@ -31,6 +31,10 @@ scenedetect==0.6.3
 requests==2.31.0
 python-dotenv==1.0.0
 yt-dlp==2024.12.13
+langdetect==1.0.9
+
+# Testing
+pytest==8.3.3
 # redis
 # SQLAlchemy
 # psycopg2-binary

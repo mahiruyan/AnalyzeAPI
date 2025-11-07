@@ -21,6 +21,19 @@ from pydantic import BaseModel, Field
 from typing import Dict, Any, Optional, List
 import os
 
+from analytics import AudienceSentimentAnalyzer
+from audience import (
+    AudienceEngagementMetrics,
+    AudienceSentimentSummary,
+    CommentThread,
+)
+from scraper import (
+    InstagramScraper,
+    ScrapeError,
+    ScraperConfig,
+    TikTokScraper,
+)
+
 # Railway iin ana uygulama dosyas
 app = FastAPI(title="analyzeAPI", version="0.2.0")
 
@@ -73,6 +86,13 @@ class AnalyzeRequest(BaseModel):
     media_id: Optional[str] = None
     published_at: Optional[str] = None
     metrics: Optional[Dict[str, Any]] = None
+    engagement_metrics: Optional[AudienceEngagementMetrics] = None
+    include_comments: bool = False
+    comment_threads: Optional[List[CommentThread]] = None
+    scraper_cookies: Optional[Dict[str, str]] = None
+    scraper_user_agent: Optional[str] = None
+    max_comments: Optional[int] = Field(200, ge=1, le=500)
+    scraper_cookie_path: Optional[str] = None
 
 class AnalyzeResponse(BaseModel):
     score: float = Field(..., ge=0, le=100)
@@ -192,6 +212,57 @@ def analyze_performance_api(data: AnalyzeRequest):
         safe_print(f"[DEBUG] File URL: {data.file_url}")
         safe_print(f"[DEBUG] Platform: {data.platform}")
         
+        audience_summary: Optional[AudienceSentimentSummary] = None
+        comment_threads: List[CommentThread] = []
+
+        if data.include_comments:
+            safe_print("[DEBUG] Audience comments requested")
+            if data.comment_threads:
+                safe_print(
+                    f"[DEBUG] Using {len(data.comment_threads)} provided comment threads"
+                )
+                comment_threads = data.comment_threads
+            else:
+                safe_print("[DEBUG] Starting scraping pipeline for comments")
+                default_cookie_paths = {
+                    "instagram": os.getenv("INSTAGRAM_COOKIE_JAR"),
+                    "tiktok": os.getenv("TIKTOK_COOKIE_JAR"),
+                }
+                config = ScraperConfig(
+                    user_agent=data.scraper_user_agent
+                    or ScraperConfig().user_agent,
+                    cookies=data.scraper_cookies,
+                    cookie_store_path=data.scraper_cookie_path
+                    or default_cookie_paths.get(data.platform),
+                )
+                try:
+                    if data.platform == "instagram":
+                        scraper = InstagramScraper(config)
+                        comment_threads = scraper.fetch_comments(
+                            data.file_url, max_comments=data.max_comments or 200
+                        )
+                    elif data.platform == "tiktok":
+                        scraper = TikTokScraper(config)
+                        comment_threads = scraper.fetch_comments(
+                            data.file_url, max_comments=data.max_comments or 200
+                        )
+                    else:
+                        raise ScrapeError(
+                            "Bu platform için scraper implementasyonu yok"
+                        )
+                except ScrapeError as scrape_error:
+                    safe_print(f"[AUDIENCE] Comment scraping failed: {scrape_error}")
+                    raise
+
+            if comment_threads:
+                safe_print(
+                    f"[DEBUG] Running sentiment analysis on {sum(len(t.replies) + 1 for t in comment_threads)} comments"
+                )
+                sentiment_analyzer = AudienceSentimentAnalyzer()
+                audience_summary = sentiment_analyzer.analyze(comment_threads)
+            else:
+                safe_print("[DEBUG] No comments available for sentiment analysis")
+
         safe_print("[DEBUG] Starting imports...")
         import tempfile
         import os
@@ -414,6 +485,94 @@ def analyze_performance_api(data: AnalyzeRequest):
             **legacy_scores  # Eski skorlar da dahil
         }
         
+        audience_result = {
+            "score": 0.0,
+            "max_score": 10.0,
+            "recommendations": [],
+            "findings": [],
+            "summary": audience_summary.model_dump() if audience_summary else None,
+            "engagement": data.engagement_metrics.model_dump()
+            if data.engagement_metrics
+            else None,
+        }
+
+        if audience_summary:
+            sentiment_balance = audience_summary.positive_ratio - audience_summary.negative_ratio
+            sentiment_score = 5.0 + sentiment_balance * 10.0
+            sentiment_score = max(0.0, min(10.0, sentiment_score))
+            if audience_summary.negative_ratio >= 0.3:
+                audience_result["recommendations"].append(
+                    "Yorumlarda belirgin negatif duygu var; krizin kaynak olduğu içeriklere hızlıca yanıt ver."
+                )
+            if audience_summary.positive_ratio >= 0.6:
+                audience_result["findings"].append(
+                    "Topluluk genel olarak içeriği olumlu karşılamış."
+                )
+        else:
+            sentiment_score = 0.0
+
+        engagement_component = 0.0
+        engagement_data = data.engagement_metrics.model_dump() if data.engagement_metrics else {}
+        denominator = (
+            engagement_data.get("views")
+            or engagement_data.get("plays")
+            or engagement_data.get("impressions")
+            or 0
+        )
+        if denominator and engagement_data.get("likes") is not None:
+            like_rate = engagement_data["likes"] / max(1, denominator)
+            engagement_component += min(1.0, like_rate * 5) * 4  # 0-4 puan
+            if like_rate < 0.03:
+                audience_result["recommendations"].append(
+                    "Like oranı düşük; CTA veya thumbnail üzerinde optimizasyon yap."
+                )
+            elif like_rate > 0.1:
+                audience_result["findings"].append(
+                    "Like oranı güçlü; içerik hedef kitleyle rezonans yakalamış."
+                )
+
+        if denominator and engagement_data.get("comments") is not None:
+            comment_rate = engagement_data["comments"] / max(1, denominator)
+            engagement_component += min(1.0, comment_rate * 20) * 3  # 0-3 puan
+            if comment_rate < 0.01:
+                audience_result["recommendations"].append(
+                    "Yorum etkileşimi sınırlı; videoda açık uçlu soru veya CTA ekle."
+                )
+            elif comment_rate > 0.03:
+                audience_result["findings"].append(
+                    "Yorum etkileşimi yüksek; topluluğun katılımı güçlü."
+                )
+
+        if denominator and engagement_data.get("shares") is not None:
+            share_rate = engagement_data["shares"] / max(1, denominator)
+            engagement_component += min(1.0, share_rate * 50) * 2  # 0-2 puan
+            if share_rate < 0.005:
+                audience_result["recommendations"].append(
+                    "Paylaşım oranı düşük; viral potansiyeli artırmak için paylaşılabilir kancalar ekle."
+                )
+            elif share_rate > 0.02:
+                audience_result["findings"].append(
+                    "Paylaşım oranı yüksek; içerik organik yayılıyor."
+                )
+
+        if denominator and engagement_data.get("saves") is not None:
+            save_rate = engagement_data["saves"] / max(1, denominator)
+            engagement_component += min(1.0, save_rate * 20) * 1  # 0-1 puan
+            if save_rate < 0.01:
+                audience_result["recommendations"].append(
+                    "Kaydetme oranı düşük; değerli ipuçlarını daha belirgin ver."
+                )
+            elif save_rate > 0.05:
+                audience_result["findings"].append(
+                    "Kaydetme oranı yüksek; içerik referans olarak tutuluyor."
+                )
+
+        engagement_component = min(5.0, engagement_component)
+
+        audience_total = round(sentiment_score * 0.6 + engagement_component * 0.4, 2)
+        audience_result["score"] = audience_total
+        advanced_scores["audience_sentiment_score"] = audience_total
+
         # Toplam skor (tm analizler dahil)
         total_score = (hook_result["score"] + pacing_result["score"] + 
                       cta_result["score"] + message_result["score"] + 
@@ -421,6 +580,7 @@ def analyze_performance_api(data: AnalyzeRequest):
                       loop_result["score"] + text_result["score"] + 
                       trend_result["score"] + content_result["score"] + 
                       music_result["score"] + access_result["score"] + 
+                      audience_total +
                       legacy_scores.get("overall_score", 0))
         
         advanced_scores["total_score"] = total_score
@@ -451,6 +611,7 @@ def analyze_performance_api(data: AnalyzeRequest):
         all_suggestions.extend(content_result.get("recommendations", []))
         all_suggestions.extend(music_result.get("recommendations", []))
         all_suggestions.extend(access_result.get("recommendations", []))
+        all_suggestions.extend(audience_result.get("recommendations", []))
         all_suggestions.extend(legacy_suggestions.get("tips", []))
         
         # Findings birletir
@@ -467,11 +628,24 @@ def analyze_performance_api(data: AnalyzeRequest):
         all_findings.extend(content_result.get("findings", []))
         all_findings.extend(music_result.get("findings", []))
         all_findings.extend(access_result.get("findings", []))
+        all_findings.extend(audience_result.get("findings", []))
         
         safe_print("[DEBUG] Advanced suggestions generated")
         safe_print(f"[DEBUG] Total advanced score: {total_score}")
         
         safe_print("[DEBUG] Analysis completed successfully!")
+
+        audience_payload = None
+        if audience_summary:
+            audience_payload = audience_summary.model_dump()
+            audience_payload["comment_threads"] = [
+                {
+                    "parent": thread.parent.model_dump(),
+                    "replies": [reply.model_dump() for reply in thread.replies],
+                }
+                for thread in comment_threads
+            ]
+
         return {
             "duration_seconds": duration,
             "features": features,
@@ -504,6 +678,12 @@ def analyze_performance_api(data: AnalyzeRequest):
             "language_quality": message_result.get("raw", {}).get("language_quality", 0.5),  # Dil kalitesi
             "score": total_score,  # Frontend iin direkt score
             "overall_score": total_score  # Frontend iin
+            ,
+            "audience_sentiment": audience_payload,
+            "audience_insights": audience_result,
+            "engagement_metrics": data.engagement_metrics.model_dump()
+            if data.engagement_metrics
+            else None,
         }
     except Exception as e:
         safe_print(f"[ERROR] Analysis failed: {str(e)}")
