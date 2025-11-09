@@ -20,6 +20,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 from typing import Dict, Any, Optional, List
 import os
+import json
+import hashlib
 
 from analytics import AudienceSentimentAnalyzer
 from audience import (
@@ -33,6 +35,7 @@ from scraper import (
     ScraperConfig,
     TikTokScraper,
 )
+from redis_client import RedisNotConfigured, try_get_redis
 
 # Railway iin ana uygulama dosyas
 app = FastAPI(title="analyzeAPI", version="0.2.0")
@@ -98,6 +101,23 @@ class AnalyzeResponse(BaseModel):
     score: float = Field(..., ge=0, le=100)
     verdict: str = Field(..., pattern="^(low|mid|high|error)$")
     suggestions: List[str]
+
+
+def _json_default(value):
+    """Redis cache için JSON serileştirici yardımcı."""
+
+    if hasattr(value, "model_dump"):
+        return value.model_dump()
+    if hasattr(value, "dict"):
+        return value.dict()
+    if isinstance(value, set):
+        return list(value)
+    if hasattr(value, "item"):
+        try:
+            return value.item()
+        except Exception:
+            pass
+    return str(value)
 
 # Hata yakalama middleware - detayl hata mesajlar
 @app.exception_handler(Exception)
@@ -212,6 +232,43 @@ def analyze_performance_api(data: AnalyzeRequest):
         safe_print(f"[DEBUG] File URL: {data.file_url}")
         safe_print(f"[DEBUG] Platform: {data.platform}")
         
+        redis_client = None
+        cache_key = None
+
+        if not data.include_comments and not data.comment_threads:
+            try:
+                redis_client = try_get_redis()
+            except RedisNotConfigured:
+                redis_client = None
+            except Exception as redis_error:
+                safe_print(f"[REDIS] Connection error: {redis_error}")
+                redis_client = None
+
+        if redis_client:
+            signature = {
+                "platform": data.platform,
+                "file_url": data.file_url,
+                "mode": data.mode or "FULL",
+                "title": data.title or "",
+                "caption": data.caption or "",
+                "tags": data.tags or [],
+                "metrics": data.metrics or {},
+                "engagement_metrics": data.engagement_metrics.model_dump()
+                if data.engagement_metrics
+                else None,
+            }
+            serialized_signature = json.dumps(
+                signature, sort_keys=True, separators=(",", ":"), default=_json_default
+            )
+            cache_key = f"analyze:{hashlib.sha256(serialized_signature.encode('utf-8')).hexdigest()}"
+            try:
+                cached_response = redis_client.get(cache_key)
+                if cached_response:
+                    safe_print(f"[REDIS] Cache hit for key {cache_key}")
+                    return json.loads(cached_response)
+            except Exception as redis_error:
+                safe_print(f"[REDIS] Cache fetch error: {redis_error}")
+
         audience_summary: Optional[AudienceSentimentSummary] = None
         comment_threads: List[CommentThread] = []
 
@@ -646,7 +703,7 @@ def analyze_performance_api(data: AnalyzeRequest):
                 for thread in comment_threads
             ]
 
-        return {
+        response_payload = {
             "duration_seconds": duration,
             "features": features,
             "scores": advanced_scores,
@@ -685,6 +742,15 @@ def analyze_performance_api(data: AnalyzeRequest):
             if data.engagement_metrics
             else None,
         }
+        if redis_client and cache_key:
+            try:
+                redis_client.setex(
+                    cache_key, 300, json.dumps(response_payload, default=_json_default)
+                )
+                safe_print(f"[REDIS] Cache stored for key {cache_key}")
+            except Exception as redis_error:
+                safe_print(f"[REDIS] Cache store error: {redis_error}")
+        return response_payload
     except Exception as e:
         safe_print(f"[ERROR] Analysis failed: {str(e)}")
         safe_print(f"[ERROR] Error type: {type(e)}")
