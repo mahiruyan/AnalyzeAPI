@@ -60,6 +60,14 @@ except Exception:
 try:
     import pytesseract  # type: ignore
     from PIL import Image
+    if not hasattr(Image, "ANTIALIAS"):
+        try:
+            resampling_filter = Image.Resampling.LANCZOS  # Pillow >=10
+        except AttributeError:
+            # Eski sürüm için fallback
+            resampling_filter = Image.LANCZOS if hasattr(Image, "LANCZOS") else None
+        if resampling_filter is not None:
+            Image.ANTIALIAS = resampling_filter  # type: ignore[attr-defined]
     
     # Windows için Tesseract PATH ayarı
     import platform
