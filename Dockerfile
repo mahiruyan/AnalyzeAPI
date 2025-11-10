@@ -44,6 +44,9 @@ RUN pip install --upgrade pip && \
 # Copy application code
 COPY . .
 
+# Preload ML modelleri (EasyOCR, Whisper)
+RUN python scripts/preload_models.py
+
 # Expose port
 EXPOSE 8000
 
