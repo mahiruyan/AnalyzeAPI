@@ -380,9 +380,13 @@ def analyze_performance_api(data: AnalyzeRequest):
             
             # Ses kar - hzl
             safe_print(" [DEBUG] Extracting audio...")
+            audio_has_stream = True
             try:
-                extract_audio_via_ffmpeg(video_path, audio_path, sample_rate=16000, mono=True)
-                safe_print(f"[DEBUG] Audio extracted to: {audio_path}")
+                audio_has_stream = extract_audio_via_ffmpeg(video_path, audio_path, sample_rate=16000, mono=True)
+                if audio_has_stream:
+                    safe_print(f"[DEBUG] Audio extracted to: {audio_path}")
+                else:
+                    safe_print("[DEBUG] Video sessiz; placeholder audio üretildi.")
             except Exception as e:
                 raise Exception(f"Ses karma baarsz: {e}")
             
@@ -410,6 +414,8 @@ def analyze_performance_api(data: AnalyzeRequest):
                 duration_seconds=duration,
                 fast_mode=False  # Her zaman FULL mode - fast mode sikik
             )
+            if not audio_has_stream:
+                features.setdefault("issues", []).append("Video sessiz olduğu için ses analizi sınırlı yapılabildi.")
             safe_print("[DEBUG] Features extracted")
             
             # Eski skorlar hesapla

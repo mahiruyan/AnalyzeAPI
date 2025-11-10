@@ -24,6 +24,8 @@ from pathlib import Path
 from typing import List, Optional, Callable, Any
 import tempfile
 import re
+import wave
+import array
 
 import requests
 import time
@@ -83,6 +85,56 @@ def _resolve_scrapingbee_proxy() -> Optional[str]:
             return f"http://{proxy_user}:{proxy_pass}@{proxy_host}:{proxy_port}"
         return f"http://{proxy_host}:{proxy_port}"
     return None
+
+
+def _video_has_audio_stream(video_path: str) -> bool:
+    """ffprobe ile videoda ses kanalı olup olmadığını tespit eder."""
+    args = [
+        "ffprobe",
+        "-v",
+        "error",
+        "-select_streams",
+        "a",
+        "-show_entries",
+        "stream=index",
+        "-of",
+        "csv=p=0",
+        video_path,
+    ]
+    try:
+        proc = subprocess.run(
+            args,
+            check=False,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+            encoding="utf-8",
+            errors="ignore",
+        )
+        if proc.returncode != 0:
+            safe_print(f"[AUDIO] ffprobe audio check failed (code {proc.returncode}): {proc.stderr.strip()}")
+            # Emin olamadıysak legacy davranışı koruyup ses varmış gibi devam edelim
+            return True
+        has_audio = bool(proc.stdout.strip())
+        safe_print(f"[AUDIO] Audio stream detected: {has_audio}")
+        return has_audio
+    except Exception as exc:
+        safe_print(f"[AUDIO] ffprobe audio detection error: {exc}")
+        return True
+
+
+def _generate_silent_wav(output_wav: str, sample_rate: int, mono: bool, duration_seconds: float = 0.5) -> None:
+    """Sessiz placeholder WAV üretir."""
+    num_channels = 1 if mono else 2
+    total_frames = max(1, int(sample_rate * duration_seconds))
+    Path(output_wav).parent.mkdir(parents=True, exist_ok=True)
+    data = array.array("h", [0] * total_frames * num_channels)
+    with wave.open(output_wav, "wb") as wav_file:
+        wav_file.setnchannels(num_channels)
+        wav_file.setsampwidth(2)  # 16-bit PCM
+        wav_file.setframerate(sample_rate)
+        wav_file.writeframes(data.tobytes())
+    safe_print(f"[AUDIO] Generated silent placeholder WAV at {output_wav}")
 
 
 def download_video(url: str, dest_path: str, timeout: int = 60) -> None:
@@ -227,13 +279,19 @@ def extract_audio_via_ffmpeg(
     output_wav: str,
     sample_rate: int = 16000,
     mono: bool = True,
-) -> None:
+) -> bool:
     _ensure_ffmpeg_exists()
     Path(output_wav).parent.mkdir(parents=True, exist_ok=True)
     
     # Check if video file exists
     if not Path(input_video).exists():
         raise Exception(f"Video file not found: {input_video}")
+
+    has_audio = _video_has_audio_stream(input_video)
+    if not has_audio:
+        safe_print("[AUDIO] Video dosyasında ses kanalı tespit edilmedi; sessiz placeholder oluşturuluyor.")
+        _generate_silent_wav(output_wav, sample_rate, mono)
+        return False
     
     # Simple FFmpeg command that works
     args = [
@@ -255,7 +313,7 @@ def extract_audio_via_ffmpeg(
         # Verify the output file exists and has content
         if not Path(output_wav).exists() or Path(output_wav).stat().st_size == 0:
             raise Exception("Audio extraction produced empty file")
-            
+        return True
     except subprocess.CalledProcessError as e:
         safe_print(f"FFmpeg failed with exit code: {e.returncode}")
         safe_print(f"FFmpeg stderr: {e.stderr}")

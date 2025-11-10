@@ -37,7 +37,7 @@ def process_job(job_id: str, payload: Dict[str, Any]) -> Dict[str, Any]:
             update_status(job_id, "processing", {"step": "preprocess"})
             if is_cancelled(job_id):
                 raise RuntimeError("Job cancelled")
-            extract_audio_via_ffmpeg(str(video_path), str(audio_path), sample_rate=16000, mono=True)
+            audio_has_stream = extract_audio_via_ffmpeg(str(video_path), str(audio_path), sample_rate=16000, mono=True)
             frames = grab_frames(str(video_path), output_dir=str(frames_dir), fps=1)
 
             # 3) Özellik çıkarımı
@@ -55,6 +55,8 @@ def process_job(job_id: str, payload: Dict[str, Any]) -> Dict[str, Any]:
                 duration_seconds=duration,
                 fast_mode=fast_mode,
             )
+            if not audio_has_stream:
+                features.setdefault("issues", []).append("Video sessiz olduğu için ses analizi sınırlı yapılabildi.")
 
             # 4) Skorlama
             scores = score_features(features, platform=payload.get("platform", ""), fast_mode=fast_mode)
