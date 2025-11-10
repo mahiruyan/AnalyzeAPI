@@ -98,15 +98,21 @@ def download_video(url: str, dest_path: str, timeout: int = 60) -> None:
         # Instagram URL normalize
         if "instagram.com" in url:
             url = _normalize_instagram_url(url)
+
+        dest = Path(dest_path)
+        base_no_ext = dest.with_suffix("")
+        ydl_outtmpl = str(base_no_ext) + ".%(ext)s"
+
         # Sosyal medya iin yt-dlp kullan (hz iin optimize edildi)
         ydl_opts = {
-            'format': 'best[height<=480]/best',
-            'outtmpl': dest_path,
+            'format': 'bv[height<=480]+ba/b[height<=480]/best',
+            'outtmpl': ydl_outtmpl,
             'quiet': False,  # Debug iin ak
             'no_warnings': False,  # Debug iin ak
             'extract_flat': False,
             'socket_timeout': timeout,
             'retries': 3,
+            'noplaylist': True,
             # Instagram iin gerekli ayarlar
             'cookiesfrombrowser': None,
             'extractor_args': {
@@ -131,11 +137,37 @@ def download_video(url: str, dest_path: str, timeout: int = 60) -> None:
         if proxy_url:
             ydl_opts['proxy'] = proxy_url
             safe_print(f"[PROXY] yt-dlp via {proxy_host_display}")
+        # mp4 merge garanti
+        ydl_opts['merge_output_format'] = 'mp4'
+        ydl_opts['postprocessors'] = [{
+            'key': 'FFmpegVideoConvertor',
+            'preferedformat': 'mp4',
+        }]
+        ydl_opts['postprocessor_args'] = ['-movflags', 'faststart']
+
         try:
             safe_print(f"Downloading with yt-dlp: {url}")
             with yt_dlp.YoutubeDL(ydl_opts) as ydl:
                 ydl.download([url])
-            safe_print(f"Download completed: {dest_path}")
+            # İndirilen gerçek dosyayı bul ve hedef adına taşı
+            downloaded_candidates = sorted(dest.parent.glob(f"{base_no_ext.name}.*"), key=lambda p: p.stat().st_mtime, reverse=True)
+            selected_file = None
+            for candidate in downloaded_candidates:
+                if candidate.suffix.lower() in {'.mp4', '.mkv', '.mov', '.webm'}:
+                    selected_file = candidate
+                    break
+            if selected_file is None:
+                raise FileNotFoundError("yt-dlp uygun çıktı dosyası üretmedi")
+
+            if selected_file != dest:
+                if dest.exists():
+                    dest.unlink()
+                selected_file.rename(dest)
+
+            file_size = dest.stat().st_size if dest.exists() else 0
+            safe_print(f"Download completed: {dest_path} ({file_size/1024/1024:.2f} MB)")
+            if file_size == 0:
+                raise Exception("İndirilen video dosyası boş görünüyor")
             return
         except Exception as e:
             safe_print(f"yt-dlp failed: {e}")
