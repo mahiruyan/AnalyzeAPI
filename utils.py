@@ -69,9 +69,30 @@ def _normalize_instagram_url(url: str) -> str:
         return url
 
 
+def _resolve_scrapingbee_proxy() -> Optional[str]:
+    proxy_url = os.getenv("SCRAPINGBEE_PROXY_URL")
+    if proxy_url:
+        return proxy_url.strip()
+
+    proxy_host = os.getenv("SCRAPINGBEE_PROXY_HOST")
+    proxy_port = os.getenv("SCRAPINGBEE_PROXY_PORT")
+    if proxy_host and proxy_port:
+        proxy_user = os.getenv("SCRAPINGBEE_PROXY_USER")
+        proxy_pass = os.getenv("SCRAPINGBEE_PROXY_PASS") or os.getenv("SCRAPINGBEE_API_KEY")
+        if proxy_user and proxy_pass:
+            return f"http://{proxy_user}:{proxy_pass}@{proxy_host}:{proxy_port}"
+        return f"http://{proxy_host}:{proxy_port}"
+    return None
+
+
 def download_video(url: str, dest_path: str, timeout: int = 60) -> None:
     """Video indirme - sosyal medya iin yt-dlp, optimize edildi"""
     Path(dest_path).parent.mkdir(parents=True, exist_ok=True)
+    proxy_url = _resolve_scrapingbee_proxy()
+    proxy_host_display = None
+    if proxy_url:
+        proxy_host_display = proxy_url.split("@")[-1]
+        proxy_host_display = proxy_host_display.replace("http://", "").replace("https://", "")
     
     if _is_social_media_url(url) and yt_dlp is not None:
         # Instagram URL normalize
@@ -107,6 +128,9 @@ def download_video(url: str, dest_path: str, timeout: int = 60) -> None:
                 'Upgrade-Insecure-Requests': '1',
             }
         }
+        if proxy_url:
+            ydl_opts['proxy'] = proxy_url
+            safe_print(f"[PROXY] yt-dlp via {proxy_host_display}")
         try:
             safe_print(f"Downloading with yt-dlp: {url}")
             with yt_dlp.YoutubeDL(ydl_opts) as ydl:
@@ -146,7 +170,11 @@ def download_video(url: str, dest_path: str, timeout: int = 60) -> None:
     if not _is_social_media_url(url):
         try:
             safe_print(f"Downloading with requests: {url}")
-            resp = requests.get(url, stream=True, timeout=timeout)
+            proxies = None
+            if proxy_url:
+                proxies = {"http": proxy_url, "https": proxy_url}
+                safe_print(f"[PROXY] requests via {proxy_host_display}")
+            resp = requests.get(url, stream=True, timeout=timeout, proxies=proxies)
             resp.raise_for_status()
             with open(dest_path, "wb") as f:
                 for chunk in resp.iter_content(chunk_size=1024 * 1024):
