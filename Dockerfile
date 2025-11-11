@@ -51,7 +51,7 @@ RUN python scripts/preload_models.py
 EXPOSE 8000
 
 # Health check - daha uzun start period
-HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=5 \
+HEALTHCHECK --interval=30s --timeout=10s --start-period=240s --retries=5 \
     CMD curl -f http://localhost:8000/api/health || exit 1
 
 # Run the application

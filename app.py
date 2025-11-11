@@ -23,6 +23,8 @@ import os
 import json
 import hashlib
 
+from starlette.concurrency import run_in_threadpool
+
 from analytics import AudienceSentimentAnalyzer
 from audience import (
     AudienceEngagementMetrics,
@@ -48,6 +50,21 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+@app.on_event("startup")
+async def startup_warmup() -> None:
+    """
+    Uygulama ayağa kalkarken EasyOCR/Whisper gibi ağır modelleri önceden yükle.
+    """
+    safe_print("[WARMUP] Startup warmup başlatılıyor...")
+    try:
+        from features import warmup_models
+
+        await run_in_threadpool(warmup_models)
+        safe_print("[WARMUP] Startup warmup tamamlandı.")
+    except Exception as exc:
+        safe_print(f"[WARMUP] Startup warmup hata verdi: {exc}")
 
 # Pydantic modelleri
 class InstagramMetrics(BaseModel):

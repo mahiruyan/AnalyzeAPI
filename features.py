@@ -15,8 +15,9 @@ def safe_print(*args, **kwargs):
         print(*safe_args, **kwargs)
 
 
-from typing import Dict, Any, List, Tuple
+from typing import Dict, Any, List, Tuple, Optional
 from pathlib import Path
+import threading
 
 import numpy as np
 
@@ -127,6 +128,70 @@ try:
     from faster_whisper import WhisperModel
 except Exception:
     WhisperModel = None
+
+_easyocr_reader: Optional["easyocr.Reader"] = None
+_easyocr_lock = threading.Lock()
+
+_whisper_model: Optional["WhisperModel"] = None
+_whisper_lock = threading.Lock()
+
+
+def _get_easyocr_reader() -> Optional["easyocr.Reader"]:
+    """
+    EasyOCR Reader nesnesini cache'leyip geri döndürür.
+    """
+    global _easyocr_reader
+    try:
+        import easyocr  # type: ignore
+    except ImportError:
+        return None
+
+    if _easyocr_reader is None:
+        with _easyocr_lock:
+            if _easyocr_reader is None:
+                try:
+                    safe_print("[WARMUP] Initializing EasyOCR reader (gpu=False)")
+                    _easyocr_reader = easyocr.Reader(['en', 'tr'], gpu=False)
+                    safe_print("[WARMUP] EasyOCR reader ready")
+                except Exception as exc:
+                    safe_print(f"[WARMUP] EasyOCR initialization failed: {exc}")
+                    _easyocr_reader = None
+    return _easyocr_reader
+
+
+def _get_whisper_model() -> Optional["WhisperModel"]:
+    """
+    WhisperModel örneğini cache'leyip geri döndürür.
+    """
+    global _whisper_model
+    if WhisperModel is None:
+        return None
+    if _whisper_model is None:
+        with _whisper_lock:
+            if _whisper_model is None:
+                try:
+                    safe_print("[WARMUP] Loading Whisper model (small/int8)")
+                    _whisper_model = WhisperModel("small", compute_type="int8")
+                    safe_print("[WARMUP] Whisper model ready")
+                except Exception as exc:
+                    safe_print(f"[WARMUP] Whisper initialization failed: {exc}")
+                    _whisper_model = None
+    return _whisper_model
+
+
+def warmup_models() -> None:
+    """
+    OCR ve ASR modellerini önceden yükler. Başarısız olursa loglar.
+    """
+    try:
+        _get_easyocr_reader()
+    except Exception as exc:
+        safe_print(f"[WARMUP] EasyOCR warmup error: {exc}")
+
+    try:
+        _get_whisper_model()
+    except Exception as exc:
+        safe_print(f"[WARMUP] Whisper warmup error: {exc}")
 
 
 def _safe_load_audio(audio_path: str, sr: int = 16000):
@@ -277,10 +342,10 @@ def _ocr_frames(frames: List[str], fast_mode: bool = False) -> Tuple[List[str], 
             safe_print("[OCR] PaddleOCR not available, trying EasyOCR...")
 
             try:
-                import easyocr
-                safe_print("[OCR] Using EasyOCR...")
-
-                reader = easyocr.Reader(['en', 'tr'])
+                reader = _get_easyocr_reader()
+                if reader is None:
+                    raise ImportError("EasyOCR reader could not be initialized")
+                safe_print("[OCR] Using EasyOCR with cached reader...")
                 texts = []
 
                 for i, frame_path in enumerate(frames):
@@ -431,11 +496,11 @@ def _asr(audio_path: str, fast_mode: bool = False) -> Tuple[str, List[str]]:
     if fast_mode:
         issues.append("Oops! Hızlı mod açık olduğu için ASR atlandı.")
         return "", issues
-    if WhisperModel is None:
+    model = _get_whisper_model()
+    if model is None:
         issues.append("Oops! Whisper modeli yüklenemediği için ASR çalışmadı.")
         return "", issues
     try:
-        model = WhisperModel("small", compute_type="int8")
         segments, info = model.transcribe(audio_path, language="en")
         text_parts = [seg.text.strip() for seg in segments]
         return " ".join([p for p in text_parts if p]), issues
