@@ -139,6 +139,7 @@ _whisper_lock = threading.Lock()
 def _get_easyocr_reader() -> Optional["easyocr.Reader"]:
     """
     EasyOCR Reader nesnesini cache'leyip geri döndürür.
+    Docker build'de preload edildiği için runtime'da hızlı yüklenir.
     """
     global _easyocr_reader
     try:
@@ -150,11 +151,11 @@ def _get_easyocr_reader() -> Optional["easyocr.Reader"]:
         with _easyocr_lock:
             if _easyocr_reader is None:
                 try:
-                    safe_print("[WARMUP] Initializing EasyOCR reader (gpu=False)")
-                    _easyocr_reader = easyocr.Reader(['en', 'tr'], gpu=False)
-                    safe_print("[WARMUP] EasyOCR reader ready")
+                    safe_print("[CACHE] Loading EasyOCR reader from preloaded models...")
+                    _easyocr_reader = easyocr.Reader(['en', 'tr'], gpu=False, verbose=False)
+                    safe_print("[CACHE] ✓ EasyOCR reader ready")
                 except Exception as exc:
-                    safe_print(f"[WARMUP] EasyOCR initialization failed: {exc}")
+                    safe_print(f"[CACHE] ✗ EasyOCR initialization failed: {exc}")
                     _easyocr_reader = None
     return _easyocr_reader
 
@@ -162,6 +163,7 @@ def _get_easyocr_reader() -> Optional["easyocr.Reader"]:
 def _get_whisper_model() -> Optional["WhisperModel"]:
     """
     WhisperModel örneğini cache'leyip geri döndürür.
+    Docker build'de preload edildiği için runtime'da hızlı yüklenir.
     """
     global _whisper_model
     if WhisperModel is None:
@@ -170,11 +172,11 @@ def _get_whisper_model() -> Optional["WhisperModel"]:
         with _whisper_lock:
             if _whisper_model is None:
                 try:
-                    safe_print("[WARMUP] Loading Whisper model (small/int8)")
+                    safe_print("[CACHE] Loading Whisper model from preloaded models...")
                     _whisper_model = WhisperModel("small", compute_type="int8")
-                    safe_print("[WARMUP] Whisper model ready")
+                    safe_print("[CACHE] ✓ Whisper model ready")
                 except Exception as exc:
-                    safe_print(f"[WARMUP] Whisper initialization failed: {exc}")
+                    safe_print(f"[CACHE] ✗ Whisper initialization failed: {exc}")
                     _whisper_model = None
     return _whisper_model
 
